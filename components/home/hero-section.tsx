@@ -1,6 +1,6 @@
 export function HeroSection() {
   return (
-    <section className="px-4 py-20 md:py-32">
+    <section id="home" className="px-4 py-20 md:py-32">
       <div className="max-w-6xl mx-auto text-center">
         <div className="inline-block mb-4 px-4 py-2 bg-[#E84A3A]/10 rounded-full text-[#E84A3A] text-sm font-medium">
           ✨ Building the Future
