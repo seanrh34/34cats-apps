@@ -52,7 +52,14 @@ export function Navbar() {
     if (hash) {
       const element = document.getElementById(hash);
       if (element) {
-        element.scrollIntoView({ behavior: "smooth" });
+        const navbarHeight = 64; // h-16 = 64px
+        const elementPosition = element.getBoundingClientRect().top + window.scrollY;
+        const offsetPosition = elementPosition - navbarHeight;
+        
+        window.scrollTo({
+          top: offsetPosition,
+          behavior: "smooth"
+        });
       }
     }
     setIsOpen(false);

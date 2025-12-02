@@ -2,11 +2,11 @@ import Image from "next/image";
 
 export function HeroSection() {
   return (
-    <section id="home" className="px-4 py-20 md:py-32">
+    <section id="home" className="px-4 py-12 md:pb-32">
       <div className="max-w-6xl mx-auto text-center">
         <Image src="/34cats_main.png" alt="34cats Apps Logo" width={2000} height={1200} className="mx-auto mb-8 w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-2xl h-auto" />
         <p className="text-xl md:text-2xl text-gray-300 mb-8 max-w-3xl mx-auto">
-          Explore innovative tools, experiments, and AI-powered creations designed to enhance your digital experience
+          Creating fun, innovative digital tools where some are just for fun but some are designed to boost your productivity and creativity.
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
           <a
