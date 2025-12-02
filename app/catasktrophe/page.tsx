@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export default function Catasktrophe() {
   return (
     <main className="min-h-screen bg-gradient-to-b from-gray-900 to-black">
@@ -22,22 +24,22 @@ export default function Catasktrophe() {
               Under Development
             </h2>
             <p className="text-gray-400 mb-6">
-              We're working hard to bring you an amazing task management experience. 
+              We&apos;re working hard to bring you an amazing task management experience. 
               Check back soon for updates!
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <a
+              <Link
                 href="/"
                 className="px-6 py-3 bg-[#E84A3A] text-white rounded-lg font-semibold hover:bg-[#d43d2d] transition-all"
               >
                 Back to Home
-              </a>
-              <a
+              </Link>
+              <Link
                 href="/#apps"
                 className="px-6 py-3 bg-gray-700 text-gray-200 rounded-lg font-semibold hover:bg-gray-600 transition-all"
               >
                 View Other Apps
-              </a>
+              </Link>
             </div>
           </div>
         </div>

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import Image from "next/image";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { mainNavItems } from "@/config/navigation";
@@ -63,16 +63,11 @@ export function Navbar() {
       <div className="container mx-auto max-w-6xl px-4">
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
-          <a 
+          <Link 
             href="/"
             className="flex items-center space-x-2 group">
-            <div className="text-2xl font-bold">
-              <span className="text-white group-hover:text-[#E84A3A] transition-colors">
-                34cats
-              </span>
-              <span className="text-[#E84A3A]"> Apps</span>
-            </div>
-          </a>
+            <Image src="/34cats_main.png" alt="34cats Apps Logo" width={120} height={120} className="w-auto h-12" />
+          </Link>
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex md:items-center md:space-x-8">
@@ -81,7 +76,7 @@ export function Navbar() {
               const isItemActive = activeSection === sectionId;
               
               return (
-                <a
+                <Link
                   key={item.name}
                   href={item.href}
                   onClick={(e) => handleLinkClick(e, item.href)}
@@ -96,7 +91,7 @@ export function Navbar() {
                       <span className="absolute -bottom-[1px] left-0 right-0 h-[2px] bg-[#E84A3A] rounded-full" />
                     )}
                   </span>
-                </a>
+                </Link>
               );
             })}
           </div>
