@@ -2,18 +2,11 @@ import { App, Feature } from "@/lib/types";
 
 export const apps: App[] = [
   {
-    name: "CatGPT",
-    href: "/catGPT",
-    description: "Your innovative AI companion",
-    status: "Coming Soon",
+    name: "PawPress CMS",
+    href: "/pawpress-cms",
+    description: "Free and open-source headless CMS built with Next.js and Tailwind CSS.",
+    status: "Live",
     icon: "🐱",
-  },
-  {
-    name: "Catasktrophe",
-    href: "/catasktrophe",
-    description: "Task management (probably the 100th one you've seen)",
-    status: "Coming Soon",
-    icon: "✓",
   },
   // Add more apps here
 ];

@@ -3,7 +3,7 @@ export function AboutSection() {
       <section id="about" className="px-4 py-16 bg-gray-900/50">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-3xl md:text-4xl font-bold mb-6 text-white">
-            Can&apos;t Spell &quot;Funtional&quot; without &quot;Fun&quot;
+            Can&apos;t Spell &quot;Functional&quot; without &quot;Fun&quot;
           </h2>
           <p className="text-lg text-gray-300 mb-8">
             While some of the apps here are built for fun, we never compromise on functionality. 
