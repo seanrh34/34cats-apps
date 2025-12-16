@@ -136,7 +136,26 @@ export default function PawPressCMSPage() {
           </div>
         </ContentSection>
 
-        <ContentSection title="Final Thoughts" className="border-t border-white/10 pt-16">
+        <ContentSection title="See It In Action" className="border-t border-white/10 pt-16">
+          <p>
+            Want to see PawPress CMS in production? Check out the live blog powered by this system.
+          </p>
+          <div className="mt-6 text-center">
+            <a
+              href="https://blog.34cats.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center px-8 py-4 bg-[#E84A3A] hover:bg-[#d43d2d] text-white rounded-lg font-semibold transition-all shadow-lg hover:shadow-xl hover:shadow-[#E84A3A]/20"
+            >
+              Visit Live Demo
+              <svg className="ml-2 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+              </svg>
+            </a>
+          </div>
+        </ContentSection>
+
+        <ContentSection title="Final Thoughts">
           <p>
             Building a custom CMS isn't always the answer, but for focused use cases, it offers clarity and control that off-the-shelf solutions can't match.
           </p>
