@@ -1,4 +1,7 @@
+"use client";
+
 import Image from "next/image";
+import { smoothScrollToSection } from "@/lib/scroll-utils";
 
 export function HeroSection() {
   return (
@@ -11,12 +14,14 @@ export function HeroSection() {
         <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
           <a
             href="#apps"
+            onClick={(e) => smoothScrollToSection(e, "#apps")}
             className="px-8 py-4 bg-[#E84A3A] text-white rounded-lg font-semibold hover:bg-[#d43d2d] transition-all shadow-lg hover:shadow-xl hover:shadow-[#E84A3A]/20 transform hover:-translate-y-0.5"
           >
             Explore Apps
           </a>
           <a
             href="#about"
+            onClick={(e) => smoothScrollToSection(e, "#about")}
             className="px-8 py-4 bg-gray-800 text-gray-200 rounded-lg font-semibold hover:bg-gray-700 transition-all border border-gray-700 shadow-sm hover:shadow-md"
           >
             Learn More

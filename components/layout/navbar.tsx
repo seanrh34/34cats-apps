@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { mainNavItems } from "@/config/navigation";
+import { smoothScrollToSection } from "@/lib/scroll-utils";
 
 export function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -46,23 +47,9 @@ export function Navbar() {
   }, [activeSection]);
 
   const handleLinkClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
-    e.preventDefault();
-    // Extract the hash from the href (e.g., "/#apps" -> "apps")
-    const hash = href.includes('#') ? href.split('#')[1] : '';
-    if (hash) {
-      const element = document.getElementById(hash);
-      if (element) {
-        const navbarHeight = 64; // h-16 = 64px
-        const elementPosition = element.getBoundingClientRect().top + window.scrollY;
-        const offsetPosition = elementPosition - navbarHeight;
-        
-        window.scrollTo({
-          top: offsetPosition,
-          behavior: "smooth"
-        });
-      }
-    }
+    smoothScrollToSection(e, href);
     setIsOpen(false);
+    setMobileMenuOpen(false);
   };
 
   return (
@@ -107,6 +94,7 @@ export function Navbar() {
           <div className="hidden md:block">
             <Link
               href="/#apps"
+              onClick={(e) => handleLinkClick(e, "/#apps")}
               className="inline-flex items-center px-4 py-2 text-sm font-semibold text-white bg-[#E84A3A] rounded-lg hover:bg-[#d43d2d] transition-all shadow-md hover:shadow-lg hover:shadow-[#E84A3A]/20"
             >
               Explore Apps
@@ -175,7 +163,7 @@ export function Navbar() {
               <Link
                 href="/#apps"
                 className="block px-3 py-2 mt-2 text-center text-sm font-semibold text-white bg-[#E84A3A] rounded-lg hover:bg-[#d43d2d] transition-colors"
-                onClick={() => setMobileMenuOpen(false)}
+                onClick={(e) => handleLinkClick(e, "/#apps")}
               >
                 Explore Apps
               </Link>
