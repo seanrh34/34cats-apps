@@ -8,6 +8,13 @@ export const apps: App[] = [
     status: "Live",
     icon: "🐱",
   },
+  {
+    name: "Resumeow",
+    href: "/resumeow",
+    description: "Create professional resumes with LaTeX quality. Simple forms, beautiful PDFs.",
+    status: "In Development",
+    icon: "📄",
+  },
   // Add more apps here
 ];
 
