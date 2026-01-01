@@ -1,6 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/contexts/auth-context";
 import { ResumeData, PersonalInfo, Experience, Education, Skill } from "@/lib/types/resume";
 import { PersonalInfoForm } from "@/components/resumeow/personal-info-form";
 import { ExperienceForm } from "@/components/resumeow/experience-form";
@@ -10,9 +12,18 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 
 export default function ResumeowPage() {
+  const { user, loading, signOut } = useAuth();
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<"personal" | "experience" | "education" | "skills">("personal");
   const [isGenerating, setIsGenerating] = useState(false);
   const [latexCode, setLatexCode] = useState<string>("");
+
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push("/login");
+    }
+  }, [user, loading, router]);
 
   const [resumeData, setResumeData] = useState<ResumeData>({
     personalInfo: {
@@ -79,11 +90,48 @@ export default function ResumeowPage() {
     { id: "skills", label: "Skills" },
   ] as const;
 
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      router.push("/");
+    } catch (error) {
+      console.error("Error signing out:", error);
+    }
+  };
+
+  // Show loading state while checking auth
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black flex items-center justify-center">
+        <div className="text-white text-xl">Loading...</div>
+      </div>
+    );
+  }
+
+  // Don't render if not authenticated (will redirect)
+  if (!user) {
+    return null;
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black">
       <div className="container mx-auto px-4 py-12">
         {/* Header */}
-        <div className="text-center mb-12">
+        <div className="text-center mb-8">
+          <div className="flex justify-end mb-4">
+            <div className="flex items-center gap-4">
+              <span className="text-sm text-gray-300">
+                {user.email}
+              </span>
+              <Button
+                onClick={handleSignOut}
+                variant="outline"
+                size="sm"
+              >
+                Sign Out
+              </Button>
+            </div>
+          </div>
           <h1 className="text-4xl md:text-5xl font-bold mb-4 text-white">Resumeow 📄</h1>
           <p className="text-xl text-gray-300 max-w-2xl mx-auto">
             Create professional resumes with LaTeX quality. Fill in your details and let us handle the formatting.
