@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/auth-context";
 import { ResumeData, PersonalInfo, Experience, Education, Skill } from "@/lib/types/resume";
@@ -10,6 +10,12 @@ import { EducationForm } from "@/components/resumeow/education-form";
 import { SkillsForm } from "@/components/resumeow/skills-form";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { 
+  fetchUserResumes, 
+  saveResume, 
+  deleteResume, 
+  SavedResume 
+} from "@/lib/services/resume-service";
 
 export default function ResumeowPage() {
   const { user, loading, signOut } = useAuth();
@@ -17,6 +23,12 @@ export default function ResumeowPage() {
   const [activeTab, setActiveTab] = useState<"personal" | "experience" | "education" | "skills">("personal");
   const [isGenerating, setIsGenerating] = useState(false);
   const [latexCode, setLatexCode] = useState<string>("");
+  const [savedResumes, setSavedResumes] = useState<SavedResume[]>([]);
+  const [currentResumeId, setCurrentResumeId] = useState<string | undefined>();
+  const [resumeTitle, setResumeTitle] = useState("My Resume");
+  const [isSaving, setIsSaving] = useState(false);
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [showResumeList, setShowResumeList] = useState(false);
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -38,6 +50,91 @@ export default function ResumeowPage() {
     education: [],
     skills: [],
   });
+
+  // Load user's resumes on mount
+  useEffect(() => {
+    if (user) {
+      loadResumes();
+    }
+  }, [user]);
+
+  const loadResumes = async () => {
+    try {
+      const resumes = await fetchUserResumes();
+      setSavedResumes(resumes);
+      
+      // Load the most recent resume if available
+      if (resumes.length > 0 && !currentResumeId) {
+        loadResume(resumes[0]);
+      }
+    } catch (error) {
+      console.error("Error loading resumes:", error);
+    }
+  };
+
+  const loadResume = (resume: SavedResume) => {
+    setResumeData(resume.resume_data);
+    setResumeTitle(resume.title);
+    setCurrentResumeId(resume.id);
+    setLastSaved(new Date(resume.updated_at));
+    setShowResumeList(false);
+  };
+
+  const handleSaveResume = async () => {
+    if (!user) return;
+    
+    setIsSaving(true);
+    try {
+      const saved = await saveResume(resumeData, resumeTitle, currentResumeId);
+      setCurrentResumeId(saved.id);
+      setLastSaved(new Date(saved.updated_at));
+      await loadResumes();
+      alert("Resume saved successfully!");
+    } catch (error) {
+      console.error("Error saving resume:", error);
+      alert("Failed to save resume. Please try again.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleNewResume = () => {
+    setResumeData({
+      personalInfo: {
+        fullName: "",
+        email: "",
+        phone: "",
+        location: "",
+        linkedin: "",
+        github: "",
+      },
+      experience: [],
+      education: [],
+      skills: [],
+    });
+    setResumeTitle("New Resume");
+    setCurrentResumeId(undefined);
+    setLastSaved(null);
+    setShowResumeList(false);
+  };
+
+  const handleDeleteResume = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this resume?")) return;
+    
+    try {
+      await deleteResume(id);
+      await loadResumes();
+      
+      // If deleted current resume, reset to blank
+      if (id === currentResumeId) {
+        handleNewResume();
+      }
+      alert("Resume deleted successfully!");
+    } catch (error) {
+      console.error("Error deleting resume:", error);
+      alert("Failed to delete resume. Please try again.");
+    }
+  };
 
   const updatePersonalInfo = (data: PersonalInfo) => {
     setResumeData({ ...resumeData, personalInfo: data });
@@ -118,7 +215,24 @@ export default function ResumeowPage() {
       <div className="container mx-auto px-4 py-12">
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="flex justify-end mb-4">
+          <div className="flex justify-between items-center mb-4">
+            <div className="flex items-center gap-3">
+              <Button
+                onClick={() => setShowResumeList(!showResumeList)}
+                variant="secondary"
+                size="sm"
+              >
+                {showResumeList ? "← Back to Editor" : "📁 My Resumes"}
+              </Button>
+              <Button
+                onClick={handleNewResume}
+                variant="outline"
+                size="sm"
+              >
+                + New Resume
+              </Button>
+            </div>
+            
             <div className="flex items-center gap-4">
               <span className="text-sm text-gray-300">
                 {user.email}
@@ -132,13 +246,92 @@ export default function ResumeowPage() {
               </Button>
             </div>
           </div>
-          <h1 className="text-4xl md:text-5xl font-bold mb-4 text-white">Resumeow 📄</h1>
-          <p className="text-xl text-gray-300 max-w-2xl mx-auto">
-            Create professional resumes with LaTeX quality. Fill in your details and let us handle the formatting.
-          </p>
+
+          {!showResumeList && (
+            <>
+              <h1 className="text-4xl md:text-5xl font-bold mb-4 text-white">Resumeow 📄</h1>
+              <div className="flex items-center justify-center gap-4 mb-4">
+                <input
+                  type="text"
+                  value={resumeTitle}
+                  onChange={(e) => setResumeTitle(e.target.value)}
+                  className="text-xl bg-gray-800/50 border border-gray-700 rounded-lg px-4 py-2 text-white max-w-md"
+                  placeholder="Resume Title"
+                />
+                <Button
+                  onClick={handleSaveResume}
+                  disabled={isSaving}
+                  variant="primary"
+                  size="sm"
+                >
+                  {isSaving ? "Saving..." : "💾 Save"}
+                </Button>
+              </div>
+              {lastSaved && (
+                <p className="text-sm text-gray-400">
+                  Last saved: {lastSaved.toLocaleString()}
+                </p>
+              )}
+              <p className="text-xl text-gray-300 max-w-2xl mx-auto">
+                Create professional resumes with LaTeX quality. Fill in your details and let us handle the formatting.
+              </p>
+            </>
+          )}
         </div>
 
-        <div className="max-w-5xl mx-auto">
+        {showResumeList ? (
+          <div className="max-w-4xl mx-auto">
+            <h2 className="text-2xl font-bold text-white mb-6">Your Saved Resumes</h2>
+            {savedResumes.length === 0 ? (
+              <Card className="p-8 bg-gray-800/30 text-center">
+                <p className="text-gray-400 mb-4">No saved resumes yet.</p>
+                <Button onClick={handleNewResume} variant="primary">
+                  Create Your First Resume
+                </Button>
+              </Card>
+            ) : (
+              <div className="space-y-4">
+                {savedResumes.map((resume) => (
+                  <Card
+                    key={resume.id}
+                    className="p-6 bg-gray-800/30 hover:bg-gray-800/50 transition-colors"
+                  >
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <h3 className="text-xl font-semibold text-white mb-2">
+                          {resume.title}
+                        </h3>
+                        <p className="text-sm text-gray-400">
+                          Last updated: {new Date(resume.updated_at).toLocaleString()}
+                        </p>
+                        <p className="text-sm text-gray-500 mt-1">
+                          Created: {new Date(resume.created_at).toLocaleString()}
+                        </p>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          onClick={() => loadResume(resume)}
+                          variant="secondary"
+                          size="sm"
+                        >
+                          Edit
+                        </Button>
+                        <Button
+                          onClick={() => handleDeleteResume(resume.id)}
+                          variant="outline"
+                          size="sm"
+                        >
+                          Delete
+                        </Button>
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="max-w-5xl mx-auto">
           <Card className="p-6 bg-gray-800/30">
             {/* Tab Navigation */}
             <div className="flex gap-2 mb-6 border-b border-gray-700 overflow-x-auto">
@@ -259,6 +452,7 @@ export default function ResumeowPage() {
             <ol className="list-decimal list-inside space-y-1 text-sm text-gray-300">
               <li>Fill in your personal information in each tab</li>
               <li>Add your work experience, education, and skills</li>
+              <li>Click "Save" to save your resume to the cloud</li>
               <li>Click "Generate Resume" to create your LaTeX code</li>
               <li>Copy the code and paste it into Overleaf to get your PDF</li>
             </ol>
@@ -266,7 +460,8 @@ export default function ResumeowPage() {
               <strong className="text-[#E84A3A]">Coming soon:</strong> Direct PDF download without needing Overleaf!
             </p>
           </Card>
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );
