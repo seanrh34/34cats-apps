@@ -14,13 +14,10 @@ export function EducationForm({ data, onChange }: EducationFormProps) {
     const newEdu: Education = {
       id: crypto.randomUUID(),
       institution: "",
-      degree: "",
-      field: "",
       location: "",
-      startDate: "",
-      endDate: "",
+      degree: "",
       gpa: "",
-      honors: [],
+      dateRange: "",
     };
     onChange([...data, newEdu]);
   };
@@ -73,32 +70,6 @@ export function EducationForm({ data, onChange }: EducationFormProps) {
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-1 text-gray-200">Degree *</label>
-              <Input
-                value={edu.degree}
-                onChange={(e) =>
-                  updateEducation(edu.id, "degree", e.target.value)
-                }
-                placeholder="Bachelor of Science"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1 text-gray-200">
-                Field of Study *
-              </label>
-              <Input
-                value={edu.field}
-                onChange={(e) =>
-                  updateEducation(edu.id, "field", e.target.value)
-                }
-                placeholder="Computer Science"
-                required
-              />
-            </div>
-
-            <div>
               <label className="block text-sm font-medium mb-1 text-gray-200">Location *</label>
               <Input
                 value={edu.location}
@@ -112,38 +83,38 @@ export function EducationForm({ data, onChange }: EducationFormProps) {
 
             <div>
               <label className="block text-sm font-medium mb-1 text-gray-200">
-                Start Date *
+                Degree *
               </label>
               <Input
-                type="month"
-                value={edu.startDate}
+                value={edu.degree}
                 onChange={(e) =>
-                  updateEducation(edu.id, "startDate", e.target.value)
+                  updateEducation(edu.id, "degree", e.target.value)
                 }
+                placeholder="Bachelor of Science in Computer Science"
                 required
               />
             </div>
 
             <div>
               <label className="block text-sm font-medium mb-1 text-gray-200">
-                End Date *
+                Date Range *
               </label>
               <Input
-                type="month"
-                value={edu.endDate}
+                value={edu.dateRange}
                 onChange={(e) =>
-                  updateEducation(edu.id, "endDate", e.target.value)
+                  updateEducation(edu.id, "dateRange", e.target.value)
                 }
+                placeholder="Aug 2020 - May 2024"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-1 text-gray-200">GPA</label>
+              <label className="block text-sm font-medium mb-1 text-gray-200">GPA (optional)</label>
               <Input
                 value={edu.gpa || ""}
                 onChange={(e) => updateEducation(edu.id, "gpa", e.target.value)}
-                placeholder="3.8/4.0"
+                placeholder="Cumulative GPA: 3.8/4.0"
               />
             </div>
           </div>

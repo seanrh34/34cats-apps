@@ -51,12 +51,11 @@ export function PersonalInfoForm({ data, onChange }: PersonalInfoFormProps) {
         </div>
         
         <div>
-          <label className="block text-sm font-medium mb-1 text-gray-200">Location *</label>
+          <label className="block text-sm font-medium mb-1 text-gray-200">Website</label>
           <Input
-            value={data.location}
-            onChange={(e) => handleChange("location", e.target.value)}
-            placeholder="New York, NY"
-            required
+            value={data.website || ""}
+            onChange={(e) => handleChange("website", e.target.value)}
+            placeholder="www.example.com"
           />
         </div>
         

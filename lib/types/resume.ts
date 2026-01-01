@@ -2,7 +2,6 @@ export interface PersonalInfo {
   fullName: string;
   email: string;
   phone: string;
-  location: string;
   linkedin?: string;
   github?: string;
   website?: string;
@@ -10,25 +9,20 @@ export interface PersonalInfo {
 
 export interface Experience {
   id: string;
-  company: string;
   position: string;
+  dateRange: string;
+  company: string;
   location: string;
-  startDate: string;
-  endDate: string;
-  current: boolean;
   description: string[];
 }
 
 export interface Education {
   id: string;
   institution: string;
-  degree: string;
-  field: string;
   location: string;
-  startDate: string;
-  endDate: string;
+  degree: string;
   gpa?: string;
-  honors?: string[];
+  dateRange: string;
 }
 
 export interface Skill {
@@ -39,16 +33,23 @@ export interface Skill {
 export interface Project {
   id: string;
   name: string;
-  description: string;
-  technologies: string[];
   link?: string;
+}
+
+export interface CoCurricularActivity {
+  id: string;
+  position: string;
+  dateRange: string;
+  organization: string;
+  location: string;
+  description: string[];
 }
 
 export interface ResumeData {
   personalInfo: PersonalInfo;
-  summary?: string;
-  experience: Experience[];
   education: Education[];
+  experience: Experience[];
+  coCurricularActivities?: CoCurricularActivity[];
   skills: Skill[];
   projects?: Project[];
 }

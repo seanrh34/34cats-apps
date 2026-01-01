@@ -3,11 +3,13 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/auth-context";
-import { ResumeData, PersonalInfo, Experience, Education, Skill } from "@/lib/types/resume";
+import { ResumeData, PersonalInfo, Experience, Education, Skill, Project, CoCurricularActivity } from "@/lib/types/resume";
 import { PersonalInfoForm } from "@/components/resumeow/personal-info-form";
 import { ExperienceForm } from "@/components/resumeow/experience-form";
 import { EducationForm } from "@/components/resumeow/education-form";
 import { SkillsForm } from "@/components/resumeow/skills-form";
+import { ProjectsForm } from "@/components/resumeow/projects-form";
+import { CoCurricularForm } from "@/components/resumeow/cocurricular-form";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { 
@@ -20,7 +22,7 @@ import {
 export default function ResumeowPage() {
   const { user, loading, signOut } = useAuth();
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<"personal" | "experience" | "education" | "skills">("personal");
+  const [activeTab, setActiveTab] = useState<"personal" | "education" | "experience" | "cocurricular" | "skills" | "projects">("personal");
   const [isGenerating, setIsGenerating] = useState(false);
   const [latexCode, setLatexCode] = useState<string>("");
   const [savedResumes, setSavedResumes] = useState<SavedResume[]>([]);
@@ -42,13 +44,15 @@ export default function ResumeowPage() {
       fullName: "",
       email: "",
       phone: "",
-      location: "",
       linkedin: "",
       github: "",
+      website: "",
     },
-    experience: [],
     education: [],
+    experience: [],
+    coCurricularActivities: [],
     skills: [],
+    projects: [],
   });
 
   // Load user's resumes on mount
@@ -104,13 +108,15 @@ export default function ResumeowPage() {
         fullName: "",
         email: "",
         phone: "",
-        location: "",
         linkedin: "",
         github: "",
+        website: "",
       },
-      experience: [],
       education: [],
+      experience: [],
+      coCurricularActivities: [],
       skills: [],
+      projects: [],
     });
     setResumeTitle("New Resume");
     setCurrentResumeId(undefined);
@@ -148,8 +154,16 @@ export default function ResumeowPage() {
     setResumeData({ ...resumeData, education: data });
   };
 
+  const updateCoCurricular = (data: CoCurricularActivity[]) => {
+    setResumeData({ ...resumeData, coCurricularActivities: data });
+  };
+
   const updateSkills = (data: Skill[]) => {
     setResumeData({ ...resumeData, skills: data });
+  };
+
+  const updateProjects = (data: Project[]) => {
+    setResumeData({ ...resumeData, projects: data });
   };
 
   const generateResume = async () => {
@@ -182,9 +196,11 @@ export default function ResumeowPage() {
 
   const tabs = [
     { id: "personal", label: "Personal Info" },
-    { id: "experience", label: "Experience" },
     { id: "education", label: "Education" },
+    { id: "experience", label: "Experience" },
+    { id: "cocurricular", label: "Co-Curricular" },
     { id: "skills", label: "Skills" },
+    { id: "projects", label: "Projects" },
   ] as const;
 
   const handleSignOut = async () => {
@@ -358,20 +374,32 @@ export default function ResumeowPage() {
                   onChange={updatePersonalInfo}
                 />
               )}
-              {activeTab === "experience" && (
-                <ExperienceForm
-                  data={resumeData.experience}
-                  onChange={updateExperience}
-                />
-              )}
               {activeTab === "education" && (
                 <EducationForm
                   data={resumeData.education}
                   onChange={updateEducation}
                 />
               )}
+              {activeTab === "experience" && (
+                <ExperienceForm
+                  data={resumeData.experience}
+                  onChange={updateExperience}
+                />
+              )}
+              {activeTab === "cocurricular" && (
+                <CoCurricularForm
+                  data={resumeData.coCurricularActivities || []}
+                  onChange={updateCoCurricular}
+                />
+              )}
               {activeTab === "skills" && (
                 <SkillsForm data={resumeData.skills} onChange={updateSkills} />
+              )}
+              {activeTab === "projects" && (
+                <ProjectsForm
+                  data={resumeData.projects || []}
+                  onChange={updateProjects}
+                />
               )}
             </div>
 
@@ -390,7 +418,7 @@ export default function ResumeowPage() {
                 ← Previous
               </Button>
 
-              {activeTab === "skills" ? (
+              {activeTab === "projects" ? (
                 <Button
                   onClick={generateResume}
                   disabled={isGenerating}

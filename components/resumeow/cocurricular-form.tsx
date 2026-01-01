@@ -1,69 +1,69 @@
 "use client";
 
-import { Experience } from "@/lib/types/resume";
+import { CoCurricularActivity } from "@/lib/types/resume";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
-interface ExperienceFormProps {
-  data: Experience[];
-  onChange: (data: Experience[]) => void;
+interface CoCurricularFormProps {
+  data: CoCurricularActivity[];
+  onChange: (data: CoCurricularActivity[]) => void;
 }
 
-export function ExperienceForm({ data, onChange }: ExperienceFormProps) {
-  const addExperience = () => {
-    const newExp: Experience = {
+export function CoCurricularForm({ data, onChange }: CoCurricularFormProps) {
+  const addActivity = () => {
+    const newActivity: CoCurricularActivity = {
       id: crypto.randomUUID(),
       position: "",
       dateRange: "",
-      company: "",
+      organization: "",
       location: "",
       description: [""],
     };
-    onChange([...data, newExp]);
+    onChange([...data, newActivity]);
   };
 
-  const updateExperience = (id: string, field: keyof Experience, value: any) => {
+  const updateActivity = (id: string, field: keyof CoCurricularActivity, value: any) => {
     onChange(
-      data.map((exp) => (exp.id === id ? { ...exp, [field]: value } : exp))
+      data.map((activity) => (activity.id === id ? { ...activity, [field]: value } : activity))
     );
   };
 
-  const removeExperience = (id: string) => {
-    onChange(data.filter((exp) => exp.id !== id));
+  const removeActivity = (id: string) => {
+    onChange(data.filter((activity) => activity.id !== id));
   };
 
   const addBullet = (id: string) => {
     onChange(
-      data.map((exp) =>
-        exp.id === id ? { ...exp, description: [...exp.description, ""] } : exp
+      data.map((activity) =>
+        activity.id === id ? { ...activity, description: [...activity.description, ""] } : activity
       )
     );
   };
 
   const updateBullet = (id: string, index: number, value: string) => {
     onChange(
-      data.map((exp) =>
-        exp.id === id
+      data.map((activity) =>
+        activity.id === id
           ? {
-              ...exp,
-              description: exp.description.map((d, i) =>
+              ...activity,
+              description: activity.description.map((d, i) =>
                 i === index ? value : d
               ),
             }
-          : exp
+          : activity
       )
     );
   };
 
   const removeBullet = (id: string, index: number) => {
     onChange(
-      data.map((exp) =>
-        exp.id === id
+      data.map((activity) =>
+        activity.id === id
           ? {
-              ...exp,
-              description: exp.description.filter((_, i) => i !== index),
+              ...activity,
+              description: activity.description.filter((_, i) => i !== index),
             }
-          : exp
+          : activity
       )
     );
   };
@@ -71,18 +71,18 @@ export function ExperienceForm({ data, onChange }: ExperienceFormProps) {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h3 className="text-lg font-semibold text-white">Work Experience</h3>
-        <Button onClick={addExperience} variant="outline" size="sm">
-          + Add Experience
+        <h3 className="text-lg font-semibold text-white">Co-Curricular Activities</h3>
+        <Button onClick={addActivity} variant="outline" size="sm">
+          + Add Activity
         </Button>
       </div>
 
-      {data.map((exp, expIndex) => (
-        <div key={exp.id} className="border border-gray-700 rounded-lg p-4 space-y-4 bg-gray-800/20">
+      {data.map((activity, activityIndex) => (
+        <div key={activity.id} className="border border-gray-700 rounded-lg p-4 space-y-4 bg-gray-800/20">
           <div className="flex justify-between items-start">
-            <h4 className="font-medium text-white">Experience {expIndex + 1}</h4>
+            <h4 className="font-medium text-white">Activity {activityIndex + 1}</h4>
             <Button
-              onClick={() => removeExperience(exp.id)}
+              onClick={() => removeActivity(activity.id)}
               variant="outline"
               size="sm"
             >
@@ -94,11 +94,11 @@ export function ExperienceForm({ data, onChange }: ExperienceFormProps) {
             <div>
               <label className="block text-sm font-medium mb-1 text-gray-200">Position *</label>
               <Input
-                value={exp.position}
+                value={activity.position}
                 onChange={(e) =>
-                  updateExperience(exp.id, "position", e.target.value)
+                  updateActivity(activity.id, "position", e.target.value)
                 }
-                placeholder="Software Engineer"
+                placeholder="Vice President"
                 required
               />
             </div>
@@ -106,23 +106,23 @@ export function ExperienceForm({ data, onChange }: ExperienceFormProps) {
             <div>
               <label className="block text-sm font-medium mb-1 text-gray-200">Date Range *</label>
               <Input
-                value={exp.dateRange}
+                value={activity.dateRange}
                 onChange={(e) =>
-                  updateExperience(exp.id, "dateRange", e.target.value)
+                  updateActivity(activity.id, "dateRange", e.target.value)
                 }
-                placeholder="Aug 2023 - Present"
+                placeholder="Sep 2023 - Aug 2024"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-1 text-gray-200">Company *</label>
+              <label className="block text-sm font-medium mb-1 text-gray-200">Organization *</label>
               <Input
-                value={exp.company}
+                value={activity.organization}
                 onChange={(e) =>
-                  updateExperience(exp.id, "company", e.target.value)
+                  updateActivity(activity.id, "organization", e.target.value)
                 }
-                placeholder="Company Name"
+                placeholder="Student Council"
                 required
               />
             </div>
@@ -130,9 +130,9 @@ export function ExperienceForm({ data, onChange }: ExperienceFormProps) {
             <div>
               <label className="block text-sm font-medium mb-1 text-gray-200">Location *</label>
               <Input
-                value={exp.location}
+                value={activity.location}
                 onChange={(e) =>
-                  updateExperience(exp.id, "location", e.target.value)
+                  updateActivity(activity.id, "location", e.target.value)
                 }
                 placeholder="San Francisco, CA"
                 required
@@ -143,29 +143,29 @@ export function ExperienceForm({ data, onChange }: ExperienceFormProps) {
           <div className="space-y-2">
             <div className="flex justify-between items-center">
               <label className="block text-sm font-medium text-gray-200">
-                Responsibilities & Achievements
+                Activities & Achievements
               </label>
               <Button
-                onClick={() => addBullet(exp.id)}
+                onClick={() => addBullet(activity.id)}
                 variant="outline"
                 size="sm"
               >
                 + Add Bullet
               </Button>
             </div>
-            {exp.description.map((bullet, bulletIndex) => (
+            {activity.description.map((bullet, bulletIndex) => (
               <div key={bulletIndex} className="flex gap-2">
                 <Input
                   value={bullet}
                   onChange={(e) =>
-                    updateBullet(exp.id, bulletIndex, e.target.value)
+                    updateBullet(activity.id, bulletIndex, e.target.value)
                   }
-                  placeholder="Describe your achievement or responsibility..."
+                  placeholder="Describe your achievement or activity..."
                   className="flex-1"
                 />
-                {exp.description.length > 1 && (
+                {activity.description.length > 1 && (
                   <Button
-                    onClick={() => removeBullet(exp.id, bulletIndex)}
+                    onClick={() => removeBullet(activity.id, bulletIndex)}
                     variant="outline"
                     size="sm"
                   >
@@ -180,7 +180,7 @@ export function ExperienceForm({ data, onChange }: ExperienceFormProps) {
 
       {data.length === 0 && (
         <div className="text-center py-8 text-gray-400">
-          No experience added yet. Click "Add Experience" to get started.
+          No co-curricular activities added yet. Click "Add Activity" to get started.
         </div>
       )}
     </div>
