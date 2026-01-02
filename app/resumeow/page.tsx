@@ -24,7 +24,6 @@ export default function ResumeowPage() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<"personal" | "education" | "experience" | "cocurricular" | "skills" | "projects">("personal");
   const [isGenerating, setIsGenerating] = useState(false);
-  const [latexCode, setLatexCode] = useState<string>("");
   const [savedResumes, setSavedResumes] = useState<SavedResume[]>([]);
   const [currentResumeId, setCurrentResumeId] = useState<string | undefined>();
   const [resumeTitle, setResumeTitle] = useState("My Resume");
@@ -177,18 +176,28 @@ export default function ResumeowPage() {
         body: JSON.stringify(resumeData),
       });
 
-      const result = await response.json();
-
-      if (result.success) {
-        setLatexCode(result.latex);
-        alert("Resume generated! Check the LaTeX output below.");
-        // TODO: When PDF compilation is ready, download the PDF instead
-      } else {
-        alert("Failed to generate resume");
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to generate resume");
       }
+
+      // Get PDF blob from response
+      const pdfBlob = await response.blob();
+      
+      // Create download link
+      const url = window.URL.createObjectURL(pdfBlob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${resumeTitle.replace(/[^a-z0-9]/gi, '_')}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      alert("Resume PDF downloaded successfully!");
     } catch (error) {
       console.error("Error:", error);
-      alert("An error occurred while generating the resume");
+      alert(error instanceof Error ? error.message : "An error occurred while generating the resume");
     } finally {
       setIsGenerating(false);
     }
@@ -441,39 +450,6 @@ export default function ResumeowPage() {
             </div>
           </Card>
 
-          {/* LaTeX Preview (temporary, until PDF compilation is ready) */}
-          {latexCode && (
-            <Card className="mt-6 p-6 bg-gray-800/30">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-semibold text-white">Generated LaTeX Code</h3>
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    navigator.clipboard.writeText(latexCode);
-                    alert("LaTeX code copied to clipboard!");
-                  }}
-                >
-                  Copy to Clipboard
-                </Button>
-              </div>
-              <pre className="bg-gray-900 p-4 rounded-lg overflow-x-auto text-xs border border-gray-700">
-                <code className="text-gray-300">{latexCode}</code>
-              </pre>
-              <p className="text-sm text-gray-400 mt-4">
-                Copy this code and paste it into{" "}
-                <a
-                  href="https://www.overleaf.com/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-[#E84A3A] hover:underline"
-                >
-                  Overleaf
-                </a>{" "}
-                or any LaTeX editor to generate your PDF.
-              </p>
-            </Card>
-          )}
-
           {/* Instructions */}
           <Card className="mt-6 p-6 bg-gray-800/50 border-gray-700">
             <h3 className="font-semibold mb-2 text-white">💡 How to use:</h3>
@@ -481,11 +457,10 @@ export default function ResumeowPage() {
               <li>Fill in your personal information in each tab</li>
               <li>Add your work experience, education, and skills</li>
               <li>Click "Save" to save your resume to the cloud</li>
-              <li>Click "Generate Resume" to create your LaTeX code</li>
-              <li>Copy the code and paste it into Overleaf to get your PDF</li>
+              <li>Click "Generate Resume" to download your PDF directly</li>
             </ol>
             <p className="text-xs text-gray-400 mt-3">
-              <strong className="text-[#E84A3A]">Coming soon:</strong> Direct PDF download without needing Overleaf!
+              Your resume is compiled with LaTeX to ensure professional formatting and quality.
             </p>
           </Card>
           </div>

@@ -9,59 +9,55 @@ export async function POST(request: NextRequest) {
     // Generate LaTeX code
     const latexCode = generateLatexResume(resumeData);
 
-    // TODO: For now, we'll return the LaTeX code
-    // In production, you would compile this to PDF using:
-    // 1. LaTeX.Online API (https://latexonline.cc/compile?text=...)
-    // 2. Local pdflatex server
-    // 3. Third-party service like Overleaf API
+    // Compile to PDF using LaTeX.Online
+    const pdfBuffer = await compileLatexToPDF(latexCode);
 
-    // Example API call (you'll need to implement this):
-    // const pdfBuffer = await compileLatexToPDF(latexCode);
-    // return new NextResponse(pdfBuffer, {
-    //   headers: {
-    //     'Content-Type': 'application/pdf',
-    //     'Content-Disposition': 'attachment; filename="resume.pdf"'
-    //   }
-    // });
-
-    // For now, return LaTeX code for testing
-    return NextResponse.json({
-      success: true,
-      latex: latexCode,
-      message: "LaTeX generated successfully. PDF compilation will be implemented next.",
+    // Return PDF file
+    return new NextResponse(pdfBuffer, {
+      headers: {
+        "Content-Type": "application/pdf",
+        "Content-Disposition": `attachment; filename="resume.pdf"`,
+        "Cache-Control": "no-cache",
+      },
     });
   } catch (error) {
     console.error("Error generating resume:", error);
     return NextResponse.json(
-      { success: false, error: "Failed to generate resume" },
+      { 
+        success: false, 
+        error: error instanceof Error ? error.message : "Failed to generate resume" 
+      },
       { status: 500 }
     );
   }
 }
 
 /**
- * Example function to compile LaTeX to PDF using LaTeX.Online
- * Uncomment and use when ready to implement PDF compilation
+ * Compile LaTeX code to PDF using LaTeX.Online service
+ * This is a free service that runs pdflatex on the server
+ * API Documentation: https://github.com/aslushnikov/latex-online
  */
 async function compileLatexToPDF(latexCode: string): Promise<Buffer> {
-  // Using LaTeX.Online API
-  const url = "https://latexonline.cc/compile";
-  
-  const response = await fetch(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    body: new URLSearchParams({
-      text: latexCode,
-      command: "pdflatex",
-    }),
-  });
+  try {
+    // LaTeX.Online uses GET request with ?text= parameter
+    // The text needs to be URL-encoded
+    const encodedLatex = encodeURIComponent(latexCode);
+    const url = `https://latexonline.cc/compile?text=${encodedLatex}&command=pdflatex`;
+    
+    const response = await fetch(url, {
+      method: "GET",
+    });
 
-  if (!response.ok) {
-    throw new Error("LaTeX compilation failed");
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("LaTeX compilation error:", errorText);
+      throw new Error(`LaTeX compilation failed: ${response.status} ${response.statusText}`);
+    }
+
+    const arrayBuffer = await response.arrayBuffer();
+    return Buffer.from(arrayBuffer);
+  } catch (error) {
+    console.error("Error in compileLatexToPDF:", error);
+    throw error;
   }
-
-  const arrayBuffer = await response.arrayBuffer();
-  return Buffer.from(arrayBuffer);
 }
