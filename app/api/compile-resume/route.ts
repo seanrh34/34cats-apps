@@ -14,8 +14,8 @@ export async function POST(request: NextRequest) {
     // Compile to PDF using LaTeX.Online
     const pdfBuffer = await compileLatexToPDF(latexCode);
 
-    // Return PDF file
-    return new NextResponse(pdfBuffer, {
+    // Return PDF file (convert Buffer to Uint8Array for NextResponse)
+    return new NextResponse(new Uint8Array(pdfBuffer), {
       headers: {
         "Content-Type": "application/pdf",
         "Content-Disposition": `attachment; filename="resume.pdf"`,
@@ -47,9 +47,9 @@ async function compileLatexToPDF(latexCode: string): Promise<Buffer> {
     // Create a tar archive containing main.tex
     const tarBuffer = await createTarArchive(latexCode);
     
-    // Create FormData and upload tar file
+    // Create FormData and upload tar file (convert Buffer to Uint8Array)
     const formData = new FormData();
-    const tarBlob = new Blob([tarBuffer], { type: "application/x-tar" });
+    const tarBlob = new Blob([new Uint8Array(tarBuffer)], { type: "application/x-tar" });
     formData.append("file", tarBlob, "archive.tar");
     
     // POST the tar archive to LaTeX.Online with target parameter
