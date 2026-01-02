@@ -19,6 +19,8 @@ import {
   SavedResume 
 } from "@/lib/services/resume-service";
 import { generateLatexResume } from "@/lib/latex/template";
+import Image from "next/image";
+import { ScrollToBottomButton } from "@/components/shared/scroll-to-bottom";
 
 export default function ResumeowPage() {
   const { user, loading, signOut } = useAuth();
@@ -33,14 +35,6 @@ export default function ResumeowPage() {
   const [showResumeList, setShowResumeList] = useState(false);
   const [cooldownSeconds, setCooldownSeconds] = useState(0);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-
-  // Redirect to login if not authenticated
-  useEffect(() => {
-    if (!loading && !user) {
-      router.push("/login");
-    }
-  }, [user, loading, router]);
-
   const [resumeData, setResumeData] = useState<ResumeData>({
     personalInfo: {
       fullName: "",
@@ -322,9 +316,9 @@ export default function ResumeowPage() {
     );
   }
 
-  // Don't render if not authenticated (will redirect)
+  // Show landing page if not authenticated
   if (!user) {
-    return null;
+    return <ResumeowLandingPage />;
   }
 
   return (
@@ -589,6 +583,182 @@ export default function ResumeowPage() {
           </div>
         )}
       </div>
+      <ScrollToBottomButton />
     </div>
   );
 }
+
+function ResumeowLandingPage() {
+  const router = useRouter();
+
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black">
+      {/* Hero Section */}
+      <div className="container mx-auto px-4 py-16 md:py-24">
+        <div className="text-center mb-12 md:mb-24">
+          <h1 className="text-4xl md:text-6xl font-bold text-white mb-6">
+            Resumeow 📄
+          </h1>
+          <p className="text-xl md:text-2xl text-gray-300 max-w-3xl mx-auto mb-8">
+            Create professional resumes with LaTeX quality. Simple forms, beautiful PDFs.
+          </p>
+          <p className="text-lg text-gray-400 max-w-2xl mx-auto">
+            Fill in your details and I'll handle the formatting according to what recruiters look for.
+          </p>
+        </div>
+
+        {/* Screenshots Section */}
+        <div className="max-w-6xl mx-auto space-y-16 mb-16">
+          {/* Intro - Image Left */}
+          <div className="grid md:grid-cols-2 gap-8 items-center">
+            <div className="rounded-lg overflow-hidden border border-gray-700 shadow-xl">
+              <Image
+                src="/landing_pages/resumeow/resumeow_intro.png"
+                alt="Resumeow Introduction"
+                width={800}
+                height={450}
+                className="w-full h-auto"
+              />
+            </div>
+            <div className="space-y-4">
+              <h2 className="text-2xl md:text-3xl font-bold text-white">
+                Simple & Intuitive Interface
+              </h2>
+              <p className="text-lg text-gray-300">
+                Start building your professional resume with an easy-to-use interface. No LaTeX knowledge required.
+              </p>
+            </div>
+          </div>
+
+          {/* Fill in Details - Image Right */}
+          <div className="grid md:grid-cols-2 gap-8 items-center">
+            <div className="space-y-4 order-2 md:order-1">
+              <h2 className="text-2xl md:text-3xl font-bold text-white">
+                Fill In Your Details
+              </h2>
+              <p className="text-lg text-gray-300">
+                Add your experiences, education, projects, and skills with guided forms and helpful examples.
+              </p>
+            </div>
+            <div className="rounded-lg overflow-hidden border border-gray-700 shadow-xl order-1 md:order-2">
+              <Image
+                src="/landing_pages/resumeow/resumeow_experiences.png"
+                alt="Add your experiences"
+                width={800}
+                height={450}
+                className="w-full h-auto"
+              />
+            </div>
+          </div>
+
+          {/* See Sample Output - Image Left */}
+          <div className="grid md:grid-cols-2 gap-8 items-center">
+            <div className="rounded-lg overflow-hidden border border-gray-700 shadow-xl">
+              <Image
+                src="/landing_pages/resumeow/resumeow_sample.png"
+                alt="Sample resume output"
+                width={800}
+                height={450}
+                className="w-full h-auto"
+              />
+            </div>
+            <div className="space-y-4">
+              <h2 className="text-2xl md:text-3xl font-bold text-white">
+                See Sample Output
+              </h2>
+              <p className="text-lg text-gray-300">
+                Preview how your resume will look with professional formatting and clean design.
+              </p>
+            </div>
+          </div>
+
+          {/* Generate PDF - Image Right */}
+          <div className="grid md:grid-cols-2 gap-8 items-center">
+            <div className="space-y-4 order-2 md:order-1">
+              <h2 className="text-2xl md:text-3xl font-bold text-white">
+                Generate Professional PDFs
+              </h2>
+              <p className="text-lg text-gray-300">
+                Download your resume as a beautifully formatted PDF, compiled with LaTeX for the highest quality.
+              </p>
+            </div>
+            <div className="rounded-lg overflow-hidden border border-gray-700 shadow-xl order-1 md:order-2">
+              <Image
+                src="/landing_pages/resumeow/resumeow_generate_resume.png"
+                alt="Generate resume PDF"
+                width={800}
+                height={450}
+                className="w-full h-auto"
+              />
+            </div>
+          </div>
+
+          {/* Save & Manage - Image Left */}
+          <div className="grid md:grid-cols-2 gap-8 items-center">
+            <div className="rounded-lg overflow-hidden border border-gray-700 shadow-xl">
+              <Image
+                src="/landing_pages/resumeow/resumeow_saved.png"
+                alt="Saved resumes"
+                width={800}
+                height={450}
+                className="w-full h-auto"
+              />
+            </div>
+            <div className="space-y-4">
+              <h2 className="text-2xl md:text-3xl font-bold text-white">
+                Save & Manage Multiple Resumes
+              </h2>
+              <p className="text-lg text-gray-300">
+                Keep all your resumes in one place. Access them from anywhere, anytime, with cloud sync.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Features */}
+        <div className="max-w-4xl mx-auto mb-16">
+          <h2 className="text-3xl font-bold text-white text-center mb-8">Why Resumeow?</h2>
+          <div className="grid md:grid-cols-3 gap-6">
+            <Card className="p-6 bg-gray-800/30 border-gray-700">
+              <div className="text-4xl mb-3">📝</div>
+              <h3 className="text-xl font-semibold text-white mb-2">Easy to Use</h3>
+              <p className="text-gray-400">
+                Simple forms with example images to guide you through each section
+              </p>
+            </Card>
+            <Card className="p-6 bg-gray-800/30 border-gray-700">
+              <div className="text-4xl mb-3">✨</div>
+              <h3 className="text-xl font-semibold text-white mb-2">LaTeX Quality</h3>
+              <p className="text-gray-400">
+                Professional formatting powered by LaTeX compilation
+              </p>
+            </Card>
+            <Card className="p-6 bg-gray-800/30 border-gray-700">
+              <div className="text-4xl mb-3">☁️</div>
+              <h3 className="text-xl font-semibold text-white mb-2">Cloud Saved</h3>
+              <p className="text-gray-400">
+                Access your resumes from anywhere, saved securely in the cloud
+              </p>
+            </Card>
+          </div>
+        </div>
+
+        {/* CTA */}
+        <div className="text-center">
+          <Button
+            onClick={() => router.push("/login")}
+            size="lg"
+            className="bg-[#E84A3A] text-white hover:bg-[#d43d2d] shadow-lg hover:shadow-xl hover:shadow-[#E84A3A]/20 transform hover:-translate-y-0.5 text-lg px-12 py-6 cursor-pointer"
+          >
+            Login to Try Now →
+          </Button>
+          <p className="text-gray-400 mt-4">
+            Free to use • No credit card required
+          </p>
+        </div>
+      </div>
+      <ScrollToBottomButton />
+    </div>
+  );
+}
+

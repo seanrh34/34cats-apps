@@ -1,6 +1,7 @@
 import { ProjectHero } from "@/components/pawpress/project-hero";
 import { ContentSection } from "@/components/pawpress/content-section";
 import { CapabilityList } from "@/components/pawpress/capability-list";
+import { ScrollToBottomButton } from "@/components/shared/scroll-to-bottom";
 
 export default function PawPressCMSPage() {
   const capabilities = [
@@ -164,6 +165,7 @@ export default function PawPressCMSPage() {
           </p>
         </ContentSection>
       </div>
+      <ScrollToBottomButton />
     </div>
   );
 }
