@@ -62,6 +62,25 @@ export default function ResumeowPage() {
     }
   }, [user]);
 
+  // Add beforeunload warning when generating resume
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (isGenerating) {
+        e.preventDefault();
+        e.returnValue = '';
+        return '';
+      }
+    };
+
+    if (isGenerating) {
+      window.addEventListener('beforeunload', handleBeforeUnload);
+    }
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [isGenerating]);
+
   const loadResumes = async () => {
     try {
       const resumes = await fetchUserResumes();
@@ -249,6 +268,22 @@ export default function ResumeowPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black">
+      {/* Loading Overlay */}
+      {isGenerating && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+          <div className="bg-gray-800 rounded-lg p-8 shadow-2xl border border-gray-700 text-center">
+            <div className="flex flex-col items-center gap-4">
+              {/* Spinner */}
+              <div className="w-16 h-16 border-4 border-gray-600 border-t-[#E84A3A] rounded-full animate-spin"></div>
+              <div>
+                <p className="text-white text-xl font-semibold mb-2">Generating your resume...</p>
+                <p className="text-gray-400 text-sm">This may take a few seconds</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="container mx-auto px-4 py-12">
         {/* Header */}
         <div className="text-center mb-6 md:mb-8">
