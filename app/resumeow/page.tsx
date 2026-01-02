@@ -18,6 +18,7 @@ import {
   deleteResume, 
   SavedResume 
 } from "@/lib/services/resume-service";
+import { generateLatexResume } from "@/lib/latex/template";
 
 export default function ResumeowPage() {
   const { user, loading, signOut } = useAuth();
@@ -163,6 +164,17 @@ export default function ResumeowPage() {
 
   const updateProjects = (data: Project[]) => {
     setResumeData({ ...resumeData, projects: data });
+  };
+
+  const copyLatexToClipboard = async () => {
+    try {
+      const latexCode = generateLatexResume(resumeData);
+      await navigator.clipboard.writeText(latexCode);
+      alert("LaTeX code copied to clipboard! You can paste it into Overleaf or any LaTeX editor to make custom edits.");
+    } catch (error) {
+      console.error("Error copying to clipboard:", error);
+      alert("Failed to copy LaTeX code. Please try again.");
+    }
   };
 
   const generateResume = async () => {
@@ -356,6 +368,14 @@ export default function ResumeowPage() {
                 size="sm"
               >
                 {isSaving ? "Saving..." : "💾 Save"}
+              </Button>
+              <Button
+                onClick={copyLatexToClipboard}
+                variant="outline"
+                size="sm"
+                title="Copy LaTeX code to clipboard. You can paste it into Overleaf or any LaTeX editor to make custom edits."
+              >
+                📋 Copy LaTeX
               </Button>
             </div>
 
