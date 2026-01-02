@@ -2,7 +2,7 @@ export interface App {
   name: string;
   href: string;
   description: string;
-  status: "Live" | "Coming Soon" | "Beta";
+  status: "Live" | "Coming Soon" | "Beta" | "In Development";
   icon: string;
 }
 
