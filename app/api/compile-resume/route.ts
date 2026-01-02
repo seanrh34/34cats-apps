@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generateLatexResume } from "@/lib/latex/template";
 import { ResumeData } from "@/lib/types/resume";
+import * as tar from "tar-stream";
+import { Readable } from "stream";
 
 export async function POST(request: NextRequest) {
   try {
@@ -36,16 +38,24 @@ export async function POST(request: NextRequest) {
  * Compile LaTeX code to PDF using LaTeX.Online service
  * This is a free service that runs pdflatex on the server
  * API Documentation: https://github.com/aslushnikov/latex-online
+ * 
+ * For large documents, we POST a .tar archive to the /data endpoint
+ * Reference: https://github.com/aslushnikov/latex-online/issues
  */
 async function compileLatexToPDF(latexCode: string): Promise<Buffer> {
   try {
-    // LaTeX.Online uses GET request with ?text= parameter
-    // The text needs to be URL-encoded
-    const encodedLatex = encodeURIComponent(latexCode);
-    const url = `https://latexonline.cc/compile?text=${encodedLatex}&command=pdflatex`;
+    // Create a tar archive containing main.tex
+    const tarBuffer = await createTarArchive(latexCode);
     
-    const response = await fetch(url, {
-      method: "GET",
+    // Create FormData and upload tar file
+    const formData = new FormData();
+    const tarBlob = new Blob([tarBuffer], { type: "application/x-tar" });
+    formData.append("file", tarBlob, "archive.tar");
+    
+    // POST the tar archive to LaTeX.Online with target parameter
+    const response = await fetch("https://latexonline.cc/data?target=main.tex", {
+      method: "POST",
+      body: formData,
     });
 
     if (!response.ok) {
@@ -60,4 +70,28 @@ async function compileLatexToPDF(latexCode: string): Promise<Buffer> {
     console.error("Error in compileLatexToPDF:", error);
     throw error;
   }
+}
+
+/**
+ * Create a tar archive containing the LaTeX file
+ */
+async function createTarArchive(latexCode: string): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    const pack = tar.pack();
+    const chunks: Buffer[] = [];
+
+    // Collect tar data
+    pack.on("data", (chunk) => chunks.push(chunk));
+    pack.on("end", () => resolve(Buffer.concat(chunks)));
+    pack.on("error", reject);
+
+    // Add main.tex to the archive
+    pack.entry({ name: "main.tex" }, latexCode, (err) => {
+      if (err) {
+        reject(err);
+        return;
+      }
+      pack.finalize();
+    });
+  });
 }
