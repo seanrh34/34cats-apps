@@ -5,7 +5,7 @@ export function FeaturesSection() {
     <section className="px-4 py-16 bg-gray-900/50">
       <div className="max-w-6xl mx-auto">
         <h2 className="text-3xl md:text-4xl font-bold text-center mb-12 text-white">
-          Why Choose Our Apps?
+          Why Use My Apps?
         </h2>
         <div className="grid md:grid-cols-3 gap-8">
           {features.map((feature, index) => (

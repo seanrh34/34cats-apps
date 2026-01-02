@@ -34,10 +34,10 @@ export function Footer() {
           <div>
             <h4 className="text-sm font-semibold text-white mb-4">Get in Touch</h4>
             <a
-              href="mailto:contact@34cats.com"
+              href="mailto:34cats.dev@gmail.com"
               className="text-sm text-gray-400 hover:text-[#E84A3A] transition-colors"
             >
-              contact@34cats.com
+              34cats.dev@gmail.com
             </a>
           </div>
         </div>

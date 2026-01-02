@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
+import Image from "next/image";
 
 export default function LoginPage() {
   const { user, loading, signInWithGoogle } = useAuth();
@@ -13,7 +14,7 @@ export default function LoginPage() {
   // Redirect if already logged in
   useEffect(() => {
     if (user && !loading) {
-      router.push("/resumeow");
+      router.push("/");
     }
   }, [user, loading, router]);
 
@@ -38,9 +39,12 @@ export default function LoginPage() {
     <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black flex items-center justify-center px-4">
       <Card className="max-w-md w-full p-8 bg-gray-800/30">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-white mb-2">Welcome to Resumeow 📄</h1>
+          <h1 className="text-3xl font-bold text-white mb-4">Welcome to 34cats Apps</h1>
+          <div className="flex justify-center mb-4">
+            <Image src="/34cats_main.png" alt="34cats Logo" width={200} height={200} className="rounded-lg w-24 sm:w-32 md:w-40 h-auto" />
+          </div>
           <p className="text-gray-300">
-            Sign in to create and save your professional resumes
+            Sign in to save your data across all apps
           </p>
         </div>
 
@@ -81,9 +85,9 @@ export default function LoginPage() {
           <div className="text-sm text-gray-400 space-y-2">
             <p className="font-semibold text-white">Why sign in?</p>
             <ul className="list-disc list-inside space-y-1 ml-2">
-              <li>Save your resume data securely</li>
-              <li>Access your resumes from any device</li>
-              <li>Create and manage multiple resumes</li>
+              <li>Save your data securely in the cloud</li>
+              <li>Access your work from any device</li>
+              <li>Sync across all apps seamlessly</li>
             </ul>
           </div>
         </div>
