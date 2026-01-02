@@ -3,19 +3,38 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { mainNavItems } from "@/config/navigation";
 import { smoothScrollToSection } from "@/lib/scroll-utils";
+import { useAuth } from "@/contexts/auth-context";
 
 export function Navbar() {
+  const { user, loading, signOut } = useAuth();
+  const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [activeSection, setActiveSection] = useState<string | null>(null);
 
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      router.push("/");
+    } catch (error) {
+      console.error("Error signing out:", error);
+    }
+  };
+
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 20);
+
+      // Don't set active section if we're on an app page (not homepage)
+      if (window.location.pathname !== '/') {
+        setActiveSection(null);
+        return;
+      }
 
       let current = "home";
       
@@ -90,15 +109,30 @@ export function Navbar() {
             })}
           </div>
 
-          {/* CTA Button - Desktop */}
-          <div className="hidden md:block">
-            <Link
-              href="/#apps"
-              onClick={(e) => handleLinkClick(e, "/#apps")}
-              className="inline-flex items-center px-4 py-2 text-sm font-semibold text-white bg-[#E84A3A] rounded-lg hover:bg-[#d43d2d] transition-all shadow-md hover:shadow-lg hover:shadow-[#E84A3A]/20"
-            >
-              Explore Apps
-            </Link>
+          {/* Auth Section - Desktop */}
+          <div className="hidden md:flex md:items-center md:gap-4">
+            {loading ? (
+              <div className="text-sm text-gray-400">Loading...</div>
+            ) : user ? (
+              <>
+                <span className="text-sm text-gray-300 truncate max-w-[200px]">
+                  {user.email}
+                </span>
+                <button
+                  onClick={handleSignOut}
+                  className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-300 border border-gray-700 rounded-lg hover:bg-gray-800 hover:text-white transition-all"
+                >
+                  Sign Out
+                </button>
+              </>
+            ) : (
+              <Link
+                href="/login"
+                className="inline-flex items-center px-4 py-2 text-sm font-semibold text-white bg-[#E84A3A] rounded-lg hover:bg-[#d43d2d] transition-all shadow-md hover:shadow-lg hover:shadow-[#E84A3A]/20"
+              >
+                Login
+              </Link>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -160,13 +194,36 @@ export function Navbar() {
                   {item.name}
                 </Link>
               ))}
-              <Link
-                href="/#apps"
-                className="block px-3 py-2 mt-2 text-center text-sm font-semibold text-white bg-[#E84A3A] rounded-lg hover:bg-[#d43d2d] transition-colors"
-                onClick={(e) => handleLinkClick(e, "/#apps")}
-              >
-                Explore Apps
-              </Link>
+              
+              {/* Auth Section - Mobile */}
+              <div className="pt-2 mt-2 border-t border-gray-700">
+                {loading ? (
+                  <div className="px-3 py-2 text-sm text-gray-400">Loading...</div>
+                ) : user ? (
+                  <>
+                    <div className="px-3 py-2 text-sm text-gray-300 truncate">
+                      {user.email}
+                    </div>
+                    <button
+                      onClick={() => {
+                        handleSignOut();
+                        setMobileMenuOpen(false);
+                      }}
+                      className="w-full mt-2 px-3 py-2 text-center text-sm font-medium text-gray-300 border border-gray-700 rounded-lg hover:bg-gray-800 hover:text-white transition-colors"
+                    >
+                      Sign Out
+                    </button>
+                  </>
+                ) : (
+                  <Link
+                    href="/login"
+                    className="block px-3 py-2 mt-2 text-center text-sm font-semibold text-white bg-[#E84A3A] rounded-lg hover:bg-[#d43d2d] transition-colors"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Login
+                  </Link>
+                )}
+              </div>
             </div>
           </div>
         )}

@@ -289,15 +289,6 @@ export default function ResumeowPage() {
     { id: "projects", label: "Projects", required: false },
   ] as const;
 
-  const handleSignOut = async () => {
-    try {
-      await signOut();
-      router.push("/");
-    } catch (error) {
-      console.error("Error signing out:", error);
-    }
-  };
-
   // Show loading state while checking auth
   if (loading) {
     return (
@@ -333,39 +324,23 @@ export default function ResumeowPage() {
       <div className="container mx-auto px-4 py-12">
         {/* Header */}
         <div className="text-center mb-6 md:mb-8">
-          <div className="flex flex-col sm:flex-row justify-between items-center gap-3 mb-4">
-            <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
-              <Button
-                onClick={() => setShowResumeList(!showResumeList)}
-                variant="secondary"
-                size="sm"
-                className="flex-1 sm:flex-none text-xs sm:text-sm"
-              >
-                {showResumeList ? "← Back" : "📁 Resumes"}
-              </Button>
-              <Button
-                onClick={handleNewResume}
-                variant="outline"
-                size="sm"
-                className="flex-1 sm:flex-none text-xs sm:text-sm"
-              >
-                + New
-              </Button>
-            </div>
-            
-            <div className="flex items-center gap-2 sm:gap-4 w-full sm:w-auto justify-end">
-              <span className="text-xs sm:text-sm text-gray-300 truncate max-w-[150px] sm:max-w-none">
-                {user.email}
-              </span>
-              <Button
-                onClick={handleSignOut}
-                variant="outline"
-                size="sm"
-                className="text-xs sm:text-sm"
-              >
-                Sign Out
-              </Button>
-            </div>
+          <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto justify-center mb-4">
+            <Button
+              onClick={() => setShowResumeList(!showResumeList)}
+              variant="secondary"
+              size="sm"
+              className="text-xs sm:text-sm"
+            >
+              {showResumeList ? "← Back" : "📁 Resumes"}
+            </Button>
+            <Button
+              onClick={handleNewResume}
+              variant="outline"
+              size="sm"
+              className="text-xs sm:text-sm"
+            >
+              + New
+            </Button>
           </div>
 
           {!showResumeList && (
