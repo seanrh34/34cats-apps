@@ -154,7 +154,7 @@ export function CoCurricularForm({ data, onChange }: CoCurricularFormProps) {
           </div>
 
           <div className="space-y-2">
-            <div className="flex justify-between items-center">
+            <div className="flex justify-between items-center mb-3">
               <label className="block text-sm font-medium text-gray-200">
                 Activities & Achievements
               </label>

@@ -251,33 +251,36 @@ export default function ResumeowPage() {
     <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black">
       <div className="container mx-auto px-4 py-12">
         {/* Header */}
-        <div className="text-center mb-8">
-          <div className="flex justify-between items-center mb-4">
-            <div className="flex items-center gap-3">
+        <div className="text-center mb-6 md:mb-8">
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-3 mb-4">
+            <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
               <Button
                 onClick={() => setShowResumeList(!showResumeList)}
                 variant="secondary"
                 size="sm"
+                className="flex-1 sm:flex-none text-xs sm:text-sm"
               >
-                {showResumeList ? "← Back to Editor" : "📁 My Resumes"}
+                {showResumeList ? "← Back" : "📁 Resumes"}
               </Button>
               <Button
                 onClick={handleNewResume}
                 variant="outline"
                 size="sm"
+                className="flex-1 sm:flex-none text-xs sm:text-sm"
               >
-                + New Resume
+                + New
               </Button>
             </div>
             
-            <div className="flex items-center gap-4">
-              <span className="text-sm text-gray-300">
+            <div className="flex items-center gap-2 sm:gap-4 w-full sm:w-auto justify-end">
+              <span className="text-xs sm:text-sm text-gray-300 truncate max-w-[150px] sm:max-w-none">
                 {user.email}
               </span>
               <Button
                 onClick={handleSignOut}
                 variant="outline"
                 size="sm"
+                className="text-xs sm:text-sm"
               >
                 Sign Out
               </Button>
@@ -286,12 +289,12 @@ export default function ResumeowPage() {
 
           {!showResumeList && (
             <>
-              <h1 className="text-4xl md:text-5xl font-bold mb-4 text-white">Resumeow 📄</h1>
-              <p className="text-xl text-gray-300 max-w-2xl mx-auto mb-2">
+              <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-3 md:mb-4 text-white px-2">Resumeow 📄</h1>
+              <p className="text-base md:text-lg lg:text-xl text-gray-300 max-w-2xl mx-auto mb-2 px-4">
                 Create professional resumes with LaTeX quality. Fill in your details and let us handle the formatting.
               </p>
               {lastSaved && (
-                <p className="text-sm text-gray-400">
+                <p className="text-xs md:text-sm text-gray-400 px-2">
                   Last saved: {lastSaved.toLocaleString()}
                 </p>
               )}
@@ -301,7 +304,7 @@ export default function ResumeowPage() {
 
         {showResumeList ? (
           <div className="max-w-4xl mx-auto">
-            <h2 className="text-2xl font-bold text-white mb-6">Your Saved Resumes</h2>
+            <h2 className="text-xl md:text-2xl font-bold text-white mb-4 md:mb-6 px-2">Your Saved Resumes</h2>
             {savedResumes.length === 0 ? (
               <Card className="p-8 bg-gray-800/30 text-center">
                 <p className="text-gray-400 mb-4">No saved resumes yet.</p>
@@ -314,25 +317,26 @@ export default function ResumeowPage() {
                 {savedResumes.map((resume) => (
                   <Card
                     key={resume.id}
-                    className="p-6 bg-gray-800/30 hover:bg-gray-800/50 transition-colors"
+                    className="p-4 md:p-6 bg-gray-800/30 hover:bg-gray-800/50 transition-colors"
                   >
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1">
-                        <h3 className="text-xl font-semibold text-white mb-2">
+                    <div className="flex flex-col sm:flex-row justify-between items-start gap-3">
+                      <div className="flex-1 w-full">
+                        <h3 className="text-lg md:text-xl font-semibold text-white mb-2">
                           {resume.title}
                         </h3>
-                        <p className="text-sm text-gray-400">
+                        <p className="text-xs md:text-sm text-gray-400">
                           Last updated: {new Date(resume.updated_at).toLocaleString()}
                         </p>
-                        <p className="text-sm text-gray-500 mt-1">
+                        <p className="text-xs md:text-sm text-gray-500 mt-1">
                           Created: {new Date(resume.created_at).toLocaleString()}
                         </p>
                       </div>
-                      <div className="flex gap-2">
+                      <div className="flex gap-2 w-full sm:w-auto">
                         <Button
                           onClick={() => loadResume(resume)}
                           variant="secondary"
                           size="sm"
+                          className="flex-1 sm:flex-none"
                         >
                           Edit
                         </Button>
@@ -340,6 +344,7 @@ export default function ResumeowPage() {
                           onClick={() => handleDeleteResume(resume.id)}
                           variant="outline"
                           size="sm"
+                          className="flex-1 sm:flex-none"
                         >
                           Delete
                         </Button>
@@ -353,50 +358,54 @@ export default function ResumeowPage() {
         ) : (
           <div className="max-w-5xl mx-auto">
             {/* Resume Title and Save Button */}
-            <div className="flex items-center gap-4 mb-4">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-4 mb-4">
               <input
                 type="text"
                 value={resumeTitle}
                 onChange={(e) => setResumeTitle(e.target.value)}
-                className="text-xl bg-gray-800/50 border border-gray-700 rounded-lg px-4 py-2 text-white max-w-md"
+                className="text-base sm:text-lg md:text-xl bg-gray-800/50 border border-gray-700 rounded-lg px-3 sm:px-4 py-2 text-white w-full sm:max-w-md"
                 placeholder="Resume Title"
               />
-              <Button
-                onClick={handleSaveResume}
-                disabled={isSaving}
-                variant="primary"
-                size="sm"
-              >
-                {isSaving ? "Saving..." : "💾 Save"}
-              </Button>
-              <Button
-                onClick={copyLatexToClipboard}
-                variant="outline"
-                size="sm"
-                title="Copy LaTeX code to clipboard. You can paste it into Overleaf or any LaTeX editor to make custom edits."
-              >
-                📋 Copy LaTeX
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  onClick={handleSaveResume}
+                  disabled={isSaving}
+                  variant="primary"
+                  size="sm"
+                  className="flex-1 sm:flex-none"
+                >
+                  {isSaving ? "Saving..." : "💾 Save"}
+                </Button>
+                <Button
+                  onClick={copyLatexToClipboard}
+                  variant="outline"
+                  size="sm"
+                  title="Copy LaTeX code to clipboard. You can paste it into Overleaf or any LaTeX editor to make custom edits."
+                  className="flex-1 sm:flex-none"
+                >
+                  📋 Copy LaTeX
+                </Button>
+              </div>
             </div>
 
-          <Card className="p-6 bg-gray-800/30">
+          <Card className="p-4 md:p-6 bg-gray-800/30">
             {/* Tab Navigation */}
-            <div className="flex gap-2 mb-6 border-b border-gray-700 overflow-x-auto">
+            <div className="flex flex-col sm:flex-row gap-1 sm:gap-2 mb-4 md:mb-6 sm:border-b border-gray-700 sm:overflow-x-auto sm:scrollbar-hide">
               {tabs.map((tab) => (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`px-4 py-2 font-medium whitespace-nowrap transition-colors ${
+                  className={`px-3 py-2.5 sm:px-2 sm:py-2 text-sm sm:text-xs md:text-sm font-medium whitespace-nowrap transition-colors rounded sm:rounded-none text-left sm:text-center ${
                     activeTab === tab.id
-                      ? "border-b-2 border-[#E84A3A] text-[#E84A3A]"
-                      : "text-gray-400 hover:text-white"
+                      ? "bg-[#E84A3A] text-white sm:bg-transparent sm:border-b-2 sm:border-[#E84A3A] sm:text-[#E84A3A]"
+                      : "bg-gray-800/50 text-gray-400 hover:text-white hover:bg-gray-700/50 sm:bg-transparent sm:hover:bg-transparent"
                   }`}
                 >
                   {tab.label}
                 </button>
               ))}
             </div>
-            <p className="text-sm text-gray-400 mb-4 text-center">
+            <p className="text-xs sm:text-sm text-gray-400 mb-4 text-center">
               * indicates mandatory sections
             </p>
 
@@ -438,7 +447,7 @@ export default function ResumeowPage() {
             </div>
 
             {/* Navigation Buttons */}
-            <div className="flex justify-between items-center mt-8 pt-6 border-t border-gray-700">
+            <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 mt-6 md:mt-8 pt-4 md:pt-6 border-t border-gray-700">
               <Button
                 variant="outline"
                 onClick={() => {
@@ -448,6 +457,7 @@ export default function ResumeowPage() {
                   }
                 }}
                 disabled={activeTab === "personal"}
+                className="w-full sm:w-auto"
               >
                 ← Previous
               </Button>
@@ -457,6 +467,7 @@ export default function ResumeowPage() {
                   onClick={generateResume}
                   disabled={isGenerating}
                   size="lg"
+                  className="w-full sm:w-auto text-sm sm:text-base"
                 >
                   {isGenerating ? "Generating..." : "Generate Resume 🎉"}
                 </Button>
@@ -468,6 +479,7 @@ export default function ResumeowPage() {
                       setActiveTab(tabs[currentIndex + 1].id);
                     }
                   }}
+                  className="w-full sm:w-auto"
                 >
                   Next →
                 </Button>
@@ -476,9 +488,9 @@ export default function ResumeowPage() {
           </Card>
 
           {/* Instructions */}
-          <Card className="mt-6 p-6 bg-gray-800/50 border-gray-700">
-            <h3 className="font-semibold mb-2 text-white">💡 How to use:</h3>
-            <ol className="list-decimal list-inside space-y-1 text-sm text-gray-300">
+          <Card className="mt-4 md:mt-6 p-4 md:p-6 bg-gray-800/50 border-gray-700">
+            <h3 className="text-sm md:text-base font-semibold mb-2 text-white">💡 How to use:</h3>
+            <ol className="list-decimal list-inside space-y-1 text-xs md:text-sm text-gray-300">
               <li>Fill in your personal information in each tab</li>
               <li>Add your work experience, education, and skills</li>
               <li>Click "Save" to save your resume to the cloud</li>

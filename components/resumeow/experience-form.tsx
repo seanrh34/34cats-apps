@@ -161,7 +161,7 @@ export function ExperienceForm({ data, onChange }: ExperienceFormProps) {
           </div>
 
           <div className="space-y-2">
-            <div className="flex justify-between items-center">
+            <div className="flex justify-between items-center mb-3">
               <label className="block text-sm font-medium text-gray-200">
                 Responsibilities & Achievements
               </label>
