@@ -31,6 +31,7 @@ export default function ResumeowPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [showResumeList, setShowResumeList] = useState(false);
+  const [cooldownSeconds, setCooldownSeconds] = useState(0);
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -80,6 +81,39 @@ export default function ResumeowPage() {
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
   }, [isGenerating]);
+
+  // Check and manage cooldown from localStorage
+  useEffect(() => {
+    const checkCooldown = () => {
+      const cooldownEnd = localStorage.getItem('resumeGenerateCooldown');
+      if (cooldownEnd) {
+        const remaining = Math.max(0, Math.floor((parseInt(cooldownEnd) - Date.now()) / 1000));
+        if (remaining > 0) {
+          setCooldownSeconds(remaining);
+        } else {
+          localStorage.removeItem('resumeGenerateCooldown');
+          setCooldownSeconds(0);
+        }
+      }
+    };
+
+    // Check immediately on mount
+    checkCooldown();
+
+    // Update countdown every second
+    const interval = setInterval(() => {
+      const cooldownEnd = localStorage.getItem('resumeGenerateCooldown');
+      if (cooldownEnd) {
+        const remaining = Math.max(0, Math.floor((parseInt(cooldownEnd) - Date.now()) / 1000));
+        setCooldownSeconds(remaining);
+        if (remaining === 0) {
+          localStorage.removeItem('resumeGenerateCooldown');
+        }
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   const loadResumes = async () => {
     try {
@@ -197,7 +231,19 @@ export default function ResumeowPage() {
   };
 
   const generateResume = async () => {
+    // Check if still in cooldown
+    if (cooldownSeconds > 0) {
+      alert(`Please wait ${cooldownSeconds} seconds before generating another resume.`);
+      return;
+    }
+
     setIsGenerating(true);
+    
+    // Set 60-second cooldown in localStorage
+    const cooldownEnd = Date.now() + 60000; // 60 seconds
+    localStorage.setItem('resumeGenerateCooldown', cooldownEnd.toString());
+    setCooldownSeconds(60);
+
     try {
       const response = await fetch("/api/compile-resume", {
         method: "POST",
@@ -500,11 +546,15 @@ export default function ResumeowPage() {
               {activeTab === "projects" ? (
                 <Button
                   onClick={generateResume}
-                  disabled={isGenerating}
+                  disabled={isGenerating || cooldownSeconds > 0}
                   size="lg"
                   className="w-full sm:w-auto text-sm sm:text-base"
                 >
-                  {isGenerating ? "Generating..." : "Generate Resume 🎉"}
+                  {isGenerating 
+                    ? "Generating..." 
+                    : cooldownSeconds > 0 
+                      ? `Wait ${cooldownSeconds}s to Generate Again` 
+                      : "Generate Resume 🎉"}
                 </Button>
               ) : (
                 <Button
