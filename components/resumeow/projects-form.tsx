@@ -30,6 +30,20 @@ export function ProjectsForm({ data, onChange }: ProjectsFormProps) {
     onChange(data.filter((proj) => proj.id !== id));
   };
 
+  const moveProjectUp = (index: number) => {
+    if (index === 0) return;
+    const newData = [...data];
+    [newData[index - 1], newData[index]] = [newData[index], newData[index - 1]];
+    onChange(newData);
+  };
+
+  const moveProjectDown = (index: number) => {
+    if (index === data.length - 1) return;
+    const newData = [...data];
+    [newData[index], newData[index + 1]] = [newData[index + 1], newData[index]];
+    onChange(newData);
+  };
+
   return (
     <div className="space-y-6">
       {/* Sample Image */}
@@ -46,7 +60,7 @@ export function ProjectsForm({ data, onChange }: ProjectsFormProps) {
 
       <div className="flex justify-between items-center">
         <h3 className="text-lg font-semibold text-white">Relevant Projects</h3>
-        <Button onClick={addProject} variant="outline" size="sm">
+        <Button onClick={addProject} size="sm" className="bg-green-500 hover:bg-green-600 text-white shadow-lg hover:shadow-xl hover:shadow-green-500/20">
           + Add Project
         </Button>
       </div>
@@ -55,13 +69,33 @@ export function ProjectsForm({ data, onChange }: ProjectsFormProps) {
         <div key={project.id} className="border border-gray-700 rounded-lg p-4 space-y-4 bg-gray-800/20">
           <div className="flex justify-between items-start">
             <h4 className="font-medium text-white">Project {index + 1}</h4>
-            <Button
-              onClick={() => removeProject(project.id)}
-              variant="outline"
-              size="sm"
-            >
-              Remove
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                onClick={() => moveProjectUp(index)}
+                variant="outline"
+                size="sm"
+                disabled={index === 0}
+                title={index === 0 ? "Already at the top" : "Move up"}
+              >
+                ↑
+              </Button>
+              <Button
+                onClick={() => moveProjectDown(index)}
+                variant="outline"
+                size="sm"
+                disabled={index === data.length - 1}
+                title={index === data.length - 1 ? "Already at the bottom" : "Move down"}
+              >
+                ↓
+              </Button>
+              <Button
+                onClick={() => removeProject(project.id)}
+                size="sm"
+                className="bg-red-500 hover:bg-red-600 text-white"
+              >
+                Remove
+              </Button>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

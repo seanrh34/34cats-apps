@@ -69,6 +69,20 @@ export function CoCurricularForm({ data, onChange }: CoCurricularFormProps) {
     );
   };
 
+  const moveActivityUp = (index: number) => {
+    if (index === 0) return;
+    const newData = [...data];
+    [newData[index - 1], newData[index]] = [newData[index], newData[index - 1]];
+    onChange(newData);
+  };
+
+  const moveActivityDown = (index: number) => {
+    if (index === data.length - 1) return;
+    const newData = [...data];
+    [newData[index], newData[index + 1]] = [newData[index + 1], newData[index]];
+    onChange(newData);
+  };
+
   return (
     <div className="space-y-6">
       {/* Sample Image */}
@@ -85,7 +99,7 @@ export function CoCurricularForm({ data, onChange }: CoCurricularFormProps) {
 
       <div className="flex justify-between items-center">
         <h3 className="text-lg font-semibold text-white">Co-Curricular Activities</h3>
-        <Button onClick={addActivity} variant="outline" size="sm">
+        <Button onClick={addActivity} size="sm" className="bg-green-500 hover:bg-green-600 text-white shadow-lg hover:shadow-xl hover:shadow-green-500/20">
           + Add Activity
         </Button>
       </div>
@@ -94,13 +108,33 @@ export function CoCurricularForm({ data, onChange }: CoCurricularFormProps) {
         <div key={activity.id} className="border border-gray-700 rounded-lg p-4 space-y-4 bg-gray-800/20">
           <div className="flex justify-between items-start">
             <h4 className="font-medium text-white">Activity {activityIndex + 1}</h4>
-            <Button
-              onClick={() => removeActivity(activity.id)}
-              variant="outline"
-              size="sm"
-            >
-              Remove
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                onClick={() => moveActivityUp(activityIndex)}
+                variant="outline"
+                size="sm"
+                disabled={activityIndex === 0}
+                title={activityIndex === 0 ? "Already at the top" : "Move up"}
+              >
+                ↑
+              </Button>
+              <Button
+                onClick={() => moveActivityDown(activityIndex)}
+                variant="outline"
+                size="sm"
+                disabled={activityIndex === data.length - 1}
+                title={activityIndex === data.length - 1 ? "Already at the bottom" : "Move down"}
+              >
+                ↓
+              </Button>
+              <Button
+                onClick={() => removeActivity(activity.id)}
+                size="sm"
+                className="bg-red-500 hover:bg-red-600 text-white"
+              >
+                Remove
+              </Button>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -160,8 +194,8 @@ export function CoCurricularForm({ data, onChange }: CoCurricularFormProps) {
               </label>
               <Button
                 onClick={() => addBullet(activity.id)}
-                variant="outline"
                 size="sm"
+                className="bg-green-500 hover:bg-green-600 text-white shadow-lg hover:shadow-xl hover:shadow-green-500/20"
               >
                 + Add Bullet
               </Button>

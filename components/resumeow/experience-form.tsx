@@ -74,6 +74,20 @@ export function ExperienceForm({ data, onChange }: ExperienceFormProps) {
     );
   };
 
+  const moveExperienceUp = (index: number) => {
+    if (index === 0) return;
+    const newData = [...data];
+    [newData[index - 1], newData[index]] = [newData[index], newData[index - 1]];
+    onChange(newData);
+  };
+
+  const moveExperienceDown = (index: number) => {
+    if (index === data.length - 1) return;
+    const newData = [...data];
+    [newData[index], newData[index + 1]] = [newData[index + 1], newData[index]];
+    onChange(newData);
+  };
+
   return (
     <div className="space-y-6">
       {/* Sample Image */}
@@ -90,7 +104,7 @@ export function ExperienceForm({ data, onChange }: ExperienceFormProps) {
 
       <div className="flex justify-between items-center">
         <h3 className="text-lg font-semibold text-white">Work Experience</h3>
-        <Button onClick={addExperience} variant="outline" size="sm">
+        <Button onClick={addExperience} size="sm" className="bg-green-500 hover:bg-green-600 text-white shadow-lg hover:shadow-xl hover:shadow-green-500/20">
           + Add Experience
         </Button>
       </div>
@@ -99,15 +113,35 @@ export function ExperienceForm({ data, onChange }: ExperienceFormProps) {
         <div key={exp.id} className="border border-gray-700 rounded-lg p-4 space-y-4 bg-gray-800/20">
           <div className="flex justify-between items-start">
             <h4 className="font-medium text-white">Experience {expIndex + 1}</h4>
-            <Button
-              onClick={() => removeExperience(exp.id)}
-              variant="outline"
-              size="sm"
-              disabled={data.length <= 1}
-              title={data.length <= 1 ? "You need to have at least 1 experience entry" : ""}
-            >
-              Remove
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                onClick={() => moveExperienceUp(expIndex)}
+                variant="outline"
+                size="sm"
+                disabled={expIndex === 0}
+                title={expIndex === 0 ? "Already at the top" : "Move up"}
+              >
+                ↑
+              </Button>
+              <Button
+                onClick={() => moveExperienceDown(expIndex)}
+                variant="outline"
+                size="sm"
+                disabled={expIndex === data.length - 1}
+                title={expIndex === data.length - 1 ? "Already at the bottom" : "Move down"}
+              >
+                ↓
+              </Button>
+              <Button
+                onClick={() => removeExperience(exp.id)}
+                size="sm"
+                disabled={data.length <= 1}
+                title={data.length <= 1 ? "You need to have at least 1 experience entry" : ""}
+                className="bg-red-500 hover:bg-red-600 text-white disabled:bg-gray-600 disabled:text-gray-400"
+              >
+                Remove
+              </Button>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -167,8 +201,8 @@ export function ExperienceForm({ data, onChange }: ExperienceFormProps) {
               </label>
               <Button
                 onClick={() => addBullet(exp.id)}
-                variant="outline"
                 size="sm"
+                className="bg-green-500 hover:bg-green-600 text-white shadow-lg hover:shadow-xl hover:shadow-green-500/20"
               >
                 + Add Bullet
               </Button>

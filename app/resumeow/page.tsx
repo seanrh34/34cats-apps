@@ -32,6 +32,7 @@ export default function ResumeowPage() {
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [showResumeList, setShowResumeList] = useState(false);
   const [cooldownSeconds, setCooldownSeconds] = useState(0);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -62,6 +63,26 @@ export default function ResumeowPage() {
       loadResumes();
     }
   }, [user]);
+
+  // Track unsaved changes
+  useEffect(() => {
+    // Mark as having unsaved changes whenever resumeData or title changes
+    setHasUnsavedChanges(true);
+  }, [resumeData, resumeTitle]);
+
+  // Warn about unsaved changes when leaving page
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges) {
+        e.preventDefault();
+        e.returnValue = 'You have unsaved changes. Are you sure you want to leave?';
+        return e.returnValue;
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [hasUnsavedChanges]);
 
   // Add beforeunload warning when generating resume
   useEffect(() => {
@@ -135,6 +156,7 @@ export default function ResumeowPage() {
     setCurrentResumeId(resume.id);
     setLastSaved(new Date(resume.updated_at));
     setShowResumeList(false);
+    setHasUnsavedChanges(false);
   };
 
   const handleSaveResume = async () => {
@@ -145,6 +167,7 @@ export default function ResumeowPage() {
       const saved = await saveResume(resumeData, resumeTitle, currentResumeId);
       setCurrentResumeId(saved.id);
       setLastSaved(new Date(saved.updated_at));
+      setHasUnsavedChanges(false);
       await loadResumes();
       alert("Resume saved successfully!");
     } catch (error) {
@@ -175,6 +198,7 @@ export default function ResumeowPage() {
     setCurrentResumeId(undefined);
     setLastSaved(null);
     setShowResumeList(false);
+    setHasUnsavedChanges(false);
   };
 
   const handleDeleteResume = async (id: string) => {
@@ -324,30 +348,12 @@ export default function ResumeowPage() {
       <div className="container mx-auto px-4 py-12">
         {/* Header */}
         <div className="text-center mb-6 md:mb-8">
-          <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto justify-center mb-4">
-            <Button
-              onClick={() => setShowResumeList(!showResumeList)}
-              variant="secondary"
-              size="sm"
-              className="text-xs sm:text-sm"
-            >
-              {showResumeList ? "← Back" : "📁 Resumes"}
-            </Button>
-            <Button
-              onClick={handleNewResume}
-              variant="outline"
-              size="sm"
-              className="text-xs sm:text-sm"
-            >
-              + New
-            </Button>
-          </div>
-
           {!showResumeList && (
             <>
               <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-3 md:mb-4 text-white px-2">Resumeow 📄</h1>
               <p className="text-base md:text-lg lg:text-xl text-gray-300 max-w-2xl mx-auto mb-2 px-4">
-                Create professional resumes with LaTeX quality. Fill in your details and let us handle the formatting.
+                Create professional resumes with LaTeX quality. Fill in your details and let us handle the formatting according
+                to what recruiters look for.
               </p>
               {lastSaved && (
                 <p className="text-xs md:text-sm text-gray-400 px-2">
@@ -413,6 +419,26 @@ export default function ResumeowPage() {
           </div>
         ) : (
           <div className="max-w-5xl mx-auto">
+            {/* Resume Management Buttons */}
+            <div className="flex items-center gap-2 sm:gap-3 mb-4">
+              <Button
+                onClick={() => setShowResumeList(!showResumeList)}
+                variant="secondary"
+                size="sm"
+                className="text-xs sm:text-sm"
+              >
+                {showResumeList ? "← Back" : "📁 Resumes"}
+              </Button>
+              <Button
+                onClick={handleNewResume}
+                variant="outline"
+                size="sm"
+                className="text-xs sm:text-sm"
+              >
+                + New
+              </Button>
+            </div>
+
             {/* Resume Title and Save Button */}
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-4 mb-4">
               <input

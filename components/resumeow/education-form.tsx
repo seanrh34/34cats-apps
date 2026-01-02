@@ -38,6 +38,20 @@ export function EducationForm({ data, onChange }: EducationFormProps) {
     onChange(data.filter((edu) => edu.id !== id));
   };
 
+  const moveEducationUp = (index: number) => {
+    if (index === 0) return;
+    const newData = [...data];
+    [newData[index - 1], newData[index]] = [newData[index], newData[index - 1]];
+    onChange(newData);
+  };
+
+  const moveEducationDown = (index: number) => {
+    if (index === data.length - 1) return;
+    const newData = [...data];
+    [newData[index], newData[index + 1]] = [newData[index + 1], newData[index]];
+    onChange(newData);
+  };
+
   return (
     <div className="space-y-6">
       {/* Sample Image */}
@@ -54,7 +68,7 @@ export function EducationForm({ data, onChange }: EducationFormProps) {
 
       <div className="flex justify-between items-center">
         <h3 className="text-lg font-semibold text-white">Education</h3>
-        <Button onClick={addEducation} variant="outline" size="sm">
+        <Button onClick={addEducation} size="sm" className="bg-green-500 hover:bg-green-600 text-white shadow-lg hover:shadow-xl hover:shadow-green-500/20">
           + Add Education
         </Button>
       </div>
@@ -63,15 +77,35 @@ export function EducationForm({ data, onChange }: EducationFormProps) {
         <div key={edu.id} className="border border-gray-700 rounded-lg p-4 space-y-4 bg-gray-800/20">
           <div className="flex justify-between items-start">
             <h4 className="font-medium text-white">Education {eduIndex + 1}</h4>
-            <Button
-              onClick={() => removeEducation(edu.id)}
-              variant="outline"
-              size="sm"
-              disabled={data.length <= 1}
-              title={data.length <= 1 ? "You need to have at least 1 education entry" : ""}
-            >
-              Remove
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                onClick={() => moveEducationUp(eduIndex)}
+                variant="outline"
+                size="sm"
+                disabled={eduIndex === 0}
+                title={eduIndex === 0 ? "Already at the top" : "Move up"}
+              >
+                ↑
+              </Button>
+              <Button
+                onClick={() => moveEducationDown(eduIndex)}
+                variant="outline"
+                size="sm"
+                disabled={eduIndex === data.length - 1}
+                title={eduIndex === data.length - 1 ? "Already at the bottom" : "Move down"}
+              >
+                ↓
+              </Button>
+              <Button
+                onClick={() => removeEducation(edu.id)}
+                size="sm"
+                disabled={data.length <= 1}
+                title={data.length <= 1 ? "You need to have at least 1 education entry" : ""}
+                className="bg-red-500 hover:bg-red-600 text-white disabled:bg-gray-600 disabled:text-gray-400"
+              >
+                Remove
+              </Button>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

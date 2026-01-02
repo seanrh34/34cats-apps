@@ -37,6 +37,20 @@ export function SkillsForm({ data, onChange }: SkillsFormProps) {
     onChange(data.filter((_, i) => i !== index));
   };
 
+  const moveCategoryUp = (index: number) => {
+    if (index === 0) return;
+    const newData = [...data];
+    [newData[index - 1], newData[index]] = [newData[index], newData[index - 1]];
+    onChange(newData);
+  };
+
+  const moveCategoryDown = (index: number) => {
+    if (index === data.length - 1) return;
+    const newData = [...data];
+    [newData[index], newData[index + 1]] = [newData[index + 1], newData[index]];
+    onChange(newData);
+  };
+
   return (
     <div className="space-y-6">
       {/* Sample Image */}
@@ -53,7 +67,7 @@ export function SkillsForm({ data, onChange }: SkillsFormProps) {
 
       <div className="flex justify-between items-center">
         <h3 className="text-lg font-semibold text-white">Skills</h3>
-        <Button onClick={addSkillCategory} variant="outline" size="sm">
+        <Button onClick={addSkillCategory} size="sm" className="bg-green-500 hover:bg-green-600 text-white shadow-lg hover:shadow-xl hover:shadow-green-500/20">
           + Add Category
         </Button>
       </div>
@@ -62,13 +76,33 @@ export function SkillsForm({ data, onChange }: SkillsFormProps) {
         <div key={index} className="border border-gray-700 rounded-lg p-4 space-y-4 bg-gray-800/20">
           <div className="flex justify-between items-start">
             <h4 className="font-medium text-white">Category {index + 1}</h4>
-            <Button
-              onClick={() => removeCategory(index)}
-              variant="outline"
-              size="sm"
-            >
-              Remove
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                onClick={() => moveCategoryUp(index)}
+                variant="outline"
+                size="sm"
+                disabled={index === 0}
+                title={index === 0 ? "Already at the top" : "Move up"}
+              >
+                ↑
+              </Button>
+              <Button
+                onClick={() => moveCategoryDown(index)}
+                variant="outline"
+                size="sm"
+                disabled={index === data.length - 1}
+                title={index === data.length - 1 ? "Already at the bottom" : "Move down"}
+              >
+                ↓
+              </Button>
+              <Button
+                onClick={() => removeCategory(index)}
+                size="sm"
+                className="bg-red-500 hover:bg-red-600 text-white"
+              >
+                Remove
+              </Button>
+            </div>
           </div>
 
           <div className="space-y-3">
