@@ -27,6 +27,16 @@ export function Footer() {
                   About
                 </Link>
               </li>
+              <li>
+                <Link href="/privacy-policy" className="text-sm text-gray-400 hover:text-[#E84A3A] transition-colors">
+                  Privacy Policy
+                </Link>
+              </li>
+              <li>
+                <Link href="/terms-of-service" className="text-sm text-gray-400 hover:text-[#E84A3A] transition-colors">
+                  Terms of Service
+                </Link>
+              </li>
             </ul>
           </div>
 
