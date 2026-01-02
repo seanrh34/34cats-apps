@@ -3,6 +3,7 @@
 import { Experience } from "@/lib/types/resume";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import Image from "next/image";
 
 interface ExperienceFormProps {
   data: Experience[];
@@ -29,6 +30,11 @@ export function ExperienceForm({ data, onChange }: ExperienceFormProps) {
   };
 
   const removeExperience = (id: string) => {
+    // Ensure at least 1 experience entry remains
+    if (data.length <= 1) {
+      alert("You must have at least one experience entry.");
+      return;
+    }
     onChange(data.filter((exp) => exp.id !== id));
   };
 
@@ -70,6 +76,18 @@ export function ExperienceForm({ data, onChange }: ExperienceFormProps) {
 
   return (
     <div className="space-y-6">
+      {/* Sample Image */}
+      <div className="mb-6 p-4 bg-gray-800/20 rounded-lg border border-gray-700">
+        <h4 className="text-sm font-medium text-gray-300 mb-2">Example:</h4>
+        <Image
+          src="/resumeow/experience_sample.png"
+          alt="Experience section example"
+          width={600}
+          height={150}
+          className="rounded border border-gray-600"
+        />
+      </div>
+
       <div className="flex justify-between items-center">
         <h3 className="text-lg font-semibold text-white">Work Experience</h3>
         <Button onClick={addExperience} variant="outline" size="sm">
@@ -85,6 +103,8 @@ export function ExperienceForm({ data, onChange }: ExperienceFormProps) {
               onClick={() => removeExperience(exp.id)}
               variant="outline"
               size="sm"
+              disabled={data.length <= 1}
+              title={data.length <= 1 ? "You need to have at least 1 experience entry" : ""}
             >
               Remove
             </Button>

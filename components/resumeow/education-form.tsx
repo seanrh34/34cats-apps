@@ -3,6 +3,7 @@
 import { Education } from "@/lib/types/resume";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import Image from "next/image";
 
 interface EducationFormProps {
   data: Education[];
@@ -29,11 +30,28 @@ export function EducationForm({ data, onChange }: EducationFormProps) {
   };
 
   const removeEducation = (id: string) => {
+    // Ensure at least 1 education entry remains
+    if (data.length <= 1) {
+      alert("You must have at least one education entry.");
+      return;
+    }
     onChange(data.filter((edu) => edu.id !== id));
   };
 
   return (
     <div className="space-y-6">
+      {/* Sample Image */}
+      <div className="mb-6 p-4 bg-gray-800/20 rounded-lg border border-gray-700">
+        <h4 className="text-sm font-medium text-gray-300 mb-2">Example:</h4>
+        <Image
+          src="/resumeow/education_sample.png"
+          alt="Education section example"
+          width={600}
+          height={150}
+          className="rounded border border-gray-600"
+        />
+      </div>
+
       <div className="flex justify-between items-center">
         <h3 className="text-lg font-semibold text-white">Education</h3>
         <Button onClick={addEducation} variant="outline" size="sm">
@@ -49,6 +67,8 @@ export function EducationForm({ data, onChange }: EducationFormProps) {
               onClick={() => removeEducation(edu.id)}
               variant="outline"
               size="sm"
+              disabled={data.length <= 1}
+              title={data.length <= 1 ? "You need to have at least 1 education entry" : ""}
             >
               Remove
             </Button>
@@ -110,11 +130,11 @@ export function EducationForm({ data, onChange }: EducationFormProps) {
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-1 text-gray-200">GPA (optional)</label>
+              <label className="block text-sm font-medium mb-1 text-gray-200">GPA or Other Info (optional)</label>
               <Input
                 value={edu.gpa || ""}
                 onChange={(e) => updateEducation(edu.id, "gpa", e.target.value)}
-                placeholder="Cumulative GPA: 3.8/4.0"
+                placeholder="Cumulative GPA: 4.90/5.00"
               />
             </div>
           </div>
@@ -123,7 +143,7 @@ export function EducationForm({ data, onChange }: EducationFormProps) {
 
       {data.length === 0 && (
         <div className="text-center py-8 text-gray-400">
-          No education added yet. Click "Add Education" to get started.
+          No education added yet. Click &quot;Add Education&quot; to get started.
         </div>
       )}
     </div>

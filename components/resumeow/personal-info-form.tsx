@@ -2,6 +2,7 @@
 
 import { PersonalInfo } from "@/lib/types/resume";
 import { Input } from "@/components/ui/input";
+import Image from "next/image";
 
 interface PersonalInfoFormProps {
   data: PersonalInfo;
@@ -15,6 +16,18 @@ export function PersonalInfoForm({ data, onChange }: PersonalInfoFormProps) {
 
   return (
     <div className="space-y-4">
+      {/* Sample Image */}
+      <div className="mb-6 p-4 bg-gray-800/20 rounded-lg border border-gray-700">
+        <h4 className="text-sm font-medium text-gray-300 mb-2">Example:</h4>
+        <Image
+          src="/resumeow/personal_info_sample.png"
+          alt="Personal info section example"
+          width={600}
+          height={80}
+          className="rounded border border-gray-600"
+        />
+      </div>
+
       <h3 className="text-lg font-semibold text-white">Personal Information</h3>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

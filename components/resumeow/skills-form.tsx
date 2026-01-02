@@ -3,6 +3,7 @@
 import { Skill } from "@/lib/types/resume";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import Image from "next/image";
 
 interface SkillsFormProps {
   data: Skill[];
@@ -38,6 +39,18 @@ export function SkillsForm({ data, onChange }: SkillsFormProps) {
 
   return (
     <div className="space-y-6">
+      {/* Sample Image */}
+      <div className="mb-6 p-4 bg-gray-800/20 rounded-lg border border-gray-700">
+        <h4 className="text-sm font-medium text-gray-300 mb-2">Example:</h4>
+        <Image
+          src="/resumeow/skills_sample.png"
+          alt="Skills section example"
+          width={600}
+          height={100}
+          className="rounded border border-gray-600"
+        />
+      </div>
+
       <div className="flex justify-between items-center">
         <h3 className="text-lg font-semibold text-white">Skills</h3>
         <Button onClick={addSkillCategory} variant="outline" size="sm">

@@ -204,12 +204,12 @@ export default function ResumeowPage() {
   };
 
   const tabs = [
-    { id: "personal", label: "Personal Info" },
-    { id: "education", label: "Education" },
-    { id: "experience", label: "Experience" },
-    { id: "cocurricular", label: "Co-Curricular" },
-    { id: "skills", label: "Skills" },
-    { id: "projects", label: "Projects" },
+    { id: "personal", label: "Personal Info *", required: true },
+    { id: "education", label: "Education *", required: true },
+    { id: "experience", label: "Experience *", required: true },
+    { id: "cocurricular", label: "Co-Curricular", required: false },
+    { id: "skills", label: "Skills", required: false },
+    { id: "projects", label: "Projects", required: false },
   ] as const;
 
   const handleSignOut = async () => {
@@ -275,31 +275,14 @@ export default function ResumeowPage() {
           {!showResumeList && (
             <>
               <h1 className="text-4xl md:text-5xl font-bold mb-4 text-white">Resumeow 📄</h1>
-              <div className="flex items-center justify-center gap-4 mb-4">
-                <input
-                  type="text"
-                  value={resumeTitle}
-                  onChange={(e) => setResumeTitle(e.target.value)}
-                  className="text-xl bg-gray-800/50 border border-gray-700 rounded-lg px-4 py-2 text-white max-w-md"
-                  placeholder="Resume Title"
-                />
-                <Button
-                  onClick={handleSaveResume}
-                  disabled={isSaving}
-                  variant="primary"
-                  size="sm"
-                >
-                  {isSaving ? "Saving..." : "💾 Save"}
-                </Button>
-              </div>
+              <p className="text-xl text-gray-300 max-w-2xl mx-auto mb-2">
+                Create professional resumes with LaTeX quality. Fill in your details and let us handle the formatting.
+              </p>
               {lastSaved && (
                 <p className="text-sm text-gray-400">
                   Last saved: {lastSaved.toLocaleString()}
                 </p>
               )}
-              <p className="text-xl text-gray-300 max-w-2xl mx-auto">
-                Create professional resumes with LaTeX quality. Fill in your details and let us handle the formatting.
-              </p>
             </>
           )}
         </div>
@@ -357,6 +340,25 @@ export default function ResumeowPage() {
           </div>
         ) : (
           <div className="max-w-5xl mx-auto">
+            {/* Resume Title and Save Button */}
+            <div className="flex items-center gap-4 mb-4">
+              <input
+                type="text"
+                value={resumeTitle}
+                onChange={(e) => setResumeTitle(e.target.value)}
+                className="text-xl bg-gray-800/50 border border-gray-700 rounded-lg px-4 py-2 text-white max-w-md"
+                placeholder="Resume Title"
+              />
+              <Button
+                onClick={handleSaveResume}
+                disabled={isSaving}
+                variant="primary"
+                size="sm"
+              >
+                {isSaving ? "Saving..." : "💾 Save"}
+              </Button>
+            </div>
+
           <Card className="p-6 bg-gray-800/30">
             {/* Tab Navigation */}
             <div className="flex gap-2 mb-6 border-b border-gray-700 overflow-x-auto">
@@ -374,6 +376,9 @@ export default function ResumeowPage() {
                 </button>
               ))}
             </div>
+            <p className="text-sm text-gray-400 mb-4 text-center">
+              * indicates mandatory sections
+            </p>
 
             {/* Form Content */}
             <div className="min-h-[400px]">
