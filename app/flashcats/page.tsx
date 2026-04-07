@@ -382,6 +382,18 @@ export default function FlashcatsPage() {
   };
 
   const handleResetToDecks = () => {
+    setIsEditorOpen(false);
+    setEditingDeck(null);
+    setSetupDeck(null);
+    setSetupSettings(null);
+    setPracticeState(null);
+    setCompletedState(null);
+    setIsFlipped(false);
+  };
+
+  const handleBrowseDecks = () => {
+    setIsEditorOpen(false);
+    setEditingDeck(null);
     setSetupDeck(null);
     setSetupSettings(null);
     setPracticeState(null);
@@ -481,8 +493,14 @@ export default function FlashcatsPage() {
                   <Button onClick={handleStartCreate}>
                     {user ? "Create a deck" : "Login to create decks"}
                   </Button>
-                  <Button variant="secondary" onClick={() => window.scrollTo({ top: 720, behavior: "smooth" })}>
-                    Browse decks
+                  <Button
+                    variant="secondary"
+                    onClick={() => {
+                      handleBrowseDecks();
+                      window.scrollTo({ top: 720, behavior: "smooth" });
+                    }}
+                  >
+                    Browse Decks
                   </Button>
                 </div>
               </Card>
@@ -511,20 +529,17 @@ export default function FlashcatsPage() {
               </Card>
             </div>
 
-            {isEditorOpen && (
+            {isEditorOpen ? (
               <FlashcatsDeckEditor
                 initialDeck={editingDeck}
                 isSaving={isSavingDeck}
                 remainingDeckSlots={remainingDeckSlots}
                 onSave={handleSaveDeck}
                 onCancel={() => {
-                  setIsEditorOpen(false);
-                  setEditingDeck(null);
+                  handleBrowseDecks();
                 }}
               />
-            )}
-
-            {user ? (
+            ) : user ? (
               <div className="space-y-8">
                 <div className="flex flex-col gap-4 rounded-3xl border border-white/10 bg-white/5 p-5 md:flex-row md:items-center md:justify-between">
                   <div>
@@ -550,6 +565,11 @@ export default function FlashcatsPage() {
                   onEdit={(deck) => {
                     setEditingDeck(deck);
                     setIsEditorOpen(true);
+                    setSetupDeck(null);
+                    setSetupSettings(null);
+                    setPracticeState(null);
+                    setCompletedState(null);
+                    setIsFlipped(false);
                     setPageNotice(null);
                   }}
                   onDelete={handleDeleteDeck}
@@ -569,18 +589,22 @@ export default function FlashcatsPage() {
               </Card>
             )}
 
-            <FlashcatsDeckList
-              title="Public deck library"
-              description="Available to everyone, even before signing in."
-              decks={visiblePublicDecks}
-              emptyMessage="No public decks have been published yet."
-              onPractice={handlePracticeSelect}
-            />
+            {!isEditorOpen && (
+              <>
+                <FlashcatsDeckList
+                  title="Public deck library"
+                  description="Available to everyone, even before signing in."
+                  decks={visiblePublicDecks}
+                  emptyMessage="No public decks have been published yet."
+                  onPractice={handlePracticeSelect}
+                />
 
-            {isPreparingPractice && (
-              <Card className="border-gray-700 bg-gray-950/60 p-5 text-sm text-gray-300">
-                Preparing that practice session...
-              </Card>
+                {isPreparingPractice && (
+                  <Card className="border-gray-700 bg-gray-950/60 p-5 text-sm text-gray-300">
+                    Preparing that practice session...
+                  </Card>
+                )}
+              </>
             )}
           </div>
         )}
