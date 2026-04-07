@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { mainNavItems } from "@/config/navigation";
 import { smoothScrollToSection } from "@/lib/scroll-utils";
@@ -12,10 +12,12 @@ import { useAuth } from "@/contexts/auth-context";
 export function Navbar() {
   const { user, loading, signOut } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [isOpen, setIsOpen] = useState(false);
-  const [isScrolled, setIsScrolled] = useState(false);
   const [activeSection, setActiveSection] = useState<string | null>(null);
+
+  const loginHref =
+    pathname && pathname !== "/" ? `/login?next=${encodeURIComponent(pathname)}` : "/login";
 
   const handleSignOut = async () => {
     try {
@@ -28,8 +30,6 @@ export function Navbar() {
 
   useEffect(() => {
     const handleScroll = () => {
-      setIsScrolled(window.scrollY > 20);
-
       // Don't set active section if we're on an app page (not homepage)
       if (window.location.pathname !== '/') {
         setActiveSection(null);
@@ -67,7 +67,6 @@ export function Navbar() {
 
   const handleLinkClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
     smoothScrollToSection(e, href);
-    setIsOpen(false);
     setMobileMenuOpen(false);
   };
 
@@ -127,7 +126,7 @@ export function Navbar() {
               </>
             ) : (
               <Link
-                href="/login"
+                href={loginHref}
                 className="inline-flex items-center px-4 py-2 text-sm font-semibold text-white bg-[#E84A3A] rounded-lg hover:bg-[#d43d2d] transition-all shadow-md hover:shadow-lg hover:shadow-[#E84A3A]/20"
               >
                 Login
@@ -216,7 +215,7 @@ export function Navbar() {
                   </>
                 ) : (
                   <Link
-                    href="/login"
+                    href={loginHref}
                     className="block px-3 py-2 mt-2 text-center text-sm font-semibold text-white bg-[#E84A3A] rounded-lg hover:bg-[#d43d2d] transition-colors"
                     onClick={() => setMobileMenuOpen(false)}
                   >

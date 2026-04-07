@@ -7,7 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  signInWithGoogle: () => Promise<void>;
+  signInWithGoogle: (nextPath?: string) => Promise<void>;
   signOut: () => Promise<void>;
 }
 
@@ -36,11 +36,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => subscription.unsubscribe();
   }, [supabase.auth]);
 
-  const signInWithGoogle = async () => {
+  const signInWithGoogle = async (nextPath?: string) => {
+    const callbackUrl = new URL("/auth/callback", window.location.origin);
+
+    if (nextPath && nextPath.startsWith("/") && !nextPath.startsWith("//")) {
+      callbackUrl.searchParams.set("next", nextPath);
+    }
+
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
+        redirectTo: callbackUrl.toString(),
       },
     });
 

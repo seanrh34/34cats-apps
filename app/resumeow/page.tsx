@@ -746,7 +746,7 @@ function ResumeowLandingPage() {
         {/* CTA */}
         <div className="text-center">
           <Button
-            onClick={() => router.push("/login")}
+            onClick={() => router.push("/login?next=/resumeow")}
             size="lg"
             className="bg-[#E84A3A] text-white hover:bg-[#d43d2d] shadow-lg hover:shadow-xl hover:shadow-[#E84A3A]/20 transform hover:-translate-y-0.5 text-lg px-12 py-6 cursor-pointer"
           >
@@ -761,4 +761,3 @@ function ResumeowLandingPage() {
     </div>
   );
 }
-

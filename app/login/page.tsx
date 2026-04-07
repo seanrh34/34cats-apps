@@ -3,24 +3,27 @@
 import { useAuth } from "@/contexts/auth-context";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect } from "react";
 import Image from "next/image";
+import { getSafeRedirectPath } from "@/lib/auth/redirect";
 
 export default function LoginPage() {
   const { user, loading, signInWithGoogle } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const nextPath = getSafeRedirectPath(searchParams.get("next"), "/");
 
   // Redirect if already logged in
   useEffect(() => {
     if (user && !loading) {
-      router.push("/");
+      router.push(nextPath);
     }
-  }, [user, loading, router]);
+  }, [user, loading, nextPath, router]);
 
   const handleGoogleSignIn = async () => {
     try {
-      await signInWithGoogle();
+      await signInWithGoogle(nextPath);
     } catch (error) {
       console.error("Failed to sign in:", error);
       alert("Failed to sign in. Please try again.");

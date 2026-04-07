@@ -15,6 +15,13 @@ export const apps: App[] = [
     status: "Live",
     icon: "📄",
   },
+  {
+    name: "FlashCats",
+    href: "/flashcats",
+    description: "Create flashcard decks with up to 3 custom fields, practise public or private decks, and flip cards your way.",
+    status: "Live",
+    icon: "🃏",
+  },
   // Add more apps here
 ];
 
