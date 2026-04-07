@@ -259,6 +259,7 @@ export function FlashcatsDeckPageClient({
 
   const showBlockingLoader =
     !hasRestoredPageCache && authLoading && isLoadingDeck && !deck && !practiceState;
+  const showOuterHeader = Boolean(pageError || !deck || completedState || practiceState);
 
   return (
     <main className="min-h-screen bg-linear-to-b from-[#100d12] via-black to-[#120f14]">
@@ -272,31 +273,33 @@ export function FlashcatsDeckPageClient({
           </Card>
         ) : (
           <div className="space-y-6">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <p className="text-sm uppercase tracking-[0.3em] text-[#ff9e91]">
-                  FlashCats deck
-                </p>
-                <h1 className="mt-2 text-4xl font-bold text-white">
-                  {deck?.title || "Deck not found"}
-                </h1>
-              </div>
-              <div className="flex flex-wrap gap-3">
-                <Button variant="ghost" onClick={() => router.push("/flashcats")}>
-                  Back to all decks
-                </Button>
-                {deck && (
-                  <Button
-                    variant="secondary"
-                    onClick={async () => {
-                      await navigator.clipboard.writeText(window.location.href);
-                    }}
-                  >
-                    Copy deck link
+            {showOuterHeader && (
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-sm uppercase tracking-[0.3em] text-[#ff9e91]">
+                    FlashCats deck
+                  </p>
+                  <h1 className="mt-2 text-4xl font-bold text-white">
+                    {deck?.title || "Deck not found"}
+                  </h1>
+                </div>
+                <div className="flex flex-wrap gap-3">
+                  <Button variant="ghost" onClick={() => router.push("/flashcats")}>
+                    Back to all decks
                   </Button>
-                )}
+                  {deck && (
+                    <Button
+                      variant="secondary"
+                      onClick={async () => {
+                        await navigator.clipboard.writeText(window.location.href);
+                      }}
+                    >
+                      Copy deck link
+                    </Button>
+                  )}
+                </div>
               </div>
-            </div>
+            )}
 
             {(authLoading || isPreparingDeck) && (
               <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-gray-300">
@@ -350,10 +353,13 @@ export function FlashcatsDeckPageClient({
               deck && (
                 <FlashcatsPracticeSetup
                   deck={deck}
-                  initialSettings={setupSettings || undefined}
+                  initialSettings={setupSettings || getDefaultPracticeSettings(deck)}
                   isSignedIn={Boolean(user)}
                   onStart={handlePracticeStart}
                   onBack={() => router.push("/flashcats")}
+                  onShare={async () => {
+                    await navigator.clipboard.writeText(window.location.href);
+                  }}
                 />
               )
             )}
