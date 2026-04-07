@@ -9,45 +9,20 @@ import { ScrollToBottomButton } from "@/components/shared/scroll-to-bottom";
 import { useAuth } from "@/contexts/auth-context";
 import { FlashcatsDeckEditor } from "@/components/flashcats/deck-editor";
 import { FlashcatsDeckList } from "@/components/flashcats/deck-list";
-import { FlashcatsPracticeSetup } from "@/components/flashcats/practice-setup";
-import { FlashcardPractice } from "@/components/flashcats/flashcard-practice";
-import { FlashcatsPracticeComplete } from "@/components/flashcats/practice-complete";
 import {
   createFlashcatsDeck,
   deleteFlashcatsDeck,
   ensureFlashcatsUserProfile,
-  fetchAccessibleDeck,
   fetchPublicDecks,
-  fetchUserDeckPreference,
   fetchUserDecks,
-  saveUserDeckPreference,
   updateFlashcatsDeck,
 } from "@/lib/services/flashcats-service";
 import {
   FlashcatsDeck,
   FlashcatsDeckInput,
-  FlashcatsPracticeSettings,
   FlashcatsUserProfile,
 } from "@/lib/types/flashcats";
-import {
-  FLASHCATS_MAX_DECKS_DEFAULT,
-  getDefaultPracticeSettings,
-  shuffleFlashcatsCards,
-} from "@/lib/flashcats/utils";
-
-interface PracticeSessionState {
-  deck: FlashcatsDeck;
-  settings: FlashcatsPracticeSettings;
-  queue: FlashcatsDeck["cards"];
-  completedCount: number;
-  totalCount: number;
-}
-
-interface CompletedPracticeState {
-  deck: FlashcatsDeck;
-  settings: FlashcatsPracticeSettings;
-  totalCount: number;
-}
+import { FLASHCATS_MAX_DECKS_DEFAULT } from "@/lib/flashcats/utils";
 
 interface FlashcatsPageCache {
   publicDecks: FlashcatsDeck[];
@@ -55,11 +30,6 @@ interface FlashcatsPageCache {
   userProfile: FlashcatsUserProfile | null;
   isEditorOpen: boolean;
   editingDeck: FlashcatsDeck | null;
-  setupDeck: FlashcatsDeck | null;
-  setupSettings: FlashcatsPracticeSettings | null;
-  practiceState: PracticeSessionState | null;
-  completedState: CompletedPracticeState | null;
-  isFlipped: boolean;
   updatedAt: string;
 }
 
@@ -85,16 +55,6 @@ export default function FlashcatsPage() {
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [editingDeck, setEditingDeck] = useState<FlashcatsDeck | null>(null);
   const [isSavingDeck, setIsSavingDeck] = useState(false);
-  const [setupDeck, setSetupDeck] = useState<FlashcatsDeck | null>(null);
-  const [setupSettings, setSetupSettings] = useState<FlashcatsPracticeSettings | null>(
-    null
-  );
-  const [isPreparingPractice, setIsPreparingPractice] = useState(false);
-  const [practiceState, setPracticeState] = useState<PracticeSessionState | null>(null);
-  const [completedState, setCompletedState] = useState<CompletedPracticeState | null>(
-    null
-  );
-  const [isFlipped, setIsFlipped] = useState(false);
   const [hasRestoredPageCache, setHasRestoredPageCache] = useState(false);
 
   const readPageCache = (): FlashcatsPageCache | null => {
@@ -127,11 +87,6 @@ export default function FlashcatsPage() {
     setUserProfile(cachedState.userProfile || null);
     setIsEditorOpen(Boolean(cachedState.isEditorOpen));
     setEditingDeck(cachedState.editingDeck || null);
-    setSetupDeck(cachedState.setupDeck || null);
-    setSetupSettings(cachedState.setupSettings || null);
-    setPracticeState(cachedState.practiceState || null);
-    setCompletedState(cachedState.completedState || null);
-    setIsFlipped(Boolean(cachedState.isFlipped));
     setIsLoadingData(false);
     setHasRestoredPageCache(true);
   }, []);
@@ -171,6 +126,15 @@ export default function FlashcatsPage() {
   }, [loadDecks]);
 
   useEffect(() => {
+    if (authLoading || user) {
+      return;
+    }
+
+    setIsEditorOpen(false);
+    setEditingDeck(null);
+  }, [authLoading, user]);
+
+  useEffect(() => {
     if (!hasRestoredPageCache || typeof window === "undefined") {
       return;
     }
@@ -181,11 +145,6 @@ export default function FlashcatsPage() {
       userProfile,
       isEditorOpen,
       editingDeck,
-      setupDeck,
-      setupSettings,
-      practiceState,
-      completedState,
-      isFlipped,
       updatedAt: new Date().toISOString(),
     };
 
@@ -194,15 +153,10 @@ export default function FlashcatsPage() {
       JSON.stringify(cache)
     );
   }, [
-    completedState,
     editingDeck,
     hasRestoredPageCache,
     isEditorOpen,
-    isFlipped,
-    practiceState,
     publicDecks,
-    setupDeck,
-    setupSettings,
     userDecks,
     userProfile,
   ]);
@@ -222,26 +176,6 @@ export default function FlashcatsPage() {
 
     return Math.max(userProfile.max_decks - userDecks.length, 0);
   }, [userDecks.length, userProfile]);
-
-  const beginPractice = useCallback(
-    (deck: FlashcatsDeck, settings: FlashcatsPracticeSettings) => {
-      const queue =
-        settings.mode === "shuffle" ? shuffleFlashcatsCards(deck.cards) : [...deck.cards];
-
-      setPracticeState({
-        deck,
-        settings,
-        queue,
-        completedCount: 0,
-        totalCount: queue.length,
-      });
-      setCompletedState(null);
-      setSetupDeck(null);
-      setSetupSettings(null);
-      setIsFlipped(false);
-    },
-    []
-  );
 
   const handleSaveDeck = async (input: FlashcatsDeckInput) => {
     setIsSavingDeck(true);
@@ -286,119 +220,11 @@ export default function FlashcatsPage() {
     setPageNotice(null);
     setEditingDeck(null);
     setIsEditorOpen(true);
-    setSetupDeck(null);
-    setSetupSettings(null);
-    setPracticeState(null);
-    setCompletedState(null);
-  };
-
-  const handlePracticeSelect = async (deck: FlashcatsDeck) => {
-    setIsPreparingPractice(true);
-    setPageError(null);
-
-    try {
-      const freshDeck = await fetchAccessibleDeck(deck.id);
-      if (!freshDeck) {
-        throw new Error("That deck is no longer available.");
-      }
-
-      const savedPreference = user
-        ? await fetchUserDeckPreference(freshDeck.id)
-        : null;
-
-      setSetupDeck(freshDeck);
-      setSetupSettings(getDefaultPracticeSettings(freshDeck, savedPreference));
-      setPracticeState(null);
-      setCompletedState(null);
-      setIsEditorOpen(false);
-      setEditingDeck(null);
-    } catch (error) {
-      setPageError(getMessage(error, "Failed to prepare that practice session."));
-    } finally {
-      setIsPreparingPractice(false);
-    }
-  };
-
-  const handlePracticeStart = async (settings: FlashcatsPracticeSettings) => {
-    if (!setupDeck) {
-      return;
-    }
-
-    if (user) {
-      await saveUserDeckPreference(setupDeck.id, settings.frontFields, settings.backFields);
-    }
-
-    beginPractice(setupDeck, settings);
-  };
-
-  const handleSkip = () => {
-    if (!practiceState) {
-      return;
-    }
-
-    const nextQueue = practiceState.queue.slice(1);
-    const nextCompletedCount = practiceState.completedCount + 1;
-
-    if (nextQueue.length === 0) {
-      setPracticeState(null);
-      setCompletedState({
-        deck: practiceState.deck,
-        settings: practiceState.settings,
-        totalCount: practiceState.totalCount,
-      });
-      setIsFlipped(false);
-      return;
-    }
-
-    setPracticeState({
-      ...practiceState,
-      queue: nextQueue,
-      completedCount: nextCompletedCount,
-    });
-    setIsFlipped(false);
-  };
-
-  const handleSaveForLater = () => {
-    if (!practiceState || practiceState.queue.length === 0) {
-      return;
-    }
-
-    const [currentCard, ...remainingCards] = practiceState.queue;
-    const nextQueue = [...remainingCards, currentCard];
-
-    setPracticeState({
-      ...practiceState,
-      queue: nextQueue,
-    });
-    setIsFlipped(false);
-  };
-
-  const handleTryAgain = () => {
-    if (!completedState) {
-      return;
-    }
-
-    beginPractice(completedState.deck, completedState.settings);
-  };
-
-  const handleResetToDecks = () => {
-    setIsEditorOpen(false);
-    setEditingDeck(null);
-    setSetupDeck(null);
-    setSetupSettings(null);
-    setPracticeState(null);
-    setCompletedState(null);
-    setIsFlipped(false);
   };
 
   const handleBrowseDecks = () => {
     setIsEditorOpen(false);
     setEditingDeck(null);
-    setSetupDeck(null);
-    setSetupSettings(null);
-    setPracticeState(null);
-    setCompletedState(null);
-    setIsFlipped(false);
   };
 
   const showBlockingLoader =
@@ -408,9 +234,9 @@ export default function FlashcatsPage() {
     publicDecks.length === 0 &&
     userDecks.length === 0 &&
     !isEditorOpen &&
-    !setupDeck &&
-    !practiceState &&
-    !completedState;
+    !editingDeck;
+
+  const canShowEditor = Boolean(user) && isEditorOpen;
 
   return (
     <main className="min-h-screen bg-linear-to-b from-[#100d12] via-black to-[#120f14]">
@@ -441,35 +267,6 @@ export default function FlashcatsPage() {
               Pulling decks and account settings into place.
             </p>
           </Card>
-        ) : completedState ? (
-          <FlashcatsPracticeComplete
-            deckTitle={completedState.deck.title}
-            totalCards={completedState.totalCount}
-            onTryAgain={handleTryAgain}
-            onSelectDifferentDeck={handleResetToDecks}
-          />
-        ) : practiceState ? (
-          <FlashcardPractice
-            deck={practiceState.deck}
-            currentCard={practiceState.queue[0]}
-            settings={practiceState.settings}
-            isFlipped={isFlipped}
-            remainingCount={practiceState.queue.length}
-            completedCount={practiceState.completedCount}
-            totalCount={practiceState.totalCount}
-            onFlip={() => setIsFlipped((current) => !current)}
-            onSkip={handleSkip}
-            onSaveForLater={handleSaveForLater}
-            onExit={handleResetToDecks}
-          />
-        ) : setupDeck ? (
-          <FlashcatsPracticeSetup
-            deck={setupDeck}
-            initialSettings={setupSettings || undefined}
-            isSignedIn={Boolean(user)}
-            onStart={handlePracticeStart}
-            onBack={handleResetToDecks}
-          />
         ) : (
           <div className="space-y-8">
             {(authLoading || isLoadingData) && (
@@ -529,7 +326,7 @@ export default function FlashcatsPage() {
               </Card>
             </div>
 
-            {isEditorOpen ? (
+            {canShowEditor ? (
               <FlashcatsDeckEditor
                 initialDeck={editingDeck}
                 isSaving={isSavingDeck}
@@ -561,15 +358,10 @@ export default function FlashcatsPage() {
                   description="These decks belong to your account. Public ones will also appear in the shared library."
                   decks={userDecks}
                   emptyMessage="You have not created any decks yet."
-                  onPractice={handlePracticeSelect}
+                  onPractice={(deck) => router.push(`/flashcats/${deck.id}`)}
                   onEdit={(deck) => {
                     setEditingDeck(deck);
                     setIsEditorOpen(true);
-                    setSetupDeck(null);
-                    setSetupSettings(null);
-                    setPracticeState(null);
-                    setCompletedState(null);
-                    setIsFlipped(false);
                     setPageNotice(null);
                   }}
                   onDelete={handleDeleteDeck}
@@ -589,21 +381,15 @@ export default function FlashcatsPage() {
               </Card>
             )}
 
-            {!isEditorOpen && (
+            {!canShowEditor && (
               <>
                 <FlashcatsDeckList
                   title="Public deck library"
                   description="Available to everyone, even before signing in."
                   decks={visiblePublicDecks}
                   emptyMessage="No public decks have been published yet."
-                  onPractice={handlePracticeSelect}
+                  onPractice={(deck) => router.push(`/flashcats/${deck.id}`)}
                 />
-
-                {isPreparingPractice && (
-                  <Card className="border-gray-700 bg-gray-950/60 p-5 text-sm text-gray-300">
-                    Preparing that practice session...
-                  </Card>
-                )}
               </>
             )}
           </div>
