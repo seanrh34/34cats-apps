@@ -21,6 +21,7 @@ interface FlashcardPracticeProps {
   onSkip: () => void;
   onSaveForLater: () => void;
   onExit: () => void;
+  exitLabel?: string;
 }
 
 export function FlashcardPractice({
@@ -35,6 +36,7 @@ export function FlashcardPractice({
   onSkip,
   onSaveForLater,
   onExit,
+  exitLabel = "Select a different deck",
 }: FlashcardPracticeProps) {
   const activeFields = isFlipped ? settings.backFields : settings.frontFields;
 
@@ -48,7 +50,7 @@ export function FlashcardPractice({
           <h2 className="mt-2 text-3xl font-bold text-white">{deck.title}</h2>
         </div>
         <Button variant="ghost" onClick={onExit}>
-          Select a different deck
+          {exitLabel}
         </Button>
       </div>
 
