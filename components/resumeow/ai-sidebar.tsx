@@ -254,8 +254,8 @@ export function ResumeAiSidebar({
   }, [messages, streamingText, changeSets]);
 
   const containerClassName = isOpen
-    ? "fixed inset-y-0 right-0 z-40 w-full max-w-md translate-x-0 border-l border-gray-800 bg-gray-950/95 shadow-2xl shadow-black/30 backdrop-blur transition-transform xl:sticky xl:top-6 xl:h-[calc(100vh-3rem)] xl:w-auto xl:max-w-none xl:translate-x-0 xl:overflow-hidden xl:rounded-3xl xl:border"
-    : "fixed inset-y-0 right-0 z-40 w-full max-w-md translate-x-full border-l border-gray-800 bg-gray-950/95 shadow-2xl shadow-black/30 backdrop-blur transition-transform xl:sticky xl:top-6 xl:h-[calc(100vh-3rem)] xl:w-auto xl:max-w-none xl:translate-x-0 xl:overflow-hidden xl:rounded-3xl xl:border";
+    ? "fixed inset-y-0 right-0 z-40 w-full max-w-md translate-x-0 border-l border-gray-800 bg-gray-950/95 shadow-2xl shadow-black/30 backdrop-blur transition-transform lg:sticky lg:top-20 lg:h-[calc(100vh-5rem)] lg:w-auto lg:max-w-none lg:translate-x-0 lg:overflow-hidden lg:rounded-3xl lg:border"
+    : "fixed inset-y-0 right-0 z-40 w-full max-w-md translate-x-full border-l border-gray-800 bg-gray-950/95 shadow-2xl shadow-black/30 backdrop-blur transition-transform lg:sticky lg:top-20 lg:h-[calc(100vh-5rem)] lg:w-auto lg:max-w-none lg:translate-x-0 lg:overflow-hidden lg:rounded-3xl lg:border";
 
   const canSend = !chatDisabled && !isStreaming && Boolean(chatInput.trim());
 
@@ -289,7 +289,7 @@ export function ResumeAiSidebar({
               >
                 {profile ? "Profile" : "Set Up"}
               </Button>
-              <Button variant="ghost" size="sm" onClick={onClose} className="xl:hidden">
+              <Button variant="ghost" size="sm" onClick={onClose} className="lg:hidden">
                 Close
               </Button>
             </div>

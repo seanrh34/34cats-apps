@@ -707,24 +707,22 @@ export default function ResumeowPage() {
       />
 
       <div className="container mx-auto px-4 py-12">
-        <div className="mb-6 text-center md:mb-8">
-          {!showResumeList ? (
-            <>
-              <h1 className="mb-3 px-2 text-3xl font-bold text-white md:mb-4 md:text-4xl lg:text-5xl">
-                Resumeow
-              </h1>
-              <p className="mx-auto mb-2 max-w-3xl px-4 text-base text-gray-300 md:text-lg lg:text-xl">
-                Create professional resumes with LaTeX quality, then use AI to
-                review and draft grounded improvements before you generate the final PDF.
+        {!showResumeList ? (
+          <div className="mb-6 text-center md:mb-8">
+            <h1 className="mb-3 px-2 text-3xl font-bold text-white md:mb-4 md:text-4xl lg:text-5xl">
+              Resumeow
+            </h1>
+            <p className="mx-auto mb-2 max-w-3xl px-4 text-base text-gray-300 md:text-lg lg:text-xl">
+              Create professional resumes with LaTeX quality, then use AI to
+              review and draft grounded improvements before you generate the final PDF.
+            </p>
+            {lastSaved ? (
+              <p className="px-2 text-xs text-gray-400 md:text-sm">
+                Last saved: {lastSaved.toLocaleString()}
               </p>
-              {lastSaved ? (
-                <p className="px-2 text-xs text-gray-400 md:text-sm">
-                  Last saved: {lastSaved.toLocaleString()}
-                </p>
-              ) : null}
-            </>
-          ) : null}
-        </div>
+            ) : null}
+          </div>
+        ) : null}
 
         {showResumeList ? (
           <div className="mx-auto max-w-4xl">
@@ -786,37 +784,37 @@ export default function ResumeowPage() {
           </div>
         ) : (
           <div className="mx-auto max-w-7xl">
-            <div className="mb-4 flex flex-wrap items-center gap-2 sm:gap-3">
-              <Button
-                onClick={() => setShowResumeList(!showResumeList)}
-                variant="secondary"
-                size="sm"
-                disabled={isAiRunLocked}
-                className="text-xs sm:text-sm"
-              >
-                {showResumeList ? "Back" : "Resumes"}
-              </Button>
-              <Button
-                onClick={handleNewResume}
-                variant="outline"
-                size="sm"
-                disabled={isAiRunLocked}
-                className="text-xs sm:text-sm"
-              >
-                + New
-              </Button>
-              <Button
-                onClick={() => setIsAiDrawerOpen(true)}
-                variant="ghost"
-                size="sm"
-                className="ml-auto text-xs sm:text-sm xl:hidden"
-              >
-                Open AI
-              </Button>
-            </div>
-
-            <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px] xl:items-start">
+            <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_420px] lg:items-start">
               <div className="min-w-0 space-y-4 md:space-y-6">
+                <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                  <Button
+                    onClick={() => setShowResumeList(!showResumeList)}
+                    variant="secondary"
+                    size="sm"
+                    disabled={isAiRunLocked}
+                    className="text-xs sm:text-sm"
+                  >
+                    {showResumeList ? "Back" : "Resumes"}
+                  </Button>
+                  <Button
+                    onClick={handleNewResume}
+                    variant="outline"
+                    size="sm"
+                    disabled={isAiRunLocked}
+                    className="text-xs sm:text-sm"
+                  >
+                    + New
+                  </Button>
+                  <Button
+                    onClick={() => setIsAiDrawerOpen(true)}
+                    variant="ghost"
+                    size="sm"
+                    className="ml-auto text-xs sm:text-sm lg:hidden"
+                  >
+                    Open AI
+                  </Button>
+                </div>
+
                 <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center sm:gap-4">
                   <input
                     type="text"
