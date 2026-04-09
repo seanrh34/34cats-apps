@@ -22,7 +22,7 @@ interface ResumeAiSidebarProps {
   messages: ResumeAiMessage[];
   streamingText: string;
   changeSets: ResumeChangeSet[];
-  onApplyChangeSet: (changeSetId: string) => Promise<void>;
+  onUndoChangeSet: (changeSetId: string) => Promise<void>;
   applyingChangeSetId?: string | null;
   profile: ResumeProfile | null;
   onOpenProfile: () => void;
@@ -56,11 +56,11 @@ interface ToolMessageMetadata {
 
 function SidebarMessage({
   message,
-  onApplyChangeSet,
+  onUndoChangeSet,
   applyingChangeSetId,
 }: {
   message: ResumeAiMessage;
-  onApplyChangeSet: (changeSetId: string) => Promise<void>;
+  onUndoChangeSet: (changeSetId: string) => Promise<void>;
   applyingChangeSetId?: string | null;
 }) {
   const isUser = message.role === "user";
@@ -131,27 +131,35 @@ function SidebarMessage({
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <p className="text-sm font-semibold text-white">
-                      Draft changes ready
+                      {metadata.changeSet.status === "applied"
+                        ? "Resume updated"
+                        : metadata.changeSet.status === "reverted"
+                          ? "Changes undone"
+                          : "Change set ready"}
                     </p>
                     <p className="mt-1 text-xs text-gray-200">
                       {metadata.diffItems?.length ?? metadata.changeSet.diff_items.length} section
                       {(metadata.diffItems?.length ?? metadata.changeSet.diff_items.length) === 1
                         ? ""
                         : "s"}{" "}
-                      updated. Review and apply when ready.
+                      updated.
+                      {metadata.changeSet.status === "applied"
+                        ? " You can undo this change."
+                        : metadata.changeSet.status === "reverted"
+                          ? " The prior resume has been restored."
+                          : " Review the change set."}
                     </p>
                   </div>
-                  <Button
-                    size="sm"
-                    disabled={
-                      metadata.changeSet.status !== "draft" ||
-                      applyingChangeSetId === metadata.changeSet.id
-                    }
-                    isLoading={applyingChangeSetId === metadata.changeSet.id}
-                    onClick={() => void onApplyChangeSet(metadata.changeSet!.id)}
-                  >
-                    Apply
-                  </Button>
+                  {metadata.changeSet.status === "applied" ? (
+                    <Button
+                      size="sm"
+                      disabled={applyingChangeSetId === metadata.changeSet.id}
+                      isLoading={applyingChangeSetId === metadata.changeSet.id}
+                      onClick={() => void onUndoChangeSet(metadata.changeSet!.id)}
+                    >
+                      Undo
+                    </Button>
+                  ) : null}
                 </div>
                 {metadata.changeSet.diff_items.slice(0, 2).map((diff) => (
                   <div
@@ -202,7 +210,7 @@ export function ResumeAiSidebar({
   messages,
   streamingText,
   changeSets,
-  onApplyChangeSet,
+  onUndoChangeSet,
   applyingChangeSetId,
   profile,
   onOpenProfile,
@@ -423,7 +431,7 @@ export function ResumeAiSidebar({
                 <SidebarMessage
                   key={message.id}
                   message={message}
-                  onApplyChangeSet={onApplyChangeSet}
+                  onUndoChangeSet={onUndoChangeSet}
                   applyingChangeSetId={applyingChangeSetId}
                 />
               ))}

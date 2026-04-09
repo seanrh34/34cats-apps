@@ -67,6 +67,7 @@ function mapChangeSetRow(row: DatabaseRow): ResumeChangeSet {
     prompt: String(row.prompt ?? ""),
     summary: String(row.summary ?? ""),
     status: row.status as ResumeChangeSet["status"],
+    previous_resume_data: (row.previous_resume_data as ResumeData | null) ?? null,
     proposed_resume_data: row.proposed_resume_data as ResumeData,
     diff_items: (row.diff_items as ResumeChangeSet["diff_items"] | null) ?? [],
     citations: (row.citations as ResumeChangeSet["citations"] | null) ?? [],
@@ -319,9 +320,11 @@ export async function createChangeSet(
     baseResumeRevision: number;
     prompt: string;
     summary: string;
+    previousResumeData?: ResumeData | null;
     proposedResumeData: ResumeData;
     diffItems: JsonRecord[];
     citations: JsonRecord[];
+    status?: ResumeChangeSet["status"];
   }
 ): Promise<ResumeChangeSet> {
   const { data, error } = await supabase
@@ -332,10 +335,11 @@ export async function createChangeSet(
       base_resume_revision: input.baseResumeRevision,
       prompt: input.prompt,
       summary: input.summary,
+      previous_resume_data: input.previousResumeData ?? null,
       proposed_resume_data: input.proposedResumeData,
       diff_items: input.diffItems,
       citations: input.citations,
-      status: "draft",
+      status: input.status ?? "draft",
     })
     .select("*")
     .single();

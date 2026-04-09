@@ -117,7 +117,8 @@ export interface ResumeChangeSet {
   base_resume_revision: number;
   prompt: string;
   summary: string;
-  status: "draft" | "applied" | "stale" | "discarded";
+  status: "draft" | "applied" | "stale" | "discarded" | "reverted";
+  previous_resume_data?: ResumeData | null;
   proposed_resume_data: ResumeData;
   diff_items: ResumeChangeDiffItem[];
   citations: ResumeCitation[];

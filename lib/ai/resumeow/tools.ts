@@ -3,6 +3,8 @@ import { randomUUID } from "crypto";
 import {
   createChangeSet,
   getJobDescriptionById,
+  saveResumeForUser,
+  updateChangeSetStatus,
 } from "@/lib/services/resume-server-service";
 import { createChatCompletion } from "@/lib/ai/resumeow/openrouter";
 import {
@@ -13,7 +15,7 @@ import {
   diffResumeData,
   extractJsonFromText,
 } from "@/lib/ai/resumeow/utils";
-import { retrieveSupportingContext } from "@/lib/ai/resumeow/rag";
+import { retrieveSupportingContext, syncResumeToRag } from "@/lib/ai/resumeow/rag";
 import {
   ResumeData,
   ResumeCitation,
@@ -320,6 +322,10 @@ function normalizeProposedResumeData(
 }
 
 function extractTextContent(message: unknown) {
+  if (!message || typeof message !== "object") {
+    return "";
+  }
+
   const safeMessage = message as {
     content?: string | Array<{ text?: string }>;
   };
@@ -484,12 +490,25 @@ export async function runProposeResumeChangesTool(payload: {
     parsed.proposedResumeData
   );
 
+  if (diffItems.length === 0) {
+    return {
+      summary:
+        parsed.summary ||
+        "No safe, material changes were applied to the current resume.",
+      changeSet: null,
+      diffItems,
+      updatedResume: null,
+      selectedJobDescription,
+    };
+  }
+
   const changeSet = await createChangeSet(payload.supabase, {
     userId: payload.userId,
     resumeId: payload.resume.id,
     baseResumeRevision: payload.resume.resume_revision,
     prompt: payload.instruction,
     summary: parsed.summary,
+    previousResumeData: payload.resume.resume_data,
     proposedResumeData: parsed.proposedResumeData,
     diffItems: diffItems as unknown as Record<string, unknown>[],
     citations: mapCitationIds(parsed.citation_ids, sources) as unknown as Record<
@@ -498,10 +517,29 @@ export async function runProposeResumeChangesTool(payload: {
     >[],
   });
 
+  const updatedResume = await saveResumeForUser(
+    payload.supabase,
+    payload.userId,
+    payload.resume.title,
+    parsed.proposedResumeData,
+    payload.resume.id
+  );
+
+  const appliedChangeSet = await updateChangeSetStatus(
+    payload.supabase,
+    payload.userId,
+    changeSet.id,
+    "applied"
+  );
+  await syncResumeToRag(payload.supabase, updatedResume);
+
   return {
-    summary: parsed.summary,
-    changeSet,
+    summary:
+      parsed.summary ||
+      "Applied grounded updates to the current resume.",
+    changeSet: appliedChangeSet,
     diffItems,
+    updatedResume,
     selectedJobDescription,
   };
 }

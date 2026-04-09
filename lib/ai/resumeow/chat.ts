@@ -161,6 +161,10 @@ function parseToolArguments(toolCall: ToolCallLike) {
 }
 
 function extractTextContent(message: unknown) {
+  if (!message || typeof message !== "object") {
+    return "";
+  }
+
   const safeMessage = message as {
     content?: string | Array<{ text?: string }>;
   };
@@ -292,7 +296,7 @@ function buildFallbackAssistantText(payload: {
     (result) => result.toolName === "propose_resume_changes"
   );
   if (editResult) {
-    return `${editResult.summary}\n\nI prepared a draft change set for your resume. Review the proposed changes and apply them when you are ready.`;
+    return `${editResult.summary}\n\nThe active resume has been updated. You can undo this AI change if needed.`;
   }
 
   const reviewResult = payload.toolResults.find(
@@ -539,6 +543,7 @@ export async function runResumeowChat(payload: {
           {
             changeSet: result.changeSet,
             diffItems: result.diffItems,
+            updatedResume: result.updatedResume,
           },
           null,
           2
@@ -550,6 +555,7 @@ export async function runResumeowChat(payload: {
         summary: result.summary,
         changeSet: result.changeSet,
         diffItems: result.diffItems,
+        updatedResume: result.updatedResume,
       });
     }
   }

@@ -35,12 +35,12 @@ import {
   saveResume,
 } from "@/lib/services/resume-service";
 import {
-  applyChangeSetRequest,
   fetchResumeAiState,
   fetchResumeProfile,
   saveJobDescriptionRequest,
   saveResumeProfileRequest,
   streamResumeChat,
+  undoChangeSetRequest,
 } from "@/lib/services/resume-ai-client";
 import { generateLatexResume } from "@/lib/latex/template";
 import { ScrollToBottomButton } from "@/components/shared/scroll-to-bottom";
@@ -423,10 +423,10 @@ export default function ResumeowPage() {
     }
   };
 
-  const handleApplyChangeSet = async (changeSetId: string) => {
+  const handleUndoChangeSet = async (changeSetId: string) => {
     setApplyingChangeSetId(changeSetId);
     try {
-      const response = await applyChangeSetRequest(changeSetId);
+      const response = await undoChangeSetRequest(changeSetId);
       setResumeData(response.resume.resume_data);
       setResumeTitle(response.resume.title);
       setCurrentResumeId(response.resume.id);
@@ -434,13 +434,13 @@ export default function ResumeowPage() {
       setHasUnsavedChanges(false);
       await loadResumes();
       await loadAiState(response.resume.id);
-      alert("Draft applied to your resume.");
+      alert("AI changes undone.");
     } catch (error) {
-      console.error("Failed to apply change set", error);
+      console.error("Failed to undo AI change set", error);
       alert(
         error instanceof Error
           ? error.message
-          : "Failed to apply change set."
+          : "Failed to undo AI changes."
       );
       if (currentResumeId) {
         await loadAiState(currentResumeId);
@@ -520,13 +520,22 @@ export default function ResumeowPage() {
             }
 
             if (toolName === "propose_resume_changes") {
-              setActiveProcessLabel("Drafting grounded changes to the current resume using your prompt and saved context...");
+              setActiveProcessLabel("Updating the current resume using your prompt and grounded context...");
               return;
             }
 
             setActiveProcessLabel("Working on your request...");
           },
-          onToolResult: () => {
+          onToolResult: (payload) => {
+            const updatedResume = payload.updatedResume as SavedResume | undefined;
+            if (updatedResume) {
+              setResumeData(updatedResume.resume_data);
+              setResumeTitle(updatedResume.title);
+              setCurrentResumeId(updatedResume.id);
+              setLastSaved(new Date(updatedResume.updated_at));
+              setHasUnsavedChanges(false);
+              void loadResumes();
+            }
             setActiveProcessLabel("Preparing the final response...");
           },
           onAssistantDone: ({ message }) => {
@@ -820,7 +829,7 @@ export default function ResumeowPage() {
                     {activeTab === "skills" ? (
                       <SkillsForm data={resumeData.skills} onChange={updateSkills} />
                     ) : null}
-                    {activeTab === "projects" ? (
+              {activeTab === "projects" ? (
                       <ProjectsForm
                         data={resumeData.projects || []}
                         onChange={updateProjects}
@@ -906,7 +915,7 @@ export default function ResumeowPage() {
                 messages={visibleMessages}
                 streamingText={streamingText}
                 changeSets={visibleChangeSets}
-                onApplyChangeSet={handleApplyChangeSet}
+                onUndoChangeSet={handleUndoChangeSet}
                 applyingChangeSetId={applyingChangeSetId}
                 profile={profile}
                 onOpenProfile={() => setIsProfileModalOpen(true)}

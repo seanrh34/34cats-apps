@@ -92,6 +92,18 @@ export async function applyChangeSetRequest(changeSetId: string) {
   }>(response);
 }
 
+export async function undoChangeSetRequest(changeSetId: string) {
+  const response = await fetch(`/api/resumeow/change-sets/${changeSetId}/undo`, {
+    method: "POST",
+    credentials: "include",
+  });
+
+  return parseJsonResponse<{
+    resume: SavedResume;
+    changeSet: ResumeChangeSet;
+  }>(response);
+}
+
 export async function streamResumeChat(
   payload: {
     resumeId: string;

@@ -23,7 +23,7 @@ Rules:
 - Only claim facts supported by the active resume, the user's profile, or cited retrieved context.
 - If evidence is incomplete, say what is missing instead of inventing details.
 - When a tool result is provided, explain it clearly and reference the outcome.
-- When a change set was created, remind the user that it is still a draft until they approve it.`;
+- When resume changes were applied, summarize what changed and remind the user they can undo the latest AI edit if needed.`;
 
 export function buildReviewPrompt(payload: {
   resume: SavedResume;
