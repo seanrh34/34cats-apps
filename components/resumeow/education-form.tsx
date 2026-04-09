@@ -23,7 +23,11 @@ export function EducationForm({ data, onChange }: EducationFormProps) {
     onChange([...data, newEdu]);
   };
 
-  const updateEducation = (id: string, field: keyof Education, value: any) => {
+  const updateEducation = <K extends keyof Education>(
+    id: string,
+    field: K,
+    value: Education[K]
+  ) => {
     onChange(
       data.map((edu) => (edu.id === id ? { ...edu, [field]: value } : edu))
     );

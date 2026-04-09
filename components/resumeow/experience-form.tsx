@@ -23,7 +23,11 @@ export function ExperienceForm({ data, onChange }: ExperienceFormProps) {
     onChange([...data, newExp]);
   };
 
-  const updateExperience = (id: string, field: keyof Experience, value: any) => {
+  const updateExperience = <K extends keyof Experience>(
+    id: string,
+    field: K,
+    value: Experience[K]
+  ) => {
     onChange(
       data.map((exp) => (exp.id === id ? { ...exp, [field]: value } : exp))
     );
@@ -234,7 +238,7 @@ export function ExperienceForm({ data, onChange }: ExperienceFormProps) {
 
       {data.length === 0 && (
         <div className="text-center py-8 text-gray-400">
-          No experience added yet. Click "Add Experience" to get started.
+          No experience added yet. Click &quot;Add Experience&quot; to get started.
         </div>
       )}
     </div>

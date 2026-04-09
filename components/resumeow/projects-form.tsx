@@ -20,7 +20,11 @@ export function ProjectsForm({ data, onChange }: ProjectsFormProps) {
     onChange([...data, newProject]);
   };
 
-  const updateProject = (id: string, field: keyof Project, value: any) => {
+  const updateProject = <K extends keyof Project>(
+    id: string,
+    field: K,
+    value: Project[K]
+  ) => {
     onChange(
       data.map((proj) => (proj.id === id ? { ...proj, [field]: value } : proj))
     );
@@ -131,7 +135,7 @@ export function ProjectsForm({ data, onChange }: ProjectsFormProps) {
 
       {data.length === 0 && (
         <div className="text-center py-8 text-gray-400">
-          No projects added yet. Click "Add Project" to get started.
+          No projects added yet. Click &quot;Add Project&quot; to get started.
         </div>
       )}
     </div>

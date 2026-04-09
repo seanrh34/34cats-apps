@@ -138,7 +138,7 @@ export function SkillsForm({ data, onChange }: SkillsFormProps) {
 
       {data.length === 0 && (
         <div className="text-center py-8 text-gray-400">
-          No skills added yet. Click "Add Category" to get started.
+          No skills added yet. Click &quot;Add Category&quot; to get started.
         </div>
       )}
     </div>

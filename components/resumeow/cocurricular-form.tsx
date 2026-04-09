@@ -23,7 +23,11 @@ export function CoCurricularForm({ data, onChange }: CoCurricularFormProps) {
     onChange([...data, newActivity]);
   };
 
-  const updateActivity = (id: string, field: keyof CoCurricularActivity, value: any) => {
+  const updateActivity = <K extends keyof CoCurricularActivity>(
+    id: string,
+    field: K,
+    value: CoCurricularActivity[K]
+  ) => {
     onChange(
       data.map((activity) => (activity.id === id ? { ...activity, [field]: value } : activity))
     );
@@ -227,7 +231,7 @@ export function CoCurricularForm({ data, onChange }: CoCurricularFormProps) {
 
       {data.length === 0 && (
         <div className="text-center py-8 text-gray-400">
-          No co-curricular activities added yet. Click "Add Activity" to get started.
+          No co-curricular activities added yet. Click &quot;Add Activity&quot; to get started.
         </div>
       )}
     </div>

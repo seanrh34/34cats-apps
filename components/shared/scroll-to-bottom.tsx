@@ -1,7 +1,5 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
-
 export function ScrollToBottomButton() {
   const scrollToBottom = () => {
     window.scrollTo({
