@@ -110,19 +110,19 @@ function buildSyntheticToolCall(
 ): ToolCallLike {
   return actionHint === "review"
     ? {
-        id: crypto.randomUUID(),
-        function: {
-          name: "review_resume",
-          arguments: JSON.stringify({ focus: latestUserMessage }),
-        },
-      }
+      id: crypto.randomUUID(),
+      function: {
+        name: "review_resume",
+        arguments: JSON.stringify({ focus: latestUserMessage }),
+      },
+    }
     : {
-        id: crypto.randomUUID(),
-        function: {
-          name: "propose_resume_changes",
-          arguments: JSON.stringify({ instruction: latestUserMessage }),
-        },
-      };
+      id: crypto.randomUUID(),
+      function: {
+        name: "propose_resume_changes",
+        arguments: JSON.stringify({ instruction: latestUserMessage }),
+      },
+    };
 }
 
 function getLatestUserText(messages: Array<{ role: string; content: string }>) {

@@ -79,9 +79,6 @@ export default function ResumeowPage() {
   const [rateLimitMessage, setRateLimitMessage] = useState<string | null>(null);
   const [chatErrorMessage, setChatErrorMessage] = useState<string | null>(null);
   const [activeProcessLabel, setActiveProcessLabel] = useState<string | null>(null);
-  const [latestInteractionStartedAt, setLatestInteractionStartedAt] = useState<
-    string | null
-  >(null);
   const [isAiDrawerOpen, setIsAiDrawerOpen] = useState(false);
   const [isSavingJobDescription, setIsSavingJobDescription] = useState(false);
   const [applyingChangeSetId, setApplyingChangeSetId] = useState<string | null>(
@@ -475,13 +472,12 @@ export default function ResumeowPage() {
     setRateLimitMessage(null);
     setChatErrorMessage(null);
     setActiveProcessLabel(null);
-    setLatestInteractionStartedAt(interactionStartedAt);
     setIsStreaming(true);
     setStreamingText("");
     setIsAiDrawerOpen(true);
     setChatInput("");
-    setChangeSets([]);
-    setMessages([
+    setMessages((current) => [
+      ...current,
       {
         id: `temp-user-${Date.now()}`,
         user_id: user?.id ?? "temp",
@@ -563,12 +559,12 @@ export default function ResumeowPage() {
       setActiveProcessLabel(null);
       const retryAfter =
         typeof error === "object" &&
-        error !== null &&
-        "rateLimit" in error &&
-        typeof (error as { rateLimit?: { retry_after_seconds?: number } }).rateLimit
-          ?.retry_after_seconds === "number"
+          error !== null &&
+          "rateLimit" in error &&
+          typeof (error as { rateLimit?: { retry_after_seconds?: number } }).rateLimit
+            ?.retry_after_seconds === "number"
           ? (error as { rateLimit?: { retry_after_seconds?: number } }).rateLimit!
-              .retry_after_seconds
+            .retry_after_seconds
           : null;
       setRateLimitMessage(
         retryAfter
@@ -609,22 +605,8 @@ export default function ResumeowPage() {
   }
 
   const showProfilePrompt = !profile && !hasDismissedProfilePrompt;
-  const interactionStartMs = latestInteractionStartedAt
-    ? new Date(latestInteractionStartedAt).getTime()
-    : null;
-  const visibleMessages =
-    interactionStartMs === null
-      ? []
-      : messages.filter(
-          (message) => new Date(message.created_at).getTime() >= interactionStartMs
-        );
-  const visibleChangeSets =
-    interactionStartMs === null
-      ? []
-      : changeSets.filter(
-          (changeSet) =>
-            new Date(changeSet.created_at).getTime() >= interactionStartMs
-        );
+  const visibleMessages = messages;
+  const visibleChangeSets = changeSets;
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black">
@@ -645,9 +627,8 @@ export default function ResumeowPage() {
       ) : null}
 
       <ProfileModal
-        key={`${profile?.updated_at ?? "new"}:${
-          isProfileModalOpen || showProfilePrompt ? "open" : "closed"
-        }`}
+        key={`${profile?.updated_at ?? "new"}:${isProfileModalOpen || showProfilePrompt ? "open" : "closed"
+          }`}
         open={isProfileModalOpen || showProfilePrompt}
         profile={profile}
         onClose={showProfilePrompt ? dismissProfilePrompt : () => setIsProfileModalOpen(false)}
@@ -798,11 +779,10 @@ export default function ResumeowPage() {
                       <button
                         key={tab.id}
                         onClick={() => setActiveTab(tab.id)}
-                        className={`rounded px-3 py-2.5 text-left text-sm font-medium whitespace-nowrap transition-colors sm:rounded-none sm:px-2 sm:py-2 sm:text-center md:text-sm ${
-                          activeTab === tab.id
+                        className={`rounded px-3 py-2.5 text-left text-sm font-medium whitespace-nowrap transition-colors sm:rounded-none sm:px-2 sm:py-2 sm:text-center md:text-sm ${activeTab === tab.id
                             ? "bg-[#E84A3A] text-white sm:border-b-2 sm:border-[#E84A3A] sm:bg-transparent sm:text-[#E84A3A]"
                             : "bg-gray-800/50 text-gray-400 hover:bg-gray-700/50 hover:text-white sm:bg-transparent sm:hover:bg-transparent"
-                        }`}
+                          }`}
                       >
                         {tab.label}
                       </button>
