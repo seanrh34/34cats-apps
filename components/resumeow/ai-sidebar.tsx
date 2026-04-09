@@ -39,6 +39,7 @@ interface ResumeAiSidebarProps {
   rateLimitMessage?: string | null;
   activeProcessLabel?: string | null;
   errorMessage?: string | null;
+  isLocked?: boolean;
 }
 
 interface ReviewFindingPreview {
@@ -58,10 +59,12 @@ function SidebarMessage({
   message,
   onUndoChangeSet,
   applyingChangeSetId,
+  isLocked,
 }: {
   message: ResumeAiMessage;
   onUndoChangeSet: (changeSetId: string) => Promise<void>;
   applyingChangeSetId?: string | null;
+  isLocked?: boolean;
 }) {
   const isUser = message.role === "user";
   const isTool = message.role === "tool";
@@ -153,9 +156,14 @@ function SidebarMessage({
                   {metadata.changeSet.status === "applied" ? (
                     <Button
                       size="sm"
-                      disabled={applyingChangeSetId === metadata.changeSet.id}
+                      disabled={isLocked || applyingChangeSetId === metadata.changeSet.id}
                       isLoading={applyingChangeSetId === metadata.changeSet.id}
-                      onClick={() => void onUndoChangeSet(metadata.changeSet!.id)}
+                      onClick={() => {
+                        if (isLocked) {
+                          return;
+                        }
+                        void onUndoChangeSet(metadata.changeSet!.id);
+                      }}
                     >
                       Undo
                     </Button>
@@ -222,6 +230,7 @@ export function ResumeAiSidebar({
   rateLimitMessage,
   activeProcessLabel,
   errorMessage,
+  isLocked = false,
 }: ResumeAiSidebarProps) {
   const [jobDraft, setJobDraft] = useState({
     title: "",
@@ -272,7 +281,12 @@ export function ResumeAiSidebar({
               </p>
             </div>
             <div className="flex items-center gap-2">
-              <Button variant="ghost" size="sm" onClick={onOpenProfile}>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onOpenProfile}
+                disabled={isLocked}
+              >
                 {profile ? "Profile" : "Set Up"}
               </Button>
               <Button variant="ghost" size="sm" onClick={onClose} className="xl:hidden">
@@ -288,7 +302,13 @@ export function ResumeAiSidebar({
               </label>
               <select
                 value={selectedJobDescriptionId ?? ""}
-                onChange={(event) => onSelectedJobDescriptionChange(event.target.value)}
+                onChange={(event) => {
+                  if (isLocked) {
+                    return;
+                  }
+                  onSelectedJobDescriptionChange(event.target.value);
+                }}
+                disabled={isLocked}
                 className="h-11 w-full rounded-xl border border-gray-700 bg-gray-900/80 px-4 text-sm text-white focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#E84A3A]"
               >
                 <option value="">No job description selected</option>
@@ -310,7 +330,13 @@ export function ResumeAiSidebar({
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setIsJobComposerOpen((current) => !current)}
+                onClick={() => {
+                  if (isLocked) {
+                    return;
+                  }
+                  setIsJobComposerOpen((current) => !current);
+                }}
+                disabled={isLocked}
               >
                 {isJobComposerOpen ? "Hide" : "Add"}
               </Button>
@@ -327,6 +353,7 @@ export function ResumeAiSidebar({
                         title: event.target.value,
                       }))
                     }
+                    disabled={isLocked || isSavingJobDescription}
                     placeholder="Title"
                     className="h-10 w-full rounded-xl border border-gray-700 bg-gray-800/60 px-3 text-sm text-white placeholder:text-gray-500 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#E84A3A]"
                   />
@@ -339,6 +366,7 @@ export function ResumeAiSidebar({
                           company: event.target.value,
                         }))
                       }
+                      disabled={isLocked || isSavingJobDescription}
                       placeholder="Company"
                       className="h-10 w-full rounded-xl border border-gray-700 bg-gray-800/60 px-3 text-sm text-white placeholder:text-gray-500 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#E84A3A]"
                     />
@@ -350,6 +378,7 @@ export function ResumeAiSidebar({
                           role: event.target.value,
                         }))
                       }
+                      disabled={isLocked || isSavingJobDescription}
                       placeholder="Role"
                       className="h-10 w-full rounded-xl border border-gray-700 bg-gray-800/60 px-3 text-sm text-white placeholder:text-gray-500 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#E84A3A]"
                     />
@@ -362,6 +391,7 @@ export function ResumeAiSidebar({
                         content: event.target.value,
                       }))
                     }
+                    disabled={isLocked || isSavingJobDescription}
                     placeholder="Paste the job description here..."
                     className="min-h-28 w-full rounded-xl border border-gray-700 bg-gray-800/60 px-3 py-3 text-sm text-white placeholder:text-gray-500 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#E84A3A]"
                   />
@@ -369,6 +399,9 @@ export function ResumeAiSidebar({
                     size="sm"
                     isLoading={isSavingJobDescription}
                     onClick={async () => {
+                      if (isLocked) {
+                        return;
+                      }
                       await onSaveJobDescription(jobDraft);
                       setJobDraft({
                         title: "",
@@ -378,7 +411,7 @@ export function ResumeAiSidebar({
                       });
                       setIsJobComposerOpen(false);
                     }}
-                    disabled={!jobDraft.content.trim()}
+                    disabled={isLocked || !jobDraft.content.trim()}
                   >
                     Save Job Description
                   </Button>
@@ -416,7 +449,13 @@ export function ResumeAiSidebar({
                     <button
                       key={prompt}
                       type="button"
-                      onClick={() => onChatInputChange(prompt)}
+                      onClick={() => {
+                        if (isLocked) {
+                          return;
+                        }
+                        onChatInputChange(prompt);
+                      }}
+                      disabled={isLocked}
                       className="rounded-full border border-gray-700 bg-gray-900 px-3 py-2 text-left text-xs text-gray-200 transition-colors hover:border-[#E84A3A]/40 hover:bg-[#E84A3A]/10"
                     >
                       {prompt}
@@ -433,6 +472,7 @@ export function ResumeAiSidebar({
                   message={message}
                   onUndoChangeSet={onUndoChangeSet}
                   applyingChangeSetId={applyingChangeSetId}
+                  isLocked={isLocked}
                 />
               ))}
               {activeProcessLabel ? (

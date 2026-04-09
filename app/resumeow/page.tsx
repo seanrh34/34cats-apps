@@ -224,6 +224,10 @@ export default function ResumeowPage() {
   }, [user, currentResumeId, loadAiState]);
 
   const loadResume = (resume: SavedResume) => {
+    if (isStreaming) {
+      return;
+    }
+
     setResumeData(resume.resume_data);
     setResumeTitle(resume.title);
     setCurrentResumeId(resume.id);
@@ -236,6 +240,9 @@ export default function ResumeowPage() {
 
   const handleSaveResume = async () => {
     if (!user) return;
+    if (isStreaming) {
+      return;
+    }
 
     setIsSaving(true);
     try {
@@ -255,6 +262,10 @@ export default function ResumeowPage() {
   };
 
   const handleNewResume = () => {
+    if (isStreaming) {
+      return;
+    }
+
     setResumeData(DEFAULT_RESUME_DATA);
     setResumeTitle("New Resume");
     setCurrentResumeId(undefined);
@@ -268,6 +279,10 @@ export default function ResumeowPage() {
   };
 
   const handleDeleteResume = async (id: string) => {
+    if (isStreaming) {
+      return;
+    }
+
     if (!confirm("Are you sure you want to delete this resume?")) return;
 
     try {
@@ -285,26 +300,50 @@ export default function ResumeowPage() {
   };
 
   const updatePersonalInfo = (data: PersonalInfo) => {
+    if (isStreaming) {
+      return;
+    }
+
     setResumeData({ ...resumeData, personalInfo: data });
   };
 
   const updateExperience = (data: Experience[]) => {
+    if (isStreaming) {
+      return;
+    }
+
     setResumeData({ ...resumeData, experience: data });
   };
 
   const updateEducation = (data: Education[]) => {
+    if (isStreaming) {
+      return;
+    }
+
     setResumeData({ ...resumeData, education: data });
   };
 
   const updateCoCurricular = (data: CoCurricularActivity[]) => {
+    if (isStreaming) {
+      return;
+    }
+
     setResumeData({ ...resumeData, coCurricularActivities: data });
   };
 
   const updateSkills = (data: Skill[]) => {
+    if (isStreaming) {
+      return;
+    }
+
     setResumeData({ ...resumeData, skills: data });
   };
 
   const updateProjects = (data: Project[]) => {
+    if (isStreaming) {
+      return;
+    }
+
     setResumeData({ ...resumeData, projects: data });
   };
 
@@ -374,6 +413,10 @@ export default function ResumeowPage() {
   const handleSaveProfile = async (
     payload: Omit<ResumeProfile, "id" | "user_id" | "created_at" | "updated_at">
   ) => {
+    if (isStreaming) {
+      return;
+    }
+
     setIsSavingProfile(true);
     try {
       const response = await saveResumeProfileRequest({
@@ -393,6 +436,10 @@ export default function ResumeowPage() {
   };
 
   const dismissProfilePrompt = () => {
+    if (isStreaming) {
+      return;
+    }
+
     window.localStorage.setItem(PROFILE_PROMPT_DISMISSED_KEY, "1");
     setHasDismissedProfilePrompt(true);
     setIsProfileModalOpen(false);
@@ -404,6 +451,10 @@ export default function ResumeowPage() {
     role: string;
     content: string;
   }) => {
+    if (isStreaming) {
+      return;
+    }
+
     if (!payload.content.trim()) {
       return;
     }
@@ -424,6 +475,10 @@ export default function ResumeowPage() {
   };
 
   const handleUndoChangeSet = async (changeSetId: string) => {
+    if (isStreaming) {
+      return;
+    }
+
     setApplyingChangeSetId(changeSetId);
     try {
       const response = await undoChangeSetRequest(changeSetId);
@@ -466,6 +521,10 @@ export default function ResumeowPage() {
     const outgoingText = chatInput.trim() || fallbackPrompt;
     if (!outgoingText) {
       return;
+    }
+
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
     }
 
     const interactionStartedAt = new Date().toISOString();
@@ -614,6 +673,7 @@ export default function ResumeowPage() {
   }
 
   const showProfilePrompt = !profile && !hasDismissedProfilePrompt;
+  const isAiRunLocked = isStreaming;
   const visibleMessages = messages;
   const visibleChangeSets = changeSets;
 
@@ -643,6 +703,7 @@ export default function ResumeowPage() {
         onClose={showProfilePrompt ? dismissProfilePrompt : () => setIsProfileModalOpen(false)}
         onSave={handleSaveProfile}
         isSaving={isSavingProfile}
+        isLocked={isAiRunLocked}
       />
 
       <div className="container mx-auto px-4 py-12">
@@ -702,6 +763,7 @@ export default function ResumeowPage() {
                           onClick={() => loadResume(resume)}
                           variant="secondary"
                           size="sm"
+                          disabled={isAiRunLocked}
                           className="flex-1 sm:flex-none"
                         >
                           Edit
@@ -710,6 +772,7 @@ export default function ResumeowPage() {
                           onClick={() => handleDeleteResume(resume.id)}
                           variant="outline"
                           size="sm"
+                          disabled={isAiRunLocked}
                           className="flex-1 sm:flex-none"
                         >
                           Delete
@@ -728,6 +791,7 @@ export default function ResumeowPage() {
                 onClick={() => setShowResumeList(!showResumeList)}
                 variant="secondary"
                 size="sm"
+                disabled={isAiRunLocked}
                 className="text-xs sm:text-sm"
               >
                 {showResumeList ? "Back" : "Resumes"}
@@ -736,6 +800,7 @@ export default function ResumeowPage() {
                 onClick={handleNewResume}
                 variant="outline"
                 size="sm"
+                disabled={isAiRunLocked}
                 className="text-xs sm:text-sm"
               >
                 + New
@@ -756,14 +821,20 @@ export default function ResumeowPage() {
                   <input
                     type="text"
                     value={resumeTitle}
-                    onChange={(e) => setResumeTitle(e.target.value)}
+                    onChange={(e) => {
+                      if (isAiRunLocked) {
+                        return;
+                      }
+                      setResumeTitle(e.target.value);
+                    }}
+                    disabled={isAiRunLocked}
                     className="w-full rounded-lg border border-gray-700 bg-gray-800/50 px-3 py-2 text-base text-white sm:max-w-md sm:text-lg md:text-xl"
                     placeholder="Resume Title"
                   />
                   <div className="flex gap-2">
                     <Button
                       onClick={handleSaveResume}
-                      disabled={isSaving}
+                      disabled={isSaving || isAiRunLocked}
                       variant="primary"
                       size="sm"
                       className="flex-1 sm:flex-none"
@@ -782,12 +853,26 @@ export default function ResumeowPage() {
                   </div>
                 </div>
 
-                <Card className="bg-gray-800/30 p-4 md:p-6">
-                  <div className="mb-4 flex flex-col gap-1 sm:mb-6 sm:flex-row sm:gap-2 sm:overflow-x-auto sm:border-b sm:border-gray-700 sm:scrollbar-hide">
+                <Card className="relative overflow-hidden bg-gray-800/30 p-4 md:p-6">
+                  {isAiRunLocked ? (
+                    <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/50 px-6 backdrop-blur-[1px]">
+                      <div className="max-w-sm rounded-xl border border-gray-700 bg-gray-900/90 px-4 py-3 text-center">
+                        <p className="text-sm font-semibold text-white">
+                          Resume editor temporarily locked
+                        </p>
+                        <p className="mt-1 text-xs text-gray-300">
+                          AI is reading context and applying updates. Editing will unlock automatically once this run completes.
+                        </p>
+                      </div>
+                    </div>
+                  ) : null}
+                  <div className={isAiRunLocked ? "pointer-events-none select-none opacity-80" : ""}>
+                    <div className="mb-4 flex flex-col gap-1 sm:mb-6 sm:flex-row sm:gap-2 sm:overflow-x-auto sm:border-b sm:border-gray-700 sm:scrollbar-hide">
                     {tabs.map((tab) => (
                       <button
                         key={tab.id}
                         onClick={() => setActiveTab(tab.id)}
+                        disabled={isAiRunLocked}
                         className={`rounded px-3 py-2.5 text-left text-sm font-medium whitespace-nowrap transition-colors sm:rounded-none sm:px-2 sm:py-2 sm:text-center md:text-sm ${activeTab === tab.id
                             ? "bg-[#E84A3A] text-white sm:border-b-2 sm:border-[#E84A3A] sm:bg-transparent sm:text-[#E84A3A]"
                             : "bg-gray-800/50 text-gray-400 hover:bg-gray-700/50 hover:text-white sm:bg-transparent sm:hover:bg-transparent"
@@ -796,88 +881,89 @@ export default function ResumeowPage() {
                         {tab.label}
                       </button>
                     ))}
-                  </div>
-                  <p className="mb-4 text-center text-xs text-gray-400 sm:text-sm">
-                    * indicates mandatory sections
-                  </p>
+                    </div>
+                    <p className="mb-4 text-center text-xs text-gray-400 sm:text-sm">
+                      * indicates mandatory sections
+                    </p>
 
-                  <div className="min-h-[400px]">
-                    {activeTab === "personal" ? (
-                      <PersonalInfoForm
-                        data={resumeData.personalInfo}
-                        onChange={updatePersonalInfo}
-                      />
-                    ) : null}
-                    {activeTab === "education" ? (
-                      <EducationForm
-                        data={resumeData.education}
-                        onChange={updateEducation}
-                      />
-                    ) : null}
-                    {activeTab === "experience" ? (
-                      <ExperienceForm
-                        data={resumeData.experience}
-                        onChange={updateExperience}
-                      />
-                    ) : null}
-                    {activeTab === "cocurricular" ? (
-                      <CoCurricularForm
-                        data={resumeData.coCurricularActivities || []}
-                        onChange={updateCoCurricular}
-                      />
-                    ) : null}
-                    {activeTab === "skills" ? (
-                      <SkillsForm data={resumeData.skills} onChange={updateSkills} />
-                    ) : null}
-              {activeTab === "projects" ? (
-                      <ProjectsForm
-                        data={resumeData.projects || []}
-                        onChange={updateProjects}
-                      />
-                    ) : null}
-                  </div>
+                    <div className="min-h-[400px]">
+                      {activeTab === "personal" ? (
+                        <PersonalInfoForm
+                          data={resumeData.personalInfo}
+                          onChange={updatePersonalInfo}
+                        />
+                      ) : null}
+                      {activeTab === "education" ? (
+                        <EducationForm
+                          data={resumeData.education}
+                          onChange={updateEducation}
+                        />
+                      ) : null}
+                      {activeTab === "experience" ? (
+                        <ExperienceForm
+                          data={resumeData.experience}
+                          onChange={updateExperience}
+                        />
+                      ) : null}
+                      {activeTab === "cocurricular" ? (
+                        <CoCurricularForm
+                          data={resumeData.coCurricularActivities || []}
+                          onChange={updateCoCurricular}
+                        />
+                      ) : null}
+                      {activeTab === "skills" ? (
+                        <SkillsForm data={resumeData.skills} onChange={updateSkills} />
+                      ) : null}
+                      {activeTab === "projects" ? (
+                        <ProjectsForm
+                          data={resumeData.projects || []}
+                          onChange={updateProjects}
+                        />
+                      ) : null}
+                    </div>
 
-                  <div className="mt-6 flex flex-col gap-3 border-t border-gray-700 pt-4 sm:flex-row sm:items-center sm:justify-between md:mt-8 md:pt-6">
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        const currentIndex = tabs.findIndex((t) => t.id === activeTab);
-                        if (currentIndex > 0) {
-                          setActiveTab(tabs[currentIndex - 1].id);
-                        }
-                      }}
-                      disabled={activeTab === "personal"}
-                      className="w-full sm:w-auto"
-                    >
-                      Previous
-                    </Button>
-
-                    {activeTab === "projects" ? (
+                    <div className="mt-6 flex flex-col gap-3 border-t border-gray-700 pt-4 sm:flex-row sm:items-center sm:justify-between md:mt-8 md:pt-6">
                       <Button
-                        onClick={generateResume}
-                        disabled={isGenerating || cooldownSeconds > 0}
-                        size="lg"
-                        className="w-full sm:w-auto"
-                      >
-                        {isGenerating
-                          ? "Generating..."
-                          : cooldownSeconds > 0
-                            ? `Wait ${cooldownSeconds}s`
-                            : "Generate Resume"}
-                      </Button>
-                    ) : (
-                      <Button
+                        variant="outline"
                         onClick={() => {
                           const currentIndex = tabs.findIndex((t) => t.id === activeTab);
-                          if (currentIndex < tabs.length - 1) {
-                            setActiveTab(tabs[currentIndex + 1].id);
+                          if (currentIndex > 0) {
+                            setActiveTab(tabs[currentIndex - 1].id);
                           }
                         }}
+                        disabled={activeTab === "personal"}
                         className="w-full sm:w-auto"
                       >
-                        Next
+                        Previous
                       </Button>
-                    )}
+
+                      {activeTab === "projects" ? (
+                        <Button
+                          onClick={generateResume}
+                          disabled={isGenerating || cooldownSeconds > 0}
+                          size="lg"
+                          className="w-full sm:w-auto"
+                        >
+                          {isGenerating
+                            ? "Generating..."
+                            : cooldownSeconds > 0
+                              ? `Wait ${cooldownSeconds}s`
+                              : "Generate Resume"}
+                        </Button>
+                      ) : (
+                        <Button
+                          onClick={() => {
+                            const currentIndex = tabs.findIndex((t) => t.id === activeTab);
+                            if (currentIndex < tabs.length - 1) {
+                              setActiveTab(tabs[currentIndex + 1].id);
+                            }
+                          }}
+                          className="w-full sm:w-auto"
+                        >
+                          Next
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 </Card>
 
@@ -918,15 +1004,26 @@ export default function ResumeowPage() {
                 onUndoChangeSet={handleUndoChangeSet}
                 applyingChangeSetId={applyingChangeSetId}
                 profile={profile}
-                onOpenProfile={() => setIsProfileModalOpen(true)}
+                onOpenProfile={() => {
+                  if (isAiRunLocked) {
+                    return;
+                  }
+                  setIsProfileModalOpen(true);
+                }}
                 jobDescriptions={jobDescriptions}
                 selectedJobDescriptionId={selectedJobDescriptionId}
-                onSelectedJobDescriptionChange={setSelectedJobDescriptionId}
+                onSelectedJobDescriptionChange={(value) => {
+                  if (isAiRunLocked) {
+                    return;
+                  }
+                  setSelectedJobDescriptionId(value);
+                }}
                 onSaveJobDescription={handleSaveJobDescription}
                 isSavingJobDescription={isSavingJobDescription}
                 rateLimitMessage={rateLimitMessage}
                 activeProcessLabel={activeProcessLabel}
                 errorMessage={chatErrorMessage}
+                isLocked={isAiRunLocked}
               />
             </div>
           </div>

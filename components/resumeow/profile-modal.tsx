@@ -18,6 +18,7 @@ interface ProfileModalProps {
     payload: Omit<ResumeProfile, "id" | "user_id" | "created_at" | "updated_at">
   ) => Promise<void>;
   isSaving: boolean;
+  isLocked?: boolean;
 }
 
 interface ProfileFormState {
@@ -53,6 +54,7 @@ export function ProfileModal({
   onClose,
   onSave,
   isSaving,
+  isLocked = false,
 }: ProfileModalProps) {
   const [form, setForm] = useState<ProfileFormState>(buildInitialFormState(profile));
 
@@ -107,6 +109,7 @@ export function ProfileModal({
             onChange={(event) =>
               updateField("professional_headline", event.target.value)
             }
+            disabled={isSaving || isLocked}
             autoCorrect="off"
             autoCapitalize="none"
             spellCheck={false}
@@ -119,6 +122,7 @@ export function ProfileModal({
             onChange={(event) =>
               updateField("years_experience", event.target.value)
             }
+            disabled={isSaving || isLocked}
             placeholder="3"
           />
           <Input
@@ -127,6 +131,7 @@ export function ProfileModal({
             onChange={(event) =>
               updateField("target_roles", event.target.value)
             }
+            disabled={isSaving || isLocked}
             autoCorrect="off"
             autoCapitalize="none"
             spellCheck={false}
@@ -138,6 +143,7 @@ export function ProfileModal({
             onChange={(event) =>
               updateField("location_preferences", event.target.value)
             }
+            disabled={isSaving || isLocked}
             autoCorrect="off"
             autoCapitalize="none"
             spellCheck={false}
@@ -149,6 +155,7 @@ export function ProfileModal({
             onChange={(event) =>
               updateField("core_skills", event.target.value)
             }
+            disabled={isSaving || isLocked}
             autoCorrect="off"
             autoCapitalize="none"
             spellCheck={false}
@@ -160,6 +167,7 @@ export function ProfileModal({
             onChange={(event) =>
               updateField("domain_focus", event.target.value)
             }
+            disabled={isSaving || isLocked}
             autoCorrect="off"
             autoCapitalize="none"
             spellCheck={false}
@@ -177,6 +185,7 @@ export function ProfileModal({
               onChange={(event) =>
                 updateField("education_summary", event.target.value)
               }
+              disabled={isSaving || isLocked}
               autoCorrect="off"
               autoCapitalize="none"
               spellCheck={false}
@@ -194,6 +203,7 @@ export function ProfileModal({
               onChange={(event) =>
                 updateField("achievement_notes", event.target.value)
               }
+              disabled={isSaving || isLocked}
               autoCorrect="off"
               autoCapitalize="none"
               spellCheck={false}
@@ -204,10 +214,14 @@ export function ProfileModal({
         </div>
 
         <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-end">
-          <Button variant="outline" onClick={onClose}>
+          <Button variant="outline" onClick={onClose} disabled={isSaving}>
             Not Now
           </Button>
-          <Button onClick={handleSubmit} isLoading={isSaving}>
+          <Button
+            onClick={handleSubmit}
+            isLoading={isSaving}
+            disabled={isSaving || isLocked}
+          >
             Save Profile
           </Button>
         </div>
