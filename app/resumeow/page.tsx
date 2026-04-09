@@ -1,31 +1,57 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useState } from "react";
+import Image from "next/image";
 import { useAuth } from "@/contexts/auth-context";
-import { ResumeData, PersonalInfo, Experience, Education, Skill, Project, CoCurricularActivity } from "@/lib/types/resume";
+import {
+  CoCurricularActivity,
+  DEFAULT_RESUME_DATA,
+  DEFAULT_RESUME_PROFILE,
+  Education,
+  Experience,
+  PersonalInfo,
+  Project,
+  ResumeAiMessage,
+  ResumeChangeSet,
+  ResumeJobDescription,
+  ResumeProfile,
+  ResumeData,
+  SavedResume,
+  Skill,
+} from "@/lib/types/resume";
 import { PersonalInfoForm } from "@/components/resumeow/personal-info-form";
 import { ExperienceForm } from "@/components/resumeow/experience-form";
 import { EducationForm } from "@/components/resumeow/education-form";
 import { SkillsForm } from "@/components/resumeow/skills-form";
 import { ProjectsForm } from "@/components/resumeow/projects-form";
 import { CoCurricularForm } from "@/components/resumeow/cocurricular-form";
+import { ResumeAiSidebar } from "@/components/resumeow/ai-sidebar";
+import { ProfileModal } from "@/components/resumeow/profile-modal";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { 
-  fetchUserResumes, 
-  saveResume, 
-  deleteResume, 
-  SavedResume 
+import {
+  deleteResume,
+  fetchUserResumes,
+  saveResume,
 } from "@/lib/services/resume-service";
+import {
+  applyChangeSetRequest,
+  fetchResumeAiState,
+  fetchResumeProfile,
+  saveJobDescriptionRequest,
+  saveResumeProfileRequest,
+  streamResumeChat,
+} from "@/lib/services/resume-ai-client";
 import { generateLatexResume } from "@/lib/latex/template";
-import Image from "next/image";
 import { ScrollToBottomButton } from "@/components/shared/scroll-to-bottom";
 
+const PROFILE_PROMPT_DISMISSED_KEY = "resumeowProfilePromptDismissed";
+
 export default function ResumeowPage() {
-  const { user, loading, signOut } = useAuth();
-  const router = useRouter();
-  const [activeTab, setActiveTab] = useState<"personal" | "education" | "experience" | "cocurricular" | "skills" | "projects">("personal");
+  const { user, loading } = useAuth();
+  const [activeTab, setActiveTab] = useState<
+    "personal" | "education" | "experience" | "cocurricular" | "skills" | "projects"
+  >("personal");
   const [isGenerating, setIsGenerating] = useState(false);
   const [savedResumes, setSavedResumes] = useState<SavedResume[]>([]);
   const [currentResumeId, setCurrentResumeId] = useState<string | undefined>();
@@ -35,94 +61,108 @@ export default function ResumeowPage() {
   const [showResumeList, setShowResumeList] = useState(false);
   const [cooldownSeconds, setCooldownSeconds] = useState(0);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  const [resumeData, setResumeData] = useState<ResumeData>({
-    personalInfo: {
-      fullName: "",
-      email: "",
-      phone: "",
-      linkedin: "",
-      github: "",
-      website: "",
-    },
-    education: [],
-    experience: [],
-    coCurricularActivities: [],
-    skills: [],
-    projects: [],
-  });
+  const [resumeData, setResumeData] = useState<ResumeData>(DEFAULT_RESUME_DATA);
+  const [profile, setProfile] = useState<ResumeProfile | null>(null);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [hasDismissedProfilePrompt, setHasDismissedProfilePrompt] =
+    useState(false);
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [messages, setMessages] = useState<ResumeAiMessage[]>([]);
+  const [changeSets, setChangeSets] = useState<ResumeChangeSet[]>([]);
+  const [jobDescriptions, setJobDescriptions] = useState<ResumeJobDescription[]>(
+    []
+  );
+  const [selectedJobDescriptionId, setSelectedJobDescriptionId] = useState("");
+  const [chatInput, setChatInput] = useState("");
+  const [streamingText, setStreamingText] = useState("");
+  const [isStreaming, setIsStreaming] = useState(false);
+  const [rateLimitMessage, setRateLimitMessage] = useState<string | null>(null);
+  const [chatErrorMessage, setChatErrorMessage] = useState<string | null>(null);
+  const [activeProcessLabel, setActiveProcessLabel] = useState<string | null>(null);
+  const [latestInteractionStartedAt, setLatestInteractionStartedAt] = useState<
+    string | null
+  >(null);
+  const [isAiDrawerOpen, setIsAiDrawerOpen] = useState(false);
+  const [isSavingJobDescription, setIsSavingJobDescription] = useState(false);
+  const [applyingChangeSetId, setApplyingChangeSetId] = useState<string | null>(
+    null
+  );
 
-  // Load user's resumes on mount
   useEffect(() => {
-    if (user) {
-      loadResumes();
+    if (typeof window === "undefined") {
+      return;
     }
-  }, [user]);
 
-  // Track unsaved changes
+    setHasDismissedProfilePrompt(
+      window.localStorage.getItem(PROFILE_PROMPT_DISMISSED_KEY) === "1"
+    );
+  }, []);
+
   useEffect(() => {
-    // Mark as having unsaved changes whenever resumeData or title changes
     setHasUnsavedChanges(true);
   }, [resumeData, resumeTitle]);
 
-  // Warn about unsaved changes when leaving page
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       if (hasUnsavedChanges) {
         e.preventDefault();
-        e.returnValue = 'You have unsaved changes. Are you sure you want to leave?';
+        e.returnValue =
+          "You have unsaved changes. Are you sure you want to leave?";
         return e.returnValue;
       }
     };
 
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, [hasUnsavedChanges]);
 
-  // Add beforeunload warning when generating resume
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       if (isGenerating) {
         e.preventDefault();
-        e.returnValue = '';
-        return '';
+        e.returnValue = "";
+        return "";
       }
     };
 
     if (isGenerating) {
-      window.addEventListener('beforeunload', handleBeforeUnload);
+      window.addEventListener("beforeunload", handleBeforeUnload);
     }
 
     return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener("beforeunload", handleBeforeUnload);
     };
   }, [isGenerating]);
 
-  // Check and manage cooldown from localStorage
   useEffect(() => {
     const checkCooldown = () => {
-      const cooldownEnd = localStorage.getItem('resumeGenerateCooldown');
+      const cooldownEnd = localStorage.getItem("resumeGenerateCooldown");
       if (cooldownEnd) {
-        const remaining = Math.max(0, Math.floor((parseInt(cooldownEnd) - Date.now()) / 1000));
+        const remaining = Math.max(
+          0,
+          Math.floor((parseInt(cooldownEnd, 10) - Date.now()) / 1000)
+        );
         if (remaining > 0) {
           setCooldownSeconds(remaining);
         } else {
-          localStorage.removeItem('resumeGenerateCooldown');
+          localStorage.removeItem("resumeGenerateCooldown");
           setCooldownSeconds(0);
         }
       }
     };
 
-    // Check immediately on mount
     checkCooldown();
 
-    // Update countdown every second
     const interval = setInterval(() => {
-      const cooldownEnd = localStorage.getItem('resumeGenerateCooldown');
+      const cooldownEnd = localStorage.getItem("resumeGenerateCooldown");
       if (cooldownEnd) {
-        const remaining = Math.max(0, Math.floor((parseInt(cooldownEnd) - Date.now()) / 1000));
+        const remaining = Math.max(
+          0,
+          Math.floor((parseInt(cooldownEnd, 10) - Date.now()) / 1000)
+        );
         setCooldownSeconds(remaining);
         if (remaining === 0) {
-          localStorage.removeItem('resumeGenerateCooldown');
+          localStorage.removeItem("resumeGenerateCooldown");
         }
       }
     }, 1000);
@@ -130,19 +170,61 @@ export default function ResumeowPage() {
     return () => clearInterval(interval);
   }, []);
 
-  const loadResumes = async () => {
+  const loadProfile = useCallback(async () => {
+    try {
+      const payload = await fetchResumeProfile();
+      setProfile(payload.profile);
+    } catch (error) {
+      console.error("Failed to load profile", error);
+    }
+  }, []);
+
+  const loadResumes = useCallback(async () => {
     try {
       const resumes = await fetchUserResumes();
       setSavedResumes(resumes);
-      
-      // Load the most recent resume if available
+
       if (resumes.length > 0 && !currentResumeId) {
         loadResume(resumes[0]);
       }
     } catch (error) {
       console.error("Error loading resumes:", error);
     }
-  };
+  }, [currentResumeId]);
+
+  const loadAiState = useCallback(async (resumeId: string) => {
+    try {
+      const payload = await fetchResumeAiState(resumeId);
+      setMessages(payload.messages);
+      setChangeSets(payload.changeSets);
+      setJobDescriptions(payload.jobDescriptions);
+    } catch (error) {
+      console.error("Failed to load AI state", error);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!user) {
+      setProfile(null);
+      setMessages([]);
+      setChangeSets([]);
+      setJobDescriptions([]);
+      return;
+    }
+
+    void loadResumes();
+    void loadProfile();
+  }, [user, loadProfile, loadResumes]);
+
+  useEffect(() => {
+    if (!user || !currentResumeId) {
+      setMessages([]);
+      setChangeSets([]);
+      return;
+    }
+
+    void loadAiState(currentResumeId);
+  }, [user, currentResumeId, loadAiState]);
 
   const loadResume = (resume: SavedResume) => {
     setResumeData(resume.resume_data);
@@ -151,11 +233,13 @@ export default function ResumeowPage() {
     setLastSaved(new Date(resume.updated_at));
     setShowResumeList(false);
     setHasUnsavedChanges(false);
+    setRateLimitMessage(null);
+    setIsAiDrawerOpen(false);
   };
 
   const handleSaveResume = async () => {
     if (!user) return;
-    
+
     setIsSaving(true);
     try {
       const saved = await saveResume(resumeData, resumeTitle, currentResumeId);
@@ -163,6 +247,7 @@ export default function ResumeowPage() {
       setLastSaved(new Date(saved.updated_at));
       setHasUnsavedChanges(false);
       await loadResumes();
+      await loadAiState(saved.id);
       alert("Resume saved successfully!");
     } catch (error) {
       console.error("Error saving resume:", error);
@@ -173,36 +258,25 @@ export default function ResumeowPage() {
   };
 
   const handleNewResume = () => {
-    setResumeData({
-      personalInfo: {
-        fullName: "",
-        email: "",
-        phone: "",
-        linkedin: "",
-        github: "",
-        website: "",
-      },
-      education: [],
-      experience: [],
-      coCurricularActivities: [],
-      skills: [],
-      projects: [],
-    });
+    setResumeData(DEFAULT_RESUME_DATA);
     setResumeTitle("New Resume");
     setCurrentResumeId(undefined);
     setLastSaved(null);
     setShowResumeList(false);
     setHasUnsavedChanges(false);
+    setMessages([]);
+    setChangeSets([]);
+    setStreamingText("");
+    setRateLimitMessage(null);
   };
 
   const handleDeleteResume = async (id: string) => {
     if (!confirm("Are you sure you want to delete this resume?")) return;
-    
+
     try {
       await deleteResume(id);
       await loadResumes();
-      
-      // If deleted current resume, reset to blank
+
       if (id === currentResumeId) {
         handleNewResume();
       }
@@ -241,7 +315,9 @@ export default function ResumeowPage() {
     try {
       const latexCode = generateLatexResume(resumeData);
       await navigator.clipboard.writeText(latexCode);
-      alert("LaTeX code copied to clipboard! You can paste it into Overleaf or any LaTeX editor to make custom edits.");
+      alert(
+        "LaTeX code copied to clipboard! You can paste it into Overleaf or any LaTeX editor to make custom edits."
+      );
     } catch (error) {
       console.error("Error copying to clipboard:", error);
       alert("Failed to copy LaTeX code. Please try again.");
@@ -249,17 +325,16 @@ export default function ResumeowPage() {
   };
 
   const generateResume = async () => {
-    // Check if still in cooldown
     if (cooldownSeconds > 0) {
-      alert(`Please wait ${cooldownSeconds} seconds before generating another resume.`);
+      alert(
+        `Please wait ${cooldownSeconds} seconds before generating another resume.`
+      );
       return;
     }
 
     setIsGenerating(true);
-    
-    // Set 60-second cooldown in localStorage
-    const cooldownEnd = Date.now() + 60000; // 60 seconds
-    localStorage.setItem('resumeGenerateCooldown', cooldownEnd.toString());
+    const cooldownEnd = Date.now() + 60000;
+    localStorage.setItem("resumeGenerateCooldown", cooldownEnd.toString());
     setCooldownSeconds(60);
 
     try {
@@ -276,14 +351,11 @@ export default function ResumeowPage() {
         throw new Error(errorData.error || "Failed to generate resume");
       }
 
-      // Get PDF blob from response
       const pdfBlob = await response.blob();
-      
-      // Create download link
       const url = window.URL.createObjectURL(pdfBlob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = `${resumeTitle.replace(/[^a-z0-9]/gi, '_')}.pdf`;
+      link.download = `${resumeTitle.replace(/[^a-z0-9]/gi, "_")}.pdf`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -292,9 +364,226 @@ export default function ResumeowPage() {
       alert("Resume PDF downloaded successfully!");
     } catch (error) {
       console.error("Error:", error);
-      alert(error instanceof Error ? error.message : "An error occurred while generating the resume");
+      alert(
+        error instanceof Error
+          ? error.message
+          : "An error occurred while generating the resume"
+      );
     } finally {
       setIsGenerating(false);
+    }
+  };
+
+  const handleSaveProfile = async (
+    payload: Omit<ResumeProfile, "id" | "user_id" | "created_at" | "updated_at">
+  ) => {
+    setIsSavingProfile(true);
+    try {
+      const response = await saveResumeProfileRequest({
+        ...DEFAULT_RESUME_PROFILE,
+        ...payload,
+      });
+      setProfile(response.profile);
+      setIsProfileModalOpen(false);
+      window.localStorage.removeItem(PROFILE_PROMPT_DISMISSED_KEY);
+      setHasDismissedProfilePrompt(false);
+    } catch (error) {
+      console.error("Failed to save profile", error);
+      alert("Failed to save profile. Please try again.");
+    } finally {
+      setIsSavingProfile(false);
+    }
+  };
+
+  const dismissProfilePrompt = () => {
+    window.localStorage.setItem(PROFILE_PROMPT_DISMISSED_KEY, "1");
+    setHasDismissedProfilePrompt(true);
+    setIsProfileModalOpen(false);
+  };
+
+  const handleSaveJobDescription = async (payload: {
+    title: string;
+    company: string;
+    role: string;
+    content: string;
+  }) => {
+    if (!payload.content.trim()) {
+      return;
+    }
+
+    setIsSavingJobDescription(true);
+    try {
+      const response = await saveJobDescriptionRequest(payload);
+      setSelectedJobDescriptionId(response.jobDescription.id);
+      if (currentResumeId) {
+        await loadAiState(currentResumeId);
+      }
+    } catch (error) {
+      console.error("Failed to save job description", error);
+      alert("Failed to save job description. Please try again.");
+    } finally {
+      setIsSavingJobDescription(false);
+    }
+  };
+
+  const handleApplyChangeSet = async (changeSetId: string) => {
+    setApplyingChangeSetId(changeSetId);
+    try {
+      const response = await applyChangeSetRequest(changeSetId);
+      setResumeData(response.resume.resume_data);
+      setResumeTitle(response.resume.title);
+      setCurrentResumeId(response.resume.id);
+      setLastSaved(new Date(response.resume.updated_at));
+      setHasUnsavedChanges(false);
+      await loadResumes();
+      await loadAiState(response.resume.id);
+      alert("Draft applied to your resume.");
+    } catch (error) {
+      console.error("Failed to apply change set", error);
+      alert(
+        error instanceof Error
+          ? error.message
+          : "Failed to apply change set."
+      );
+      if (currentResumeId) {
+        await loadAiState(currentResumeId);
+      }
+    } finally {
+      setApplyingChangeSetId(null);
+    }
+  };
+
+  const handleSendMessage = async (actionHint?: "review" | "edit" | null) => {
+    if (!currentResumeId) {
+      alert("Save this resume first to start an AI conversation.");
+      return;
+    }
+
+    const fallbackPrompt =
+      actionHint === "review"
+        ? "Review my resume and tell me the highest-impact improvements."
+        : actionHint === "edit"
+          ? "Make changes to improve this resume while staying truthful."
+          : "";
+
+    const outgoingText = chatInput.trim() || fallbackPrompt;
+    if (!outgoingText) {
+      return;
+    }
+
+    const interactionStartedAt = new Date().toISOString();
+    setRateLimitMessage(null);
+    setChatErrorMessage(null);
+    setActiveProcessLabel(null);
+    setLatestInteractionStartedAt(interactionStartedAt);
+    setIsStreaming(true);
+    setStreamingText("");
+    setIsAiDrawerOpen(true);
+    setChatInput("");
+    setChangeSets([]);
+    setMessages([
+      {
+        id: `temp-user-${Date.now()}`,
+        user_id: user?.id ?? "temp",
+        resume_id: currentResumeId,
+        role: "user",
+        content: outgoingText,
+        created_at: interactionStartedAt,
+      },
+    ]);
+
+    try {
+      await streamResumeChat(
+        {
+          resumeId: currentResumeId,
+          actionHint: actionHint ?? null,
+          jobDescriptionId: selectedJobDescriptionId || null,
+          messages: [
+            ...messages
+              .filter((message) => message.role === "user" || message.role === "assistant")
+              .map((message) => ({
+                role: message.role,
+                content: message.content,
+              })),
+            {
+              role: "user",
+              content: outgoingText,
+            },
+          ],
+        },
+        {
+          onToken: (token) => {
+            setActiveProcessLabel(null);
+            setStreamingText((current) => current + token);
+          },
+          onToolStart: (payload) => {
+            const toolName = payload.toolName;
+            if (toolName === "review_resume") {
+              setActiveProcessLabel("Reviewing the current resume against your request and retrieved context...");
+              return;
+            }
+
+            if (toolName === "propose_resume_changes") {
+              setActiveProcessLabel("Drafting grounded changes to the current resume using your prompt and saved context...");
+              return;
+            }
+
+            setActiveProcessLabel("Working on your request...");
+          },
+          onToolResult: () => {
+            setActiveProcessLabel("Preparing the final response...");
+          },
+          onAssistantDone: ({ message }) => {
+            setMessages((current) => {
+              const withoutTempAssistantNoise = current.filter(
+                (entry) => !entry.id.startsWith("temp-assistant-")
+              );
+              return [...withoutTempAssistantNoise, message];
+            });
+            setActiveProcessLabel(null);
+          },
+          onError: (payload) => {
+            setActiveProcessLabel(null);
+            setChatErrorMessage(payload.message);
+            if (payload.rateLimit) {
+              const rateLimit = payload.rateLimit as {
+                retry_after_seconds?: number;
+              };
+              setRateLimitMessage(
+                `Rate limit reached. Try again in ${rateLimit.retry_after_seconds ?? 0} seconds.`
+              );
+            } else {
+              setRateLimitMessage(payload.message);
+            }
+          },
+        }
+      );
+    } catch (error) {
+      console.error("Failed to send chat message", error);
+      setActiveProcessLabel(null);
+      const retryAfter =
+        typeof error === "object" &&
+        error !== null &&
+        "rateLimit" in error &&
+        typeof (error as { rateLimit?: { retry_after_seconds?: number } }).rateLimit
+          ?.retry_after_seconds === "number"
+          ? (error as { rateLimit?: { retry_after_seconds?: number } }).rateLimit!
+              .retry_after_seconds
+          : null;
+      setRateLimitMessage(
+        retryAfter
+          ? `Rate limit reached. Try again in ${retryAfter} seconds.`
+          : error instanceof Error
+            ? error.message
+            : "Failed to send message."
+      );
+      setChatErrorMessage(
+        error instanceof Error ? error.message : "Failed to send message."
+      );
+    } finally {
+      setStreamingText("");
+      setIsStreaming(false);
+      await loadAiState(currentResumeId);
     }
   };
 
@@ -307,63 +596,93 @@ export default function ResumeowPage() {
     { id: "projects", label: "Projects", required: false },
   ] as const;
 
-  // Show loading state while checking auth
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black flex items-center justify-center">
-        <div className="text-white text-xl">Loading...</div>
+      <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-gray-900 to-black">
+        <div className="text-xl text-white">Loading...</div>
       </div>
     );
   }
 
-  // Show landing page if not authenticated
   if (!user) {
     return <ResumeowLandingPage />;
   }
 
+  const showProfilePrompt = !profile && !hasDismissedProfilePrompt;
+  const interactionStartMs = latestInteractionStartedAt
+    ? new Date(latestInteractionStartedAt).getTime()
+    : null;
+  const visibleMessages =
+    interactionStartMs === null
+      ? []
+      : messages.filter(
+          (message) => new Date(message.created_at).getTime() >= interactionStartMs
+        );
+  const visibleChangeSets =
+    interactionStartMs === null
+      ? []
+      : changeSets.filter(
+          (changeSet) =>
+            new Date(changeSet.created_at).getTime() >= interactionStartMs
+        );
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black">
-      {/* Loading Overlay */}
-      {isGenerating && (
+      {isGenerating ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
-          <div className="bg-gray-800 rounded-lg p-8 shadow-2xl border border-gray-700 text-center">
+          <div className="rounded-lg border border-gray-700 bg-gray-800 p-8 text-center shadow-2xl">
             <div className="flex flex-col items-center gap-4">
-              {/* Spinner */}
-              <div className="w-16 h-16 border-4 border-gray-600 border-t-[#E84A3A] rounded-full animate-spin"></div>
+              <div className="h-16 w-16 animate-spin rounded-full border-4 border-gray-600 border-t-[#E84A3A]"></div>
               <div>
-                <p className="text-white text-xl font-semibold mb-2">Generating your resume...</p>
-                <p className="text-gray-400 text-sm">This may take a few seconds</p>
+                <p className="mb-2 text-xl font-semibold text-white">
+                  Generating your resume...
+                </p>
+                <p className="text-sm text-gray-400">This may take a few seconds</p>
               </div>
             </div>
           </div>
         </div>
-      )}
+      ) : null}
+
+      <ProfileModal
+        key={`${profile?.updated_at ?? "new"}:${
+          isProfileModalOpen || showProfilePrompt ? "open" : "closed"
+        }`}
+        open={isProfileModalOpen || showProfilePrompt}
+        profile={profile}
+        onClose={showProfilePrompt ? dismissProfilePrompt : () => setIsProfileModalOpen(false)}
+        onSave={handleSaveProfile}
+        isSaving={isSavingProfile}
+      />
 
       <div className="container mx-auto px-4 py-12">
-        {/* Header */}
-        <div className="text-center mb-6 md:mb-8">
-          {!showResumeList && (
+        <div className="mb-6 text-center md:mb-8">
+          {!showResumeList ? (
             <>
-              <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-3 md:mb-4 text-white px-2">Resumeow 📄</h1>
-              <p className="text-base md:text-lg lg:text-xl text-gray-300 max-w-2xl mx-auto mb-2 px-4">
-                Create professional resumes with LaTeX quality. Fill in your details and let us handle the formatting according
-                to what recruiters look for.
+              <h1 className="mb-3 px-2 text-3xl font-bold text-white md:mb-4 md:text-4xl lg:text-5xl">
+                Resumeow
+              </h1>
+              <p className="mx-auto mb-2 max-w-3xl px-4 text-base text-gray-300 md:text-lg lg:text-xl">
+                Create professional resumes with LaTeX quality, then use AI to
+                review and draft grounded improvements before you generate the final PDF.
               </p>
-              {lastSaved && (
-                <p className="text-xs md:text-sm text-gray-400 px-2">
+              {lastSaved ? (
+                <p className="px-2 text-xs text-gray-400 md:text-sm">
                   Last saved: {lastSaved.toLocaleString()}
                 </p>
-              )}
+              ) : null}
             </>
-          )}
+          ) : null}
         </div>
 
         {showResumeList ? (
-          <div className="max-w-4xl mx-auto">
-            <h2 className="text-xl md:text-2xl font-bold text-white mb-4 md:mb-6 px-2">Your Saved Resumes</h2>
+          <div className="mx-auto max-w-4xl">
+            <h2 className="mb-4 px-2 text-xl font-bold text-white md:mb-6 md:text-2xl">
+              Your Saved Resumes
+            </h2>
             {savedResumes.length === 0 ? (
-              <Card className="p-8 bg-gray-800/30 text-center">
-                <p className="text-gray-400 mb-4">No saved resumes yet.</p>
+              <Card className="bg-gray-800/30 p-8 text-center">
+                <p className="mb-4 text-gray-400">No saved resumes yet.</p>
                 <Button onClick={handleNewResume} variant="primary">
                   Create Your First Resume
                 </Button>
@@ -373,21 +692,22 @@ export default function ResumeowPage() {
                 {savedResumes.map((resume) => (
                   <Card
                     key={resume.id}
-                    className="p-4 md:p-6 bg-gray-800/30 hover:bg-gray-800/50 transition-colors"
+                    className="bg-gray-800/30 p-4 transition-colors hover:bg-gray-800/50 md:p-6"
                   >
-                    <div className="flex flex-col sm:flex-row justify-between items-start gap-3">
-                      <div className="flex-1 w-full">
-                        <h3 className="text-lg md:text-xl font-semibold text-white mb-2">
+                    <div className="flex flex-col items-start justify-between gap-3 sm:flex-row">
+                      <div className="w-full flex-1">
+                        <h3 className="mb-2 text-lg font-semibold text-white md:text-xl">
                           {resume.title}
                         </h3>
-                        <p className="text-xs md:text-sm text-gray-400">
+                        <p className="text-xs text-gray-400 md:text-sm">
                           Last updated: {new Date(resume.updated_at).toLocaleString()}
                         </p>
-                        <p className="text-xs md:text-sm text-gray-500 mt-1">
-                          Created: {new Date(resume.created_at).toLocaleString()}
+                        <p className="mt-1 text-xs text-gray-500 md:text-sm">
+                          Revision {resume.resume_revision} • Created{" "}
+                          {new Date(resume.created_at).toLocaleString()}
                         </p>
                       </div>
-                      <div className="flex gap-2 w-full sm:w-auto">
+                      <div className="flex w-full gap-2 sm:w-auto">
                         <Button
                           onClick={() => loadResume(resume)}
                           variant="secondary"
@@ -412,16 +732,15 @@ export default function ResumeowPage() {
             )}
           </div>
         ) : (
-          <div className="max-w-5xl mx-auto">
-            {/* Resume Management Buttons */}
-            <div className="flex items-center gap-2 sm:gap-3 mb-4">
+          <div className="mx-auto max-w-7xl">
+            <div className="mb-4 flex flex-wrap items-center gap-2 sm:gap-3">
               <Button
                 onClick={() => setShowResumeList(!showResumeList)}
                 variant="secondary"
                 size="sm"
                 className="text-xs sm:text-sm"
               >
-                {showResumeList ? "← Back" : "📁 Resumes"}
+                {showResumeList ? "Back" : "Resumes"}
               </Button>
               <Button
                 onClick={handleNewResume}
@@ -431,155 +750,196 @@ export default function ResumeowPage() {
               >
                 + New
               </Button>
-            </div>
-
-            {/* Resume Title and Save Button */}
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-4 mb-4">
-              <input
-                type="text"
-                value={resumeTitle}
-                onChange={(e) => setResumeTitle(e.target.value)}
-                className="text-base sm:text-lg md:text-xl bg-gray-800/50 border border-gray-700 rounded-lg px-3 sm:px-4 py-2 text-white w-full sm:max-w-md"
-                placeholder="Resume Title"
-              />
-              <div className="flex gap-2">
-                <Button
-                  onClick={handleSaveResume}
-                  disabled={isSaving}
-                  variant="primary"
-                  size="sm"
-                  className="flex-1 sm:flex-none"
-                >
-                  {isSaving ? "Saving..." : "💾 Save"}
-                </Button>
-                <Button
-                  onClick={copyLatexToClipboard}
-                  variant="outline"
-                  size="sm"
-                  title="Copy LaTeX code to clipboard. You can paste it into Overleaf or any LaTeX editor to make custom edits."
-                  className="flex-1 sm:flex-none"
-                >
-                  📋 Copy LaTeX
-                </Button>
-              </div>
-            </div>
-
-          <Card className="p-4 md:p-6 bg-gray-800/30">
-            {/* Tab Navigation */}
-            <div className="flex flex-col sm:flex-row gap-1 sm:gap-2 mb-4 md:mb-6 sm:border-b border-gray-700 sm:overflow-x-auto sm:scrollbar-hide">
-              {tabs.map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`px-3 py-2.5 sm:px-2 sm:py-2 text-sm sm:text-xs md:text-sm font-medium whitespace-nowrap transition-colors rounded sm:rounded-none text-left sm:text-center ${
-                    activeTab === tab.id
-                      ? "bg-[#E84A3A] text-white sm:bg-transparent sm:border-b-2 sm:border-[#E84A3A] sm:text-[#E84A3A]"
-                      : "bg-gray-800/50 text-gray-400 hover:text-white hover:bg-gray-700/50 sm:bg-transparent sm:hover:bg-transparent"
-                  }`}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </div>
-            <p className="text-xs sm:text-sm text-gray-400 mb-4 text-center">
-              * indicates mandatory sections
-            </p>
-
-            {/* Form Content */}
-            <div className="min-h-[400px]">
-              {activeTab === "personal" && (
-                <PersonalInfoForm
-                  data={resumeData.personalInfo}
-                  onChange={updatePersonalInfo}
-                />
-              )}
-              {activeTab === "education" && (
-                <EducationForm
-                  data={resumeData.education}
-                  onChange={updateEducation}
-                />
-              )}
-              {activeTab === "experience" && (
-                <ExperienceForm
-                  data={resumeData.experience}
-                  onChange={updateExperience}
-                />
-              )}
-              {activeTab === "cocurricular" && (
-                <CoCurricularForm
-                  data={resumeData.coCurricularActivities || []}
-                  onChange={updateCoCurricular}
-                />
-              )}
-              {activeTab === "skills" && (
-                <SkillsForm data={resumeData.skills} onChange={updateSkills} />
-              )}
-              {activeTab === "projects" && (
-                <ProjectsForm
-                  data={resumeData.projects || []}
-                  onChange={updateProjects}
-                />
-              )}
-            </div>
-
-            {/* Navigation Buttons */}
-            <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 mt-6 md:mt-8 pt-4 md:pt-6 border-t border-gray-700">
               <Button
-                variant="outline"
-                onClick={() => {
-                  const currentIndex = tabs.findIndex((t) => t.id === activeTab);
-                  if (currentIndex > 0) {
-                    setActiveTab(tabs[currentIndex - 1].id);
-                  }
-                }}
-                disabled={activeTab === "personal"}
-                className="w-full sm:w-auto"
+                onClick={() => setIsAiDrawerOpen(true)}
+                variant="ghost"
+                size="sm"
+                className="ml-auto text-xs sm:text-sm xl:hidden"
               >
-                ← Previous
+                Open AI
               </Button>
-
-              {activeTab === "projects" ? (
-                <Button
-                  onClick={generateResume}
-                  disabled={isGenerating || cooldownSeconds > 0}
-                  size="lg"
-                  className="w-full sm:w-auto text-sm sm:text-base"
-                >
-                  {isGenerating 
-                    ? "Generating..." 
-                    : cooldownSeconds > 0 
-                      ? `Wait ${cooldownSeconds}s to Generate Again` 
-                      : "Generate Resume 🎉"}
-                </Button>
-              ) : (
-                <Button
-                  onClick={() => {
-                    const currentIndex = tabs.findIndex((t) => t.id === activeTab);
-                    if (currentIndex < tabs.length - 1) {
-                      setActiveTab(tabs[currentIndex + 1].id);
-                    }
-                  }}
-                  className="w-full sm:w-auto"
-                >
-                  Next →
-                </Button>
-              )}
             </div>
-          </Card>
 
-          {/* Instructions */}
-          <Card className="mt-4 md:mt-6 p-4 md:p-6 bg-gray-800/50 border-gray-700">
-            <h3 className="text-sm md:text-base font-semibold mb-2 text-white">💡 How to use:</h3>
-            <ol className="list-decimal list-inside space-y-1 text-xs md:text-sm text-gray-300">
-              <li>Fill in your personal information in each tab</li>
-              <li>Add your work experience, education, and skills</li>
-              <li>Click "Save" to save your resume to the cloud</li>
-              <li>Click "Generate Resume" to download your PDF directly</li>
-            </ol>
-            <p className="text-xs text-gray-400 mt-3">
-              Your resume is compiled with LaTeX to ensure professional formatting and quality.
-            </p>
-          </Card>
+            <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px] xl:items-start">
+              <div className="min-w-0 space-y-4 md:space-y-6">
+                <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center sm:gap-4">
+                  <input
+                    type="text"
+                    value={resumeTitle}
+                    onChange={(e) => setResumeTitle(e.target.value)}
+                    className="w-full rounded-lg border border-gray-700 bg-gray-800/50 px-3 py-2 text-base text-white sm:max-w-md sm:text-lg md:text-xl"
+                    placeholder="Resume Title"
+                  />
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={handleSaveResume}
+                      disabled={isSaving}
+                      variant="primary"
+                      size="sm"
+                      className="flex-1 sm:flex-none"
+                    >
+                      {isSaving ? "Saving..." : "Save"}
+                    </Button>
+                    <Button
+                      onClick={copyLatexToClipboard}
+                      variant="outline"
+                      size="sm"
+                      title="Copy LaTeX code to clipboard"
+                      className="flex-1 sm:flex-none"
+                    >
+                      Copy LaTeX
+                    </Button>
+                  </div>
+                </div>
+
+                <Card className="bg-gray-800/30 p-4 md:p-6">
+                  <div className="mb-4 flex flex-col gap-1 sm:mb-6 sm:flex-row sm:gap-2 sm:overflow-x-auto sm:border-b sm:border-gray-700 sm:scrollbar-hide">
+                    {tabs.map((tab) => (
+                      <button
+                        key={tab.id}
+                        onClick={() => setActiveTab(tab.id)}
+                        className={`rounded px-3 py-2.5 text-left text-sm font-medium whitespace-nowrap transition-colors sm:rounded-none sm:px-2 sm:py-2 sm:text-center md:text-sm ${
+                          activeTab === tab.id
+                            ? "bg-[#E84A3A] text-white sm:border-b-2 sm:border-[#E84A3A] sm:bg-transparent sm:text-[#E84A3A]"
+                            : "bg-gray-800/50 text-gray-400 hover:bg-gray-700/50 hover:text-white sm:bg-transparent sm:hover:bg-transparent"
+                        }`}
+                      >
+                        {tab.label}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="mb-4 text-center text-xs text-gray-400 sm:text-sm">
+                    * indicates mandatory sections
+                  </p>
+
+                  <div className="min-h-[400px]">
+                    {activeTab === "personal" ? (
+                      <PersonalInfoForm
+                        data={resumeData.personalInfo}
+                        onChange={updatePersonalInfo}
+                      />
+                    ) : null}
+                    {activeTab === "education" ? (
+                      <EducationForm
+                        data={resumeData.education}
+                        onChange={updateEducation}
+                      />
+                    ) : null}
+                    {activeTab === "experience" ? (
+                      <ExperienceForm
+                        data={resumeData.experience}
+                        onChange={updateExperience}
+                      />
+                    ) : null}
+                    {activeTab === "cocurricular" ? (
+                      <CoCurricularForm
+                        data={resumeData.coCurricularActivities || []}
+                        onChange={updateCoCurricular}
+                      />
+                    ) : null}
+                    {activeTab === "skills" ? (
+                      <SkillsForm data={resumeData.skills} onChange={updateSkills} />
+                    ) : null}
+                    {activeTab === "projects" ? (
+                      <ProjectsForm
+                        data={resumeData.projects || []}
+                        onChange={updateProjects}
+                      />
+                    ) : null}
+                  </div>
+
+                  <div className="mt-6 flex flex-col gap-3 border-t border-gray-700 pt-4 sm:flex-row sm:items-center sm:justify-between md:mt-8 md:pt-6">
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        const currentIndex = tabs.findIndex((t) => t.id === activeTab);
+                        if (currentIndex > 0) {
+                          setActiveTab(tabs[currentIndex - 1].id);
+                        }
+                      }}
+                      disabled={activeTab === "personal"}
+                      className="w-full sm:w-auto"
+                    >
+                      Previous
+                    </Button>
+
+                    {activeTab === "projects" ? (
+                      <Button
+                        onClick={generateResume}
+                        disabled={isGenerating || cooldownSeconds > 0}
+                        size="lg"
+                        className="w-full sm:w-auto"
+                      >
+                        {isGenerating
+                          ? "Generating..."
+                          : cooldownSeconds > 0
+                            ? `Wait ${cooldownSeconds}s`
+                            : "Generate Resume"}
+                      </Button>
+                    ) : (
+                      <Button
+                        onClick={() => {
+                          const currentIndex = tabs.findIndex((t) => t.id === activeTab);
+                          if (currentIndex < tabs.length - 1) {
+                            setActiveTab(tabs[currentIndex + 1].id);
+                          }
+                        }}
+                        className="w-full sm:w-auto"
+                      >
+                        Next
+                      </Button>
+                    )}
+                  </div>
+                </Card>
+
+                <Card className="border-gray-700 bg-gray-800/50 p-4 md:p-6">
+                  <h3 className="mb-2 text-sm font-semibold text-white md:text-base">
+                    How to use
+                  </h3>
+                  <ol className="list-decimal space-y-1 pl-5 text-xs text-gray-300 md:text-sm">
+                    <li>Fill in your personal information in each tab</li>
+                    <li>Add work experience, education, skills, and projects</li>
+                    <li>Save your resume to unlock the persistent AI assistant</li>
+                    <li>Chat naturally with the AI to review, tailor, or rewrite the active resume</li>
+                    <li>Generate your final PDF when you are ready</li>
+                  </ol>
+                  <p className="mt-3 text-xs text-gray-400">
+                    Resumeow still compiles your final output with LaTeX for
+                    professional formatting and quality.
+                  </p>
+                </Card>
+              </div>
+
+              <ResumeAiSidebar
+                isOpen={isAiDrawerOpen}
+                onClose={() => setIsAiDrawerOpen(false)}
+                isStreaming={isStreaming}
+                chatDisabled={!currentResumeId}
+                chatDisabledReason={
+                  !currentResumeId
+                    ? "Save this resume first to start a persistent AI thread."
+                    : undefined
+                }
+                chatInput={chatInput}
+                onChatInputChange={setChatInput}
+                onSendMessage={handleSendMessage}
+                messages={visibleMessages}
+                streamingText={streamingText}
+                changeSets={visibleChangeSets}
+                onApplyChangeSet={handleApplyChangeSet}
+                applyingChangeSetId={applyingChangeSetId}
+                profile={profile}
+                onOpenProfile={() => setIsProfileModalOpen(true)}
+                jobDescriptions={jobDescriptions}
+                selectedJobDescriptionId={selectedJobDescriptionId}
+                onSelectedJobDescriptionChange={setSelectedJobDescriptionId}
+                onSaveJobDescription={handleSaveJobDescription}
+                isSavingJobDescription={isSavingJobDescription}
+                rateLimitMessage={rateLimitMessage}
+                activeProcessLabel={activeProcessLabel}
+                errorMessage={chatErrorMessage}
+              />
+            </div>
           </div>
         )}
       </div>
@@ -589,170 +949,92 @@ export default function ResumeowPage() {
 }
 
 function ResumeowLandingPage() {
-  const router = useRouter();
-
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black">
-      {/* Hero Section */}
       <div className="container mx-auto px-4 py-16 md:py-24">
-        <div className="text-center mb-12 md:mb-24">
-          <h1 className="text-4xl md:text-6xl font-bold text-white mb-6">
-            Resumeow 📄
+        <div className="mb-12 text-center md:mb-24">
+          <h1 className="mb-6 text-4xl font-bold text-white md:text-6xl">
+            Resumeow
           </h1>
-          <p className="text-xl md:text-2xl text-gray-300 max-w-3xl mx-auto mb-8">
-            Create professional resumes with LaTeX quality. Simple forms, beautiful PDFs.
+          <p className="mx-auto mb-8 max-w-3xl text-xl text-gray-300 md:text-2xl">
+            Create professional resumes with LaTeX quality and get grounded AI help to review and improve them.
           </p>
-          <p className="text-lg text-gray-400 max-w-2xl mx-auto">
-            Fill in your details and I'll handle the formatting according to what recruiters look for.
+          <p className="mx-auto max-w-2xl text-lg text-gray-400">
+            Fill in your details, save multiple resume versions, and use the AI sidebar to review or draft improvements before you generate the final PDF.
           </p>
         </div>
 
-        {/* Screenshots Section */}
-        <div className="max-w-6xl mx-auto space-y-16 mb-16">
-          {/* Intro - Image Left */}
-          <div className="grid md:grid-cols-2 gap-8 items-center">
-            <div className="rounded-lg overflow-hidden border border-gray-700 shadow-xl">
+        <div className="mx-auto mb-16 max-w-6xl space-y-16">
+          <div className="grid items-center gap-8 md:grid-cols-2">
+            <div className="overflow-hidden rounded-lg border border-gray-700 shadow-xl">
               <Image
                 src="/landing_pages/resumeow/resumeow_intro.png"
                 alt="Resumeow Introduction"
                 width={800}
                 height={450}
-                className="w-full h-auto"
+                className="h-auto w-full"
               />
             </div>
             <div className="space-y-4">
-              <h2 className="text-2xl md:text-3xl font-bold text-white">
-                Simple & Intuitive Interface
+              <h2 className="text-2xl font-bold text-white md:text-3xl">
+                Structured editor, smarter assistance
               </h2>
               <p className="text-lg text-gray-300">
-                Start building your professional resume with an easy-to-use interface. No LaTeX knowledge required.
+                Build your resume with the guided editor, then chat with the AI to review content, tailor drafts, and keep changes approval-based.
               </p>
             </div>
           </div>
 
-          {/* Fill in Details - Image Right */}
-          <div className="grid md:grid-cols-2 gap-8 items-center">
-            <div className="space-y-4 order-2 md:order-1">
-              <h2 className="text-2xl md:text-3xl font-bold text-white">
-                Fill In Your Details
+          <div className="grid items-center gap-8 md:grid-cols-2">
+            <div className="order-2 space-y-4 md:order-1">
+              <h2 className="text-2xl font-bold text-white md:text-3xl">
+                Resume reviews grounded in your own data
               </h2>
               <p className="text-lg text-gray-300">
-                Add your experiences, education, projects, and skills with guided forms and helpful examples.
+                Resumeow uses your saved profile, past resumes, selected job descriptions, and internal guidance to keep reviews and edit drafts factual.
               </p>
             </div>
-            <div className="rounded-lg overflow-hidden border border-gray-700 shadow-xl order-1 md:order-2">
+            <div className="order-1 overflow-hidden rounded-lg border border-gray-700 shadow-xl md:order-2">
               <Image
                 src="/landing_pages/resumeow/resumeow_experiences.png"
                 alt="Add your experiences"
                 width={800}
                 height={450}
-                className="w-full h-auto"
+                className="h-auto w-full"
               />
             </div>
           </div>
 
-          {/* See Sample Output - Image Left */}
-          <div className="grid md:grid-cols-2 gap-8 items-center">
-            <div className="rounded-lg overflow-hidden border border-gray-700 shadow-xl">
+          <div className="grid items-center gap-8 md:grid-cols-2">
+            <div className="overflow-hidden rounded-lg border border-gray-700 shadow-xl">
               <Image
                 src="/landing_pages/resumeow/resumeow_sample.png"
                 alt="Sample resume output"
                 width={800}
                 height={450}
-                className="w-full h-auto"
+                className="h-auto w-full"
               />
             </div>
             <div className="space-y-4">
-              <h2 className="text-2xl md:text-3xl font-bold text-white">
-                See Sample Output
+              <h2 className="text-2xl font-bold text-white md:text-3xl">
+                Keep the PDF quality
               </h2>
               <p className="text-lg text-gray-300">
-                Preview how your resume will look with professional formatting and clean design.
-              </p>
-            </div>
-          </div>
-
-          {/* Generate PDF - Image Right */}
-          <div className="grid md:grid-cols-2 gap-8 items-center">
-            <div className="space-y-4 order-2 md:order-1">
-              <h2 className="text-2xl md:text-3xl font-bold text-white">
-                Generate Professional PDFs
-              </h2>
-              <p className="text-lg text-gray-300">
-                Download your resume as a beautifully formatted PDF, compiled with LaTeX for the highest quality.
-              </p>
-            </div>
-            <div className="rounded-lg overflow-hidden border border-gray-700 shadow-xl order-1 md:order-2">
-              <Image
-                src="/landing_pages/resumeow/resumeow_generate_resume.png"
-                alt="Generate resume PDF"
-                width={800}
-                height={450}
-                className="w-full h-auto"
-              />
-            </div>
-          </div>
-
-          {/* Save & Manage - Image Left */}
-          <div className="grid md:grid-cols-2 gap-8 items-center">
-            <div className="rounded-lg overflow-hidden border border-gray-700 shadow-xl">
-              <Image
-                src="/landing_pages/resumeow/resumeow_saved.png"
-                alt="Saved resumes"
-                width={800}
-                height={450}
-                className="w-full h-auto"
-              />
-            </div>
-            <div className="space-y-4">
-              <h2 className="text-2xl md:text-3xl font-bold text-white">
-                Save & Manage Multiple Resumes
-              </h2>
-              <p className="text-lg text-gray-300">
-                Keep all your resumes in one place. Access them from anywhere, anytime, with cloud sync.
+                The AI helps with reasoning and drafting, but your final resume still goes through the same LaTeX PDF pipeline.
               </p>
             </div>
           </div>
         </div>
 
-        {/* Features */}
-        <div className="max-w-4xl mx-auto mb-16">
-          <h2 className="text-3xl font-bold text-white text-center mb-8">Why Resumeow?</h2>
-          <div className="grid md:grid-cols-3 gap-6">
-            <Card className="p-6 bg-gray-800/30 border-gray-700">
-              <div className="text-4xl mb-3">📝</div>
-              <h3 className="text-xl font-semibold text-white mb-2">Easy to Use</h3>
-              <p className="text-gray-400">
-                Simple forms with example images to guide you through each section
-              </p>
-            </Card>
-            <Card className="p-6 bg-gray-800/30 border-gray-700">
-              <div className="text-4xl mb-3">✨</div>
-              <h3 className="text-xl font-semibold text-white mb-2">LaTeX Quality</h3>
-              <p className="text-gray-400">
-                Professional formatting powered by LaTeX compilation
-              </p>
-            </Card>
-            <Card className="p-6 bg-gray-800/30 border-gray-700">
-              <div className="text-4xl mb-3">☁️</div>
-              <h3 className="text-xl font-semibold text-white mb-2">Cloud Saved</h3>
-              <p className="text-gray-400">
-                Access your resumes from anywhere, saved securely in the cloud
-              </p>
-            </Card>
-          </div>
-        </div>
-
-        {/* CTA */}
         <div className="text-center">
           <Button
-            onClick={() => router.push("/login")}
+            onClick={() => window.location.assign("/login")}
             size="lg"
-            className="bg-[#E84A3A] text-white hover:bg-[#d43d2d] shadow-lg hover:shadow-xl hover:shadow-[#E84A3A]/20 transform hover:-translate-y-0.5 text-lg px-12 py-6 cursor-pointer"
+            className="cursor-pointer px-12 py-6 text-lg"
           >
-            Login to Try Now →
+            Login to Try Now
           </Button>
-          <p className="text-gray-400 mt-4">
+          <p className="mt-4 text-gray-400">
             Free to use • No credit card required
           </p>
         </div>
@@ -761,4 +1043,3 @@ function ResumeowLandingPage() {
     </div>
   );
 }
-

@@ -1,135 +1,86 @@
-import { createClient } from "@/lib/supabase/client";
-import { ResumeData } from "@/lib/types/resume";
+import { ResumeData, SavedResume } from "@/lib/types/resume";
 
-export interface SavedResume {
-  id: string;
-  user_id: string;
-  title: string;
-  resume_data: ResumeData;
-  created_at: string;
-  updated_at: string;
+async function parseResponse<T>(response: Response): Promise<T> {
+  if (!response.ok) {
+    const payload = await response.json().catch(() => null);
+    throw new Error(payload?.error ?? "Request failed");
+  }
+
+  return response.json();
 }
 
-/**
- * Fetch all resumes for the current user
- */
 export async function fetchUserResumes(): Promise<SavedResume[]> {
-  const supabase = createClient();
-  
-  const { data, error } = await supabase
-    .from("resumes")
-    .select("*")
-    .order("updated_at", { ascending: false });
+  const response = await fetch("/api/resumeow/resumes", {
+    method: "GET",
+    credentials: "include",
+    cache: "no-store",
+  });
 
-  if (error) {
-    console.error("Error fetching resumes:", error);
-    throw error;
-  }
-
-  return data || [];
+  const payload = await parseResponse<{ resumes: SavedResume[] }>(response);
+  return payload.resumes;
 }
 
-/**
- * Fetch a single resume by ID
- */
 export async function fetchResume(id: string): Promise<SavedResume | null> {
-  const supabase = createClient();
-  
-  const { data, error } = await supabase
-    .from("resumes")
-    .select("*")
-    .eq("id", id)
-    .single();
+  const response = await fetch(`/api/resumeow/resumes/${id}`, {
+    method: "GET",
+    credentials: "include",
+    cache: "no-store",
+  });
 
-  if (error) {
-    console.error("Error fetching resume:", error);
-    throw error;
-  }
-
-  return data;
+  const payload = await parseResponse<{ resume: SavedResume | null }>(response);
+  return payload.resume;
 }
 
-/**
- * Create a new resume
- */
 export async function createResume(
   title: string,
   resumeData: ResumeData
 ): Promise<SavedResume> {
-  const supabase = createClient();
-  
-  const { data: { user } } = await supabase.auth.getUser();
-  
-  if (!user) {
-    throw new Error("User not authenticated");
-  }
-
-  const { data, error } = await supabase
-    .from("resumes")
-    .insert({
-      user_id: user.id,
+  const response = await fetch("/api/resumeow/resumes", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    credentials: "include",
+    body: JSON.stringify({
       title,
-      resume_data: resumeData,
-    })
-    .select()
-    .single();
+      resumeData,
+    }),
+  });
 
-  if (error) {
-    console.error("Error creating resume:", error);
-    throw error;
-  }
-
-  return data;
+  const payload = await parseResponse<{ resume: SavedResume }>(response);
+  return payload.resume;
 }
 
-/**
- * Update an existing resume
- */
 export async function updateResume(
   id: string,
   title: string,
   resumeData: ResumeData
 ): Promise<SavedResume> {
-  const supabase = createClient();
-  
-  const { data, error } = await supabase
-    .from("resumes")
-    .update({
+  const response = await fetch(`/api/resumeow/resumes/${id}`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    credentials: "include",
+    body: JSON.stringify({
       title,
-      resume_data: resumeData,
-    })
-    .eq("id", id)
-    .select()
-    .single();
+      resumeData,
+    }),
+  });
 
-  if (error) {
-    console.error("Error updating resume:", error);
-    throw error;
-  }
-
-  return data;
+  const payload = await parseResponse<{ resume: SavedResume }>(response);
+  return payload.resume;
 }
 
-/**
- * Delete a resume
- */
 export async function deleteResume(id: string): Promise<void> {
-  const supabase = createClient();
-  
-  const { error } = await supabase
-    .from("resumes")
-    .delete()
-    .eq("id", id);
+  const response = await fetch(`/api/resumeow/resumes/${id}`, {
+    method: "DELETE",
+    credentials: "include",
+  });
 
-  if (error) {
-    console.error("Error deleting resume:", error);
-    throw error;
-  }
+  await parseResponse<{ success: boolean }>(response);
 }
 
-/**
- * Save resume (create if new, update if existing)
- */
 export async function saveResume(
   resumeData: ResumeData,
   title: string,
@@ -137,7 +88,7 @@ export async function saveResume(
 ): Promise<SavedResume> {
   if (existingId) {
     return updateResume(existingId, title, resumeData);
-  } else {
-    return createResume(title, resumeData);
   }
+
+  return createResume(title, resumeData);
 }
