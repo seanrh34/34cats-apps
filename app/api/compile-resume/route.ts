@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { generateLatexResume } from "@/lib/latex/template";
 import { ResumeData } from "@/lib/types/resume";
 import * as tar from "tar-stream";
-import { Readable } from "stream";
 
 export async function POST(request: NextRequest) {
   try {

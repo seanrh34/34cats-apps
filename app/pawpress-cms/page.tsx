@@ -158,7 +158,7 @@ export default function PawPressCMSPage() {
 
         <ContentSection title="Final Thoughts">
           <p>
-            Building a custom CMS isn't always the answer, but for focused use cases, it offers clarity and control that off-the-shelf solutions can't match.
+            Building a custom CMS isn&apos;t always the answer, but for focused use cases, it offers clarity and control that off-the-shelf solutions can&apos;t match.
           </p>
           <p>
             PawPress CMS trades comprehensive features for simplicity. It works well when your requirements are narrow and ownership matters more than convenience.

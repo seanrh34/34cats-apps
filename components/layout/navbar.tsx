@@ -13,8 +13,6 @@ export function Navbar() {
   const { user, loading, signOut } = useAuth();
   const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [isOpen, setIsOpen] = useState(false);
-  const [isScrolled, setIsScrolled] = useState(false);
   const [activeSection, setActiveSection] = useState<string | null>(null);
 
   const handleSignOut = async () => {
@@ -28,8 +26,6 @@ export function Navbar() {
 
   useEffect(() => {
     const handleScroll = () => {
-      setIsScrolled(window.scrollY > 20);
-
       // Don't set active section if we're on an app page (not homepage)
       if (window.location.pathname !== '/') {
         setActiveSection(null);
@@ -61,13 +57,8 @@ export function Navbar() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  useEffect(() => {
-    console.log("Active Section:", activeSection);
-  }, [activeSection]);
-
   const handleLinkClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
     smoothScrollToSection(e, href);
-    setIsOpen(false);
     setMobileMenuOpen(false);
   };
 
