@@ -1,6 +1,8 @@
 "use client";
 
 import { KeyboardEvent, useEffect, useRef, useState } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
@@ -56,6 +58,72 @@ interface ToolMessageMetadata {
   diffItems?: ResumeChangeSet["diff_items"];
 }
 
+function MarkdownMessage({ content }: { content: string }) {
+  return (
+    <ReactMarkdown
+      remarkPlugins={[remarkGfm]}
+      components={{
+        p: ({ children }) => (
+          <p className="mb-2 whitespace-pre-wrap text-sm leading-6 text-gray-100 last:mb-0">
+            {children}
+          </p>
+        ),
+        strong: ({ children }) => (
+          <strong className="font-semibold text-white">{children}</strong>
+        ),
+        em: ({ children }) => <em className="italic text-gray-100">{children}</em>,
+        ul: ({ children }) => (
+          <ul className="mb-2 list-disc space-y-1 pl-5 text-sm text-gray-100 last:mb-0">
+            {children}
+          </ul>
+        ),
+        ol: ({ children }) => (
+          <ol className="mb-2 list-decimal space-y-1 pl-5 text-sm text-gray-100 last:mb-0">
+            {children}
+          </ol>
+        ),
+        li: ({ children }) => <li className="leading-6">{children}</li>,
+        code: ({ children }) => (
+          <code className="rounded bg-gray-800 px-1.5 py-0.5 text-xs text-gray-100">
+            {children}
+          </code>
+        ),
+        pre: ({ children }) => (
+          <pre className="mb-2 overflow-x-auto rounded-lg border border-gray-800 bg-black/30 p-3 text-xs text-gray-100 last:mb-0">
+            {children}
+          </pre>
+        ),
+        table: ({ children }) => (
+          <div className="mb-2 overflow-x-auto rounded-lg border border-gray-800 last:mb-0">
+            <table className="w-full border-collapse text-left text-xs text-gray-100">
+              {children}
+            </table>
+          </div>
+        ),
+        thead: ({ children }) => <thead className="bg-gray-800/80">{children}</thead>,
+        tbody: ({ children }) => <tbody>{children}</tbody>,
+        tr: ({ children }) => <tr className="border-b border-gray-800">{children}</tr>,
+        th: ({ children }) => (
+          <th className="px-3 py-2 font-semibold text-white">{children}</th>
+        ),
+        td: ({ children }) => <td className="px-3 py-2 align-top">{children}</td>,
+        a: ({ children, href }) => (
+          <a
+            href={href}
+            target="_blank"
+            rel="noreferrer"
+            className="text-[#E84A3A] underline decoration-[#E84A3A]/60 underline-offset-2"
+          >
+            {children}
+          </a>
+        ),
+      }}
+    >
+      {content}
+    </ReactMarkdown>
+  );
+}
+
 function SidebarMessage({
   message,
   onUndoChangeSet,
@@ -105,9 +173,7 @@ function SidebarMessage({
 
         {isTool && message.tool_name === "review_resume" ? (
           <div className="space-y-3">
-            <p className="whitespace-pre-wrap text-sm leading-6 text-gray-100">
-              {message.content}
-            </p>
+            <MarkdownMessage content={message.content} />
             {Array.isArray(metadata.findings) && metadata.findings.length > 0 ? (
               <div className="space-y-2">
                 {metadata.findings.slice(0, 3).map((finding) => (
@@ -133,9 +199,13 @@ function SidebarMessage({
           </div>
         ) : (
           <div className="space-y-3">
-            <p className={`whitespace-pre-wrap text-sm leading-6 ${isUser ? "text-white" : "text-gray-100"}`}>
-              {message.content}
-            </p>
+            {isUser ? (
+              <p className="whitespace-pre-wrap text-sm leading-6 text-white">
+                {message.content}
+              </p>
+            ) : (
+              <MarkdownMessage content={message.content} />
+            )}
             {!isTool && !isUser && effectiveChangeSet ? (
               <div className="rounded-xl border border-[#E84A3A]/30 bg-[#E84A3A]/10 p-3">
                 <div className="flex items-start justify-between gap-3">
