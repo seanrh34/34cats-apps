@@ -84,6 +84,9 @@ export default function ResumeowPage() {
   const [applyingChangeSetId, setApplyingChangeSetId] = useState<string | null>(
     null
   );
+  const [consumedUndoChangeSetIds, setConsumedUndoChangeSetIds] = useState<string[]>(
+    []
+  );
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -236,6 +239,7 @@ export default function ResumeowPage() {
     setHasUnsavedChanges(false);
     setRateLimitMessage(null);
     setIsAiDrawerOpen(false);
+    setConsumedUndoChangeSetIds([]);
   };
 
   const handleSaveResume = async () => {
@@ -274,6 +278,7 @@ export default function ResumeowPage() {
     setHasUnsavedChanges(false);
     setMessages([]);
     setChangeSets([]);
+    setConsumedUndoChangeSetIds([]);
     setStreamingText("");
     setRateLimitMessage(null);
   };
@@ -478,7 +483,13 @@ export default function ResumeowPage() {
     if (isStreaming) {
       return;
     }
+    if (consumedUndoChangeSetIds.includes(changeSetId)) {
+      return;
+    }
 
+    setConsumedUndoChangeSetIds((current) =>
+      current.includes(changeSetId) ? current : [...current, changeSetId]
+    );
     setApplyingChangeSetId(changeSetId);
     try {
       const response = await undoChangeSetRequest(changeSetId);
@@ -674,7 +685,13 @@ export default function ResumeowPage() {
 
   const showProfilePrompt = !profile && !hasDismissedProfilePrompt;
   const isAiRunLocked = isStreaming;
-  const visibleMessages = messages;
+  const visibleMessages = messages.filter(
+    (message) =>
+      !(
+        message.role === "tool" &&
+        message.tool_name === "propose_resume_changes"
+      )
+  );
   const visibleChangeSets = changeSets;
 
   return (
@@ -689,6 +706,23 @@ export default function ResumeowPage() {
                   Generating your resume...
                 </p>
                 <p className="text-sm text-gray-400">This may take a few seconds</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
+      {applyingChangeSetId ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm">
+          <div className="rounded-lg border border-gray-700 bg-gray-800 p-8 text-center shadow-2xl">
+            <div className="flex flex-col items-center gap-4">
+              <div className="h-12 w-12 animate-spin rounded-full border-4 border-gray-600 border-t-[#E84A3A]"></div>
+              <div>
+                <p className="mb-2 text-lg font-semibold text-white">
+                  Undoing AI changes...
+                </p>
+                <p className="text-sm text-gray-400">
+                  Please wait while we restore your previous resume state.
+                </p>
               </div>
             </div>
           </div>
@@ -1001,6 +1035,7 @@ export default function ResumeowPage() {
                 changeSets={visibleChangeSets}
                 onUndoChangeSet={handleUndoChangeSet}
                 applyingChangeSetId={applyingChangeSetId}
+                consumedUndoChangeSetIds={consumedUndoChangeSetIds}
                 profile={profile}
                 onOpenProfile={() => {
                   if (isAiRunLocked) {

@@ -24,6 +24,7 @@ interface ResumeAiSidebarProps {
   changeSets: ResumeChangeSet[];
   onUndoChangeSet: (changeSetId: string) => Promise<void>;
   applyingChangeSetId?: string | null;
+  consumedUndoChangeSetIds?: string[];
   profile: ResumeProfile | null;
   onOpenProfile: () => void;
   jobDescriptions: ResumeJobDescription[];
@@ -59,16 +60,26 @@ function SidebarMessage({
   message,
   onUndoChangeSet,
   applyingChangeSetId,
+  consumedUndoChangeSetIds,
+  changeSets,
   isLocked,
 }: {
   message: ResumeAiMessage;
   onUndoChangeSet: (changeSetId: string) => Promise<void>;
   applyingChangeSetId?: string | null;
+  consumedUndoChangeSetIds?: string[];
+  changeSets: ResumeChangeSet[];
   isLocked?: boolean;
 }) {
   const isUser = message.role === "user";
   const isTool = message.role === "tool";
   const metadata = (message.metadata ?? {}) as ToolMessageMetadata;
+  const effectiveChangeSet = metadata.changeSet
+    ? changeSets.find((changeSet) => changeSet.id === metadata.changeSet?.id) ??
+      metadata.changeSet
+    : null;
+  const effectiveDiffItems =
+    metadata.diffItems ?? effectiveChangeSet?.diff_items ?? [];
 
   return (
     <div className={`flex ${isUser ? "justify-end" : "justify-start"}`}>
@@ -92,11 +103,7 @@ function SidebarMessage({
           </span>
         </div>
 
-        {!isTool ? (
-          <p className={`whitespace-pre-wrap text-sm leading-6 ${isUser ? "text-white" : "text-gray-100"}`}>
-            {message.content}
-          </p>
-        ) : message.tool_name === "review_resume" ? (
+        {isTool && message.tool_name === "review_resume" ? (
           <div className="space-y-3">
             <p className="whitespace-pre-wrap text-sm leading-6 text-gray-100">
               {message.content}
@@ -126,61 +133,55 @@ function SidebarMessage({
           </div>
         ) : (
           <div className="space-y-3">
-            <p className="whitespace-pre-wrap text-sm leading-6 text-gray-100">
+            <p className={`whitespace-pre-wrap text-sm leading-6 ${isUser ? "text-white" : "text-gray-100"}`}>
               {message.content}
             </p>
-            {metadata.changeSet ? (
+            {!isTool && !isUser && effectiveChangeSet ? (
               <div className="rounded-xl border border-[#E84A3A]/30 bg-[#E84A3A]/10 p-3">
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <p className="text-sm font-semibold text-white">
-                      {metadata.changeSet.status === "applied"
+                      {effectiveChangeSet.status === "applied"
                         ? "Resume updated"
-                        : metadata.changeSet.status === "reverted"
+                        : effectiveChangeSet.status === "reverted"
                           ? "Changes undone"
                           : "Change set ready"}
                     </p>
                     <p className="mt-1 text-xs text-gray-200">
-                      {metadata.diffItems?.length ?? metadata.changeSet.diff_items.length} section
-                      {(metadata.diffItems?.length ?? metadata.changeSet.diff_items.length) === 1
+                      {effectiveDiffItems.length} section
+                      {effectiveDiffItems.length === 1
                         ? ""
                         : "s"}{" "}
                       updated.
-                      {metadata.changeSet.status === "applied"
+                      {effectiveChangeSet.status === "applied"
                         ? " You can undo this change."
-                        : metadata.changeSet.status === "reverted"
+                        : effectiveChangeSet.status === "reverted"
                           ? " The prior resume has been restored."
                           : " Review the change set."}
                     </p>
                   </div>
-                  {metadata.changeSet.status === "applied" ? (
+                  {effectiveChangeSet.status === "applied" ? (
                     <Button
                       size="sm"
-                      disabled={isLocked || applyingChangeSetId === metadata.changeSet.id}
-                      isLoading={applyingChangeSetId === metadata.changeSet.id}
+                      disabled={
+                        isLocked ||
+                        applyingChangeSetId === effectiveChangeSet.id ||
+                        (consumedUndoChangeSetIds ?? []).includes(
+                          effectiveChangeSet.id
+                        )
+                      }
+                      isLoading={applyingChangeSetId === effectiveChangeSet.id}
                       onClick={() => {
                         if (isLocked) {
                           return;
                         }
-                        void onUndoChangeSet(metadata.changeSet!.id);
+                        void onUndoChangeSet(effectiveChangeSet.id);
                       }}
                     >
                       Undo
                     </Button>
                   ) : null}
                 </div>
-                {metadata.changeSet.diff_items.slice(0, 2).map((diff) => (
-                  <div
-                    key={`${metadata.changeSet?.id}-${diff.section}-${diff.label}`}
-                    className="mt-3 rounded-lg border border-gray-800 bg-black/20 p-3"
-                  >
-                    <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400">
-                      {diff.section}
-                    </p>
-                    <p className="mt-2 text-xs text-red-200">Before: {diff.before}</p>
-                    <p className="mt-1 text-xs text-emerald-200">After: {diff.after}</p>
-                  </div>
-                ))}
               </div>
             ) : null}
           </div>
@@ -220,6 +221,7 @@ export function ResumeAiSidebar({
   changeSets,
   onUndoChangeSet,
   applyingChangeSetId,
+  consumedUndoChangeSetIds,
   profile,
   onOpenProfile,
   jobDescriptions,
@@ -472,6 +474,8 @@ export function ResumeAiSidebar({
                   message={message}
                   onUndoChangeSet={onUndoChangeSet}
                   applyingChangeSetId={applyingChangeSetId}
+                  consumedUndoChangeSetIds={consumedUndoChangeSetIds}
+                  changeSets={changeSets}
                   isLocked={isLocked}
                 />
               ))}

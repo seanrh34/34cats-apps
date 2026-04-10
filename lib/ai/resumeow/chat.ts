@@ -429,6 +429,8 @@ export async function runResumeowChat(payload: {
     summary: string;
     serialized: string;
   }> = [];
+  let latestAppliedChangeSet: ResumeChangeSet | null = null;
+  let latestAppliedDiffItems: ResumeChangeSet["diff_items"] | null = null;
 
   for (const toolCall of toolCalls) {
     const toolName = toolCall?.function?.name;
@@ -523,19 +525,6 @@ export async function runResumeowChat(payload: {
             : latestUserMessage,
       });
 
-      await insertAiMessage(payload.supabase, {
-        userId: payload.userId,
-        resumeId: payload.resume.id,
-        role: "tool",
-        content: result.summary,
-        toolName,
-        toolCallId: toolCall.id,
-        metadata: {
-          changeSet: result.changeSet,
-          diffItems: result.diffItems,
-        },
-      });
-
       toolResults.push({
         toolName,
         summary: result.summary,
@@ -549,6 +538,10 @@ export async function runResumeowChat(payload: {
           2
         ),
       });
+      if (result.changeSet) {
+        latestAppliedChangeSet = result.changeSet;
+        latestAppliedDiffItems = result.diffItems;
+      }
 
       await write("tool_result", {
         toolName,
@@ -599,6 +592,12 @@ export async function runResumeowChat(payload: {
     resumeId: payload.resume.id,
     role: "assistant",
     content: assistantText,
+    metadata: latestAppliedChangeSet
+      ? {
+          changeSet: latestAppliedChangeSet,
+          diffItems: latestAppliedDiffItems ?? latestAppliedChangeSet.diff_items,
+        }
+      : {},
   });
 
   await write("assistant_done", {
