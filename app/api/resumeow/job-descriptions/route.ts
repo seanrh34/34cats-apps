@@ -2,8 +2,10 @@ import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireUser } from "@/lib/supabase/require-user";
 import {
+  countJobDescriptionsForUser,
   deleteJobDescription,
   deleteRagDocumentBySourceKey,
+  getJobDescriptionById,
   listJobDescriptions,
   saveJobDescription,
 } from "@/lib/services/resume-server-service";
@@ -38,8 +40,31 @@ export async function POST(request: Request) {
   }
 
   const supabase = createAdminClient();
+  const requestedId =
+    typeof body.id === "string" && body.id.trim() ? body.id.trim() : null;
+
+  let saveId: string | undefined;
+  if (requestedId) {
+    const existing = await getJobDescriptionById(supabase, user.id, requestedId);
+    if (!existing) {
+      return NextResponse.json(
+        { error: "Job description not found for update" },
+        { status: 404 }
+      );
+    }
+    saveId = requestedId;
+  } else {
+    const currentCount = await countJobDescriptionsForUser(supabase, user.id);
+    if (currentCount >= 3) {
+      return NextResponse.json(
+        { error: "You can save up to 3 job descriptions." },
+        { status: 409 }
+      );
+    }
+  }
+
   const jobDescription = await saveJobDescription(supabase, user.id, {
-    id: body.id,
+    id: saveId,
     title:
       typeof body.title === "string" && body.title.trim()
         ? body.title.trim()

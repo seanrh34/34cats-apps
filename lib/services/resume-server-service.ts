@@ -404,6 +404,19 @@ export async function listJobDescriptions(
   return ((data ?? []) as DatabaseRow[]).map(mapJobDescriptionRow);
 }
 
+export async function countJobDescriptionsForUser(
+  supabase: DatabaseClient,
+  userId: string
+): Promise<number> {
+  const { count, error } = await supabase
+    .from("resume_job_descriptions")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", userId);
+
+  assertNoError(error, "Failed to count job descriptions");
+  return count ?? 0;
+}
+
 export async function getJobDescriptionById(
   supabase: DatabaseClient,
   userId: string,

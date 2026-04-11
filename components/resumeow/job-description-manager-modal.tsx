@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ResumeJobDescription } from "@/lib/types/resume";
 
+const MAX_JOB_DESCRIPTIONS = 3;
+
 interface JobDescriptionManagerModalProps {
   open: boolean;
   onClose: () => void;
@@ -38,9 +40,11 @@ export function JobDescriptionManagerModal({
   });
   const [editingJobId, setEditingJobId] = useState<string | null>(null);
   const [deletingJobId, setDeletingJobId] = useState<string | null>(null);
+  const [limitWarning, setLimitWarning] = useState<string | null>(null);
 
   const resetDraft = () => {
     setEditingJobId(null);
+    setLimitWarning(null);
     setJobDraft({
       title: "",
       company: "",
@@ -48,6 +52,10 @@ export function JobDescriptionManagerModal({
       content: "",
     });
   };
+
+  const isAddingNew = editingJobId === null;
+  const isAtJobDescriptionLimit = jobDescriptions.length >= MAX_JOB_DESCRIPTIONS;
+  const shouldBlockNewSave = isAddingNew && isAtJobDescriptionLimit;
 
   if (!open) {
     return null;
@@ -80,13 +88,26 @@ export function JobDescriptionManagerModal({
         <div className="grid gap-4 p-5 lg:grid-cols-[280px_minmax(0,1fr)]">
           <Card className="border border-gray-800 bg-gray-900/60 p-3">
             <div className="mb-3 flex items-center justify-between">
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-gray-500">
-                Existing
-              </p>
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-gray-500">
+                  Existing
+                </p>
+                <p className="mt-1 text-xs text-gray-400">
+                  {jobDescriptions.length}/{MAX_JOB_DESCRIPTIONS} saved
+                </p>
+              </div>
               <Button
                 variant="outline"
                 size="sm"
-                onClick={resetDraft}
+                onClick={() => {
+                  if (isAtJobDescriptionLimit) {
+                    setLimitWarning(
+                      `You can only save up to ${MAX_JOB_DESCRIPTIONS} job descriptions. Delete one to add a new one.`
+                    );
+                    return;
+                  }
+                  resetDraft();
+                }}
                 disabled={isLocked || isSavingJobDescription}
               >
                 New
@@ -116,6 +137,7 @@ export function JobDescriptionManagerModal({
                         variant="secondary"
                         disabled={isLocked || isSavingJobDescription}
                         onClick={() => {
+                          setLimitWarning(null);
                           setEditingJobId(job.id);
                           setJobDraft({
                             title: job.title,
@@ -144,6 +166,7 @@ export function JobDescriptionManagerModal({
                           setDeletingJobId(job.id);
                           try {
                             await onDeleteJobDescription(job.id);
+                            setLimitWarning(null);
                             if (editingJobId === job.id) {
                               resetDraft();
                             }
@@ -236,16 +259,37 @@ export function JobDescriptionManagerModal({
                   isLoading={isSavingJobDescription}
                   disabled={isLocked || !jobDraft.content.trim()}
                   onClick={async () => {
-                    await onSaveJobDescription({
-                      id: editingJobId ?? undefined,
-                      ...jobDraft,
-                    });
-                    resetDraft();
+                    if (shouldBlockNewSave) {
+                      setLimitWarning(
+                        `You can only save up to ${MAX_JOB_DESCRIPTIONS} job descriptions. Delete one to add a new one.`
+                      );
+                      return;
+                    }
+
+                    try {
+                      await onSaveJobDescription({
+                        id: editingJobId ?? undefined,
+                        ...jobDraft,
+                      });
+                      setLimitWarning(null);
+                      resetDraft();
+                    } catch (error) {
+                      const message =
+                        error instanceof Error
+                          ? error.message
+                          : "Failed to save job description.";
+                      setLimitWarning(message);
+                    }
                   }}
                 >
                   {editingJobId ? "Update" : "Add"}
                 </Button>
               </div>
+              {limitWarning ? (
+                <p className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-200">
+                  {limitWarning}
+                </p>
+              ) : null}
             </div>
           </Card>
         </div>

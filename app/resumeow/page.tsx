@@ -477,7 +477,7 @@ export default function ResumeowPage() {
       }
     } catch (error) {
       console.error("Failed to save job description", error);
-      alert("Failed to save job description. Please try again.");
+      throw error;
     } finally {
       setIsSavingJobDescription(false);
     }
