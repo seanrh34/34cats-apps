@@ -67,7 +67,7 @@ export function SkillsForm({ data, onChange }: SkillsFormProps) {
 
       <div className="flex justify-between items-center">
         <h3 className="text-lg font-semibold text-white">Skills</h3>
-        <Button onClick={addSkillCategory} size="sm" className="bg-green-500 hover:bg-green-600 text-white shadow-lg hover:shadow-xl hover:shadow-green-500/20">
+        <Button onClick={addSkillCategory} size="sm" className="bg-green-600 hover:bg-green-700 text-white shadow-lg hover:shadow-xl hover:shadow-green-600/20">
           + Add Category
         </Button>
       </div>

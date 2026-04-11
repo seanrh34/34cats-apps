@@ -72,7 +72,7 @@ export function EducationForm({ data, onChange }: EducationFormProps) {
 
       <div className="flex justify-between items-center">
         <h3 className="text-lg font-semibold text-white">Education</h3>
-        <Button onClick={addEducation} size="sm" className="bg-green-500 hover:bg-green-600 text-white shadow-lg hover:shadow-xl hover:shadow-green-500/20">
+        <Button onClick={addEducation} size="sm" className="bg-green-600 hover:bg-green-700 text-white shadow-lg hover:shadow-xl hover:shadow-green-600/20">
           + Add Education
         </Button>
       </div>

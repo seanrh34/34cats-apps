@@ -117,6 +117,171 @@ const TAB_COLOR_CLASSES: Record<
   },
 };
 
+function isBlank(value: string | undefined | null) {
+  return !value?.trim();
+}
+
+function validateResumeForOutput(resumeData: ResumeData) {
+  const issues: string[] = [];
+  const normalizedResumeData = normalizeResumeData(resumeData);
+
+  if (isBlank(normalizedResumeData.personalInfo.fullName)) {
+    issues.push("Personal information: Full Name is required.");
+  }
+
+  if (isBlank(normalizedResumeData.personalInfo.email)) {
+    issues.push("Personal information: Email is required.");
+  }
+
+  if (isBlank(normalizedResumeData.personalInfo.phone)) {
+    issues.push("Personal information: Phone is required.");
+  }
+
+  if (normalizedResumeData.education.length === 0) {
+    issues.push("Education: add at least one education entry.");
+  }
+
+  normalizedResumeData.education.forEach((entry, index) => {
+    const missingFields = [
+      isBlank(entry.institution) ? "Institution" : null,
+      isBlank(entry.location) ? "Location" : null,
+      isBlank(entry.degree) ? "Degree" : null,
+      isBlank(entry.dateRange) ? "Date Range" : null,
+    ].filter(Boolean);
+
+    if (missingFields.length > 0) {
+      issues.push(
+        `Education entry ${index + 1}: fill in ${missingFields.join(", ")}.`
+      );
+    }
+  });
+
+  if (normalizedResumeData.experience.length === 0) {
+    issues.push("Experience: add at least one experience entry.");
+  }
+
+  normalizedResumeData.experience.forEach((entry, index) => {
+    const missingFields = [
+      isBlank(entry.position) ? "Position" : null,
+      isBlank(entry.dateRange) ? "Date Range" : null,
+      isBlank(entry.company) ? "Company" : null,
+      isBlank(entry.location) ? "Location" : null,
+    ].filter(Boolean);
+
+    if (missingFields.length > 0) {
+      issues.push(
+        `Experience entry ${index + 1}: fill in ${missingFields.join(", ")}.`
+      );
+    }
+
+    entry.description.forEach((bullet, bulletIndex) => {
+      if (isBlank(bullet)) {
+        issues.push(
+          `Experience entry ${index + 1}: remove or fill bullet ${bulletIndex + 1}.`
+        );
+      }
+    });
+  });
+
+  (normalizedResumeData.coCurricularActivities ?? []).forEach((entry, index) => {
+    const hasAnyContent =
+      !isBlank(entry.position) ||
+      !isBlank(entry.dateRange) ||
+      !isBlank(entry.organization) ||
+      !isBlank(entry.location) ||
+      entry.description.some((bullet) => !isBlank(bullet));
+
+    if (!hasAnyContent) {
+      issues.push(
+        `Co-curricular activity ${index + 1}: fill it in or delete the empty entry.`
+      );
+      return;
+    }
+
+    const missingFields = [
+      isBlank(entry.position) ? "Position" : null,
+      isBlank(entry.dateRange) ? "Date Range" : null,
+      isBlank(entry.organization) ? "Organization" : null,
+      isBlank(entry.location) ? "Location" : null,
+    ].filter(Boolean);
+
+    if (missingFields.length > 0) {
+      issues.push(
+        `Co-curricular activity ${index + 1}: fill in ${missingFields.join(", ")} or delete the entry.`
+      );
+    }
+
+    entry.description.forEach((bullet, bulletIndex) => {
+      if (isBlank(bullet)) {
+        issues.push(
+          `Co-curricular activity ${index + 1}: remove or fill bullet ${bulletIndex + 1}.`
+        );
+      }
+    });
+  });
+
+  normalizedResumeData.skills.forEach((entry, index) => {
+    const hasAnyContent =
+      !isBlank(entry.category) || entry.items.some((item) => !isBlank(item));
+
+    if (!hasAnyContent) {
+      issues.push(
+        `Skills category ${index + 1}: fill it in or delete the empty entry.`
+      );
+      return;
+    }
+
+    if (isBlank(entry.category)) {
+      issues.push(`Skills category ${index + 1}: Category Name is required.`);
+    }
+
+    if (entry.items.length === 0 || entry.items.every((item) => isBlank(item))) {
+      issues.push(`Skills category ${index + 1}: add at least one skill item.`);
+    }
+
+    entry.items.forEach((item, itemIndex) => {
+      if (isBlank(item)) {
+        issues.push(
+          `Skills category ${index + 1}: remove or fill skill item ${itemIndex + 1}.`
+        );
+      }
+    });
+  });
+
+  (normalizedResumeData.projects ?? []).forEach((entry, index) => {
+    const hasAnyContent = !isBlank(entry.name) || !isBlank(entry.link);
+
+    if (!hasAnyContent) {
+      issues.push(`Project ${index + 1}: fill it in or delete the empty entry.`);
+      return;
+    }
+
+    if (isBlank(entry.name)) {
+      issues.push(`Project ${index + 1}: Project Name is required.`);
+    }
+  });
+
+  (normalizedResumeData.certificationsAwards ?? []).forEach((entry, index) => {
+    const hasAnyContent =
+      !isBlank(entry.name) || !isBlank(entry.description);
+
+    if (!hasAnyContent) {
+      issues.push(
+        `Certification or award ${index + 1}: fill it in or delete the empty entry.`
+      );
+      return;
+    }
+
+    if (isBlank(entry.name) || isBlank(entry.description)) {
+      issues.push(
+        `Certification or award ${index + 1}: both Name and Description are required.`
+      );
+    }
+  });
+
+  return issues;
+}
+
 export default function ResumeowPage() {
   const { user, loading } = useAuth();
   const [activeTab, setActiveTab] = useState<ResumeSectionId>("personal");
@@ -437,6 +602,14 @@ export default function ResumeowPage() {
   };
 
   const copyLatexToClipboard = async () => {
+    const validationIssues = validateResumeForOutput(resumeData);
+    if (validationIssues.length > 0) {
+      alert(
+        `Please complete the resume before copying LaTeX:\n\n${validationIssues.join("\n")}`
+      );
+      return;
+    }
+
     try {
       const latexCode = generateLatexResume(resumeData);
       await navigator.clipboard.writeText(latexCode);
@@ -450,6 +623,14 @@ export default function ResumeowPage() {
   };
 
   const generateResume = async () => {
+    const validationIssues = validateResumeForOutput(resumeData);
+    if (validationIssues.length > 0) {
+      alert(
+        `Please complete the resume before generating it:\n\n${validationIssues.join("\n")}`
+      );
+      return;
+    }
+
     if (cooldownSeconds > 0) {
       alert(
         `Please wait ${cooldownSeconds} seconds before generating another resume.`
@@ -1066,11 +1247,22 @@ export default function ResumeowPage() {
                     <Button
                       onClick={handleSaveResume}
                       disabled={isSaving || isAiRunLocked}
-                      variant="primary"
+                      size="sm"
+                      className="flex-1 bg-blue-600 text-white shadow-lg hover:bg-blue-700 hover:shadow-xl hover:shadow-blue-600/20 sm:flex-none"
+                    >
+                      {isSaving ? "Saving..." : "Save"}
+                    </Button>
+                    <Button
+                      onClick={generateResume}
+                      disabled={isGenerating || cooldownSeconds > 0}
                       size="sm"
                       className="flex-1 sm:flex-none"
                     >
-                      {isSaving ? "Saving..." : "Save"}
+                      {isGenerating
+                        ? "Generating..."
+                        : cooldownSeconds > 0
+                          ? `Wait ${cooldownSeconds}s`
+                          : "Generate Resume"}
                     </Button>
                     <Button
                       onClick={copyLatexToClipboard}
@@ -1098,7 +1290,10 @@ export default function ResumeowPage() {
                     </div>
                   ) : null}
                   <div className={isAiRunLocked ? "pointer-events-none select-none opacity-80" : ""}>
-                    <div className="mb-4 flex flex-col gap-1 sm:mb-6 sm:flex-row sm:gap-2 sm:overflow-x-auto sm:border-b sm:border-gray-700 sm:scrollbar-hide">
+                    <h3 className="mb-2 text-left text-lg font-semibold text-white">
+                      Tabs Ordering
+                    </h3>
+                    <div className="mb-4 flex flex-col gap-1 sm:mb-4 sm:flex-row sm:gap-2 sm:overflow-x-auto sm:scrollbar-hide">
                     {tabs.map((tab) => (
                       <button
                         key={tab.id}
@@ -1151,13 +1346,14 @@ export default function ResumeowPage() {
                       </button>
                     ))}
                     </div>
-                    <p className="mb-4 text-center text-xs text-gray-400 sm:text-sm">
+                    <p className="mb-2 text-left text-xs text-gray-400 sm:text-sm">
                       * indicates mandatory sections
                     </p>
-                    <p className="mb-4 text-center text-xs text-gray-500 sm:text-sm">
+                    <p className="text-left text-xs text-gray-500 sm:text-sm">
                       Drag the tabs above left or right to change the order of
                       the generated resume.
                     </p>
+                    <div className="mb-4 mt-4 border-b border-gray-700" />
 
                     <div className="min-h-[400px]">
                       {renderActiveTab()}
@@ -1177,20 +1373,7 @@ export default function ResumeowPage() {
                         Previous
                       </Button>
 
-                      {activeTabIndex === tabs.length - 1 ? (
-                        <Button
-                          onClick={generateResume}
-                          disabled={isGenerating || cooldownSeconds > 0}
-                          size="lg"
-                          className="w-full sm:w-auto"
-                        >
-                          {isGenerating
-                            ? "Generating..."
-                            : cooldownSeconds > 0
-                              ? `Wait ${cooldownSeconds}s`
-                              : "Generate Resume"}
-                        </Button>
-                      ) : (
+                      {activeTabIndex < tabs.length - 1 ? (
                         <Button
                           onClick={() => {
                             if (activeTabIndex < tabs.length - 1) {
@@ -1201,7 +1384,7 @@ export default function ResumeowPage() {
                         >
                           Next
                         </Button>
-                      )}
+                      ) : null}
                     </div>
                   </div>
                 </Card>

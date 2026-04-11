@@ -64,7 +64,7 @@ export function ProjectsForm({ data, onChange }: ProjectsFormProps) {
 
       <div className="flex justify-between items-center">
         <h3 className="text-lg font-semibold text-white">Relevant Projects</h3>
-        <Button onClick={addProject} size="sm" className="bg-green-500 hover:bg-green-600 text-white shadow-lg hover:shadow-xl hover:shadow-green-500/20">
+        <Button onClick={addProject} size="sm" className="bg-green-600 hover:bg-green-700 text-white shadow-lg hover:shadow-xl hover:shadow-green-600/20">
           + Add Project
         </Button>
       </div>

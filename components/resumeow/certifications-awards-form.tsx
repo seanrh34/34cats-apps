@@ -67,7 +67,7 @@ export function CertificationsAwardsForm({
         <Button
           onClick={addEntry}
           size="sm"
-          className="bg-green-500 text-white shadow-lg hover:bg-green-600 hover:shadow-xl hover:shadow-green-500/20"
+          className="bg-green-600 text-white shadow-lg hover:bg-green-700 hover:shadow-xl hover:shadow-green-600/20"
         >
           + Add Entry
         </Button>

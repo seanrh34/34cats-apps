@@ -108,7 +108,7 @@ export function ExperienceForm({ data, onChange }: ExperienceFormProps) {
 
       <div className="flex justify-between items-center">
         <h3 className="text-lg font-semibold text-white">Work Experience</h3>
-        <Button onClick={addExperience} size="sm" className="bg-green-500 hover:bg-green-600 text-white shadow-lg hover:shadow-xl hover:shadow-green-500/20">
+        <Button onClick={addExperience} size="sm" className="bg-green-600 hover:bg-green-700 text-white shadow-lg hover:shadow-xl hover:shadow-green-600/20">
           + Add Experience
         </Button>
       </div>
@@ -206,7 +206,7 @@ export function ExperienceForm({ data, onChange }: ExperienceFormProps) {
               <Button
                 onClick={() => addBullet(exp.id)}
                 size="sm"
-                className="bg-green-500 hover:bg-green-600 text-white shadow-lg hover:shadow-xl hover:shadow-green-500/20"
+                className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl hover:shadow-blue-600/20"
               >
                 + Add Bullet
               </Button>
