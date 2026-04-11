@@ -12,8 +12,12 @@ import {
   buildReviewPrompt,
 } from "@/lib/ai/resumeow/prompts";
 import {
+  buildSafeChangeSummary,
   diffResumeData,
   extractJsonFromText,
+  normalizeAiMessageContent,
+  sanitizeChangeSummary,
+  sanitizeReviewOutput,
 } from "@/lib/ai/resumeow/utils";
 import { retrieveSupportingContext, syncResumeToRag } from "@/lib/ai/resumeow/rag";
 import {
@@ -449,6 +453,53 @@ function buildContextBlock(
     .join("\n\n");
 }
 
+async function requestStructuredJsonContent(payload: {
+  prompt: string;
+  emptyResponseError: string;
+}) {
+  const buildMessages = (followUp?: string) =>
+    [
+      {
+        role: "system" as const,
+        content: payload.prompt,
+      },
+      ...(followUp
+        ? [
+            {
+              role: "user" as const,
+              content: followUp,
+            },
+          ]
+        : []),
+    ];
+
+  const firstResponse = await createChatCompletion({
+    messages: buildMessages(),
+    toolChoice: "none",
+    temperature: 0.2,
+  });
+
+  let content = extractTextContent(firstResponse.choices?.[0]?.message).trim();
+  if (content) {
+    return content;
+  }
+
+  const retryResponse = await createChatCompletion({
+    messages: buildMessages(
+      "Return only valid JSON using the exact schema requested above. Do not leave the response empty."
+    ),
+    toolChoice: "none",
+    temperature: 0,
+  });
+
+  content = extractTextContent(retryResponse.choices?.[0]?.message).trim();
+  if (content) {
+    return content;
+  }
+
+  throw new Error(payload.emptyResponseError);
+}
+
 export async function runReviewResumeTool(payload: {
   supabase: SupabaseClient;
   userId: string;
@@ -468,32 +519,29 @@ export async function runReviewResumeTool(payload: {
     }
   );
 
-  const response = await createChatCompletion({
-    messages: [
-      {
-        role: "system",
-        content: buildReviewPrompt({
-          resume: payload.resume,
-          profile: payload.profile,
-          jobDescription: selectedJobDescription,
-          userInstruction: payload.focus,
-          contextBlock: buildContextBlock(sources),
-        }),
-      },
-    ],
-    toolChoice: "none",
-    temperature: 0.2,
+  const content = await requestStructuredJsonContent({
+    prompt: buildReviewPrompt({
+      resume: payload.resume,
+      profile: payload.profile,
+      jobDescription: selectedJobDescription,
+      userInstruction: payload.focus,
+      contextBlock: buildContextBlock(sources),
+    }),
+    emptyResponseError:
+      "Resumeow AI returned an empty review response. Please try again.",
   });
-
-  const content = extractTextContent(response.choices?.[0]?.message);
   const parsed = reviewSchema.parse(JSON.parse(extractJsonFromText(content)));
-
-  return {
+  const sanitizedReview = sanitizeReviewOutput({
     summary: parsed.summary,
     findings: parsed.findings.map((finding) => ({
       ...finding,
       citations: mapCitationIds(finding.citation_ids, sources),
     })),
+  });
+
+  return {
+    summary: sanitizedReview.summary,
+    findings: sanitizedReview.findings,
     selectedJobDescription,
     citationsCatalog: sources,
   };
@@ -518,24 +566,17 @@ export async function runProposeResumeChangesTool(payload: {
     }
   );
 
-  const response = await createChatCompletion({
-    messages: [
-      {
-        role: "system",
-        content: buildChangePrompt({
-          resume: payload.resume,
-          profile: payload.profile,
-          jobDescription: selectedJobDescription,
-          userInstruction: payload.instruction,
-          contextBlock: buildContextBlock(sources),
-        }),
-      },
-    ],
-    toolChoice: "none",
-    temperature: 0.2,
+  const content = await requestStructuredJsonContent({
+    prompt: buildChangePrompt({
+      resume: payload.resume,
+      profile: payload.profile,
+      jobDescription: selectedJobDescription,
+      userInstruction: payload.instruction,
+      contextBlock: buildContextBlock(sources),
+    }),
+    emptyResponseError:
+      "Resumeow AI returned an empty edit response. Please try again.",
   });
-
-  const content = extractTextContent(response.choices?.[0]?.message);
   const rawParsed = JSON.parse(extractJsonFromText(content)) as Record<string, unknown>;
   const normalizedParsed = {
     ...rawParsed,
@@ -549,12 +590,11 @@ export async function runProposeResumeChangesTool(payload: {
     payload.resume.resume_data,
     parsed.proposedResumeData
   );
+  const sanitizedSummary = sanitizeChangeSummary(parsed.summary, diffItems);
 
   if (diffItems.length === 0) {
     return {
-      summary:
-        parsed.summary ||
-        "No safe, material changes were applied to the current resume.",
+      summary: sanitizedSummary || buildSafeChangeSummary(diffItems),
       changeSet: null,
       diffItems,
       updatedResume: null,
@@ -567,7 +607,7 @@ export async function runProposeResumeChangesTool(payload: {
     resumeId: payload.resume.id,
     baseResumeRevision: payload.resume.resume_revision,
     prompt: payload.instruction,
-    summary: parsed.summary,
+    summary: normalizeAiMessageContent(sanitizedSummary),
     previousResumeData: payload.resume.resume_data,
     proposedResumeData: parsed.proposedResumeData,
     diffItems: diffItems as unknown as Record<string, unknown>[],
@@ -594,9 +634,7 @@ export async function runProposeResumeChangesTool(payload: {
   await syncResumeToRag(payload.supabase, updatedResume);
 
   return {
-    summary:
-      parsed.summary ||
-      "Applied grounded updates to the current resume.",
+    summary: sanitizedSummary || buildSafeChangeSummary(diffItems),
     changeSet: appliedChangeSet,
     diffItems,
     updatedResume,

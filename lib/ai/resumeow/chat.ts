@@ -14,7 +14,12 @@ import {
   runReviewResumeTool,
 } from "@/lib/ai/resumeow/tools";
 import { evaluateResumeGuardrails } from "@/lib/ai/resumeow/guardrails";
-import { sseEvent } from "@/lib/ai/resumeow/utils";
+import {
+  buildEditAssistantMessage,
+  includesForbiddenFieldOrderLanguage,
+  normalizeAiMessageContent,
+  sseEvent,
+} from "@/lib/ai/resumeow/utils";
 import {
   insertAiMessage,
   listAiMessages,
@@ -80,7 +85,8 @@ const TOOL_DEFINITIONS = [
 ];
 
 function inferActionHintFromUserMessage(
-  message: string
+  message: string,
+  hasSelectedJobDescription = false
 ): "review" | "edit" | null {
   const normalized = message.toLowerCase();
   const hasReviewIntent =
@@ -88,17 +94,22 @@ function inferActionHintFromUserMessage(
       normalized
     ) || /\bhow can i improve\b/.test(normalized);
   const hasEditIntent =
-    /\b(change|rewrite|update|tailor|modify|edit|add|remove|replace|revise|fix|rework|refine|improve)\b/.test(
+    /\b(change|rewrite|update|tailor|modify|edit|add|remove|replace|revise|fix|rework|refine|improve|optimi[sz]e)\b/.test(
       normalized
     ) ||
     /\bmake .* resume\b/.test(normalized) ||
     /\buse .* profile\b/.test(normalized);
+  const referencesSelectedJobContext =
+    hasSelectedJobDescription &&
+    /\b(selected|current|saved)\s+(job description|role|job|context)\b/.test(
+      normalized
+    );
 
   if (hasReviewIntent && !hasEditIntent) {
     return "review";
   }
 
-  if (hasEditIntent) {
+  if (hasEditIntent || referencesSelectedJobContext) {
     return "edit";
   }
 
@@ -287,6 +298,7 @@ function buildFallbackAssistantText(payload: {
   toolResults: Array<{
     toolName: string;
     summary: string;
+    diffItems?: ResumeChangeSet["diff_items"];
   }>;
 }) {
   if (payload.toolResults.length === 0) {
@@ -297,17 +309,22 @@ function buildFallbackAssistantText(payload: {
     (result) => result.toolName === "propose_resume_changes"
   );
   if (editResult) {
-    return `${editResult.summary}\n\nThe active resume has been updated. You can undo this AI change if needed.`;
+    return buildEditAssistantMessage({
+      summary: editResult.summary,
+      diffItems: editResult.diffItems ?? [],
+    });
   }
 
   const reviewResult = payload.toolResults.find(
     (result) => result.toolName === "review_resume"
   );
   if (reviewResult) {
-    return reviewResult.summary;
+    return normalizeAiMessageContent(reviewResult.summary);
   }
 
-  return payload.toolResults.map((result) => result.summary).join("\n\n");
+  return normalizeAiMessageContent(
+    payload.toolResults.map((result) => result.summary).join("\n\n")
+  );
 }
 
 async function routeToolCallsWithModel(payload: {
@@ -444,7 +461,11 @@ export async function runResumeowChat(payload: {
 
   let toolCalls: ToolCallLike[] = [];
   const resolvedActionHint =
-    payload.actionHint ?? inferActionHintFromUserMessage(latestUserMessage);
+    payload.actionHint ??
+    inferActionHintFromUserMessage(
+      latestUserMessage,
+      Boolean(payload.jobDescriptionId)
+    );
   if (resolvedActionHint) {
     toolCalls = [buildSyntheticToolCall(resolvedActionHint, latestUserMessage)];
   } else {
@@ -462,6 +483,7 @@ export async function runResumeowChat(payload: {
     toolName: string;
     summary: string;
     serialized: string;
+    diffItems?: ResumeChangeSet["diff_items"];
   }> = [];
   let latestAppliedChangeSet: ResumeChangeSet | null = null;
   let latestAppliedDiffItems: ResumeChangeSet["diff_items"] | null = null;
@@ -525,7 +547,7 @@ export async function runResumeowChat(payload: {
         userId: payload.userId,
         resumeId: payload.resume.id,
         role: "tool",
-        content: result.summary,
+        content: normalizeAiMessageContent(result.summary),
         toolName,
         toolCallId: toolCall.id,
         metadata: {
@@ -535,13 +557,14 @@ export async function runResumeowChat(payload: {
 
       toolResults.push({
         toolName,
-        summary: result.summary,
+        summary: normalizeAiMessageContent(result.summary),
         serialized: JSON.stringify(result, null, 2),
+        diffItems: undefined,
       });
 
       await write("tool_result", {
         toolName,
-        summary: result.summary,
+        summary: normalizeAiMessageContent(result.summary),
         findings: result.findings,
       });
     }
@@ -561,7 +584,7 @@ export async function runResumeowChat(payload: {
 
       toolResults.push({
         toolName,
-        summary: result.summary,
+        summary: normalizeAiMessageContent(result.summary),
         serialized: JSON.stringify(
           {
             changeSet: result.changeSet,
@@ -571,6 +594,7 @@ export async function runResumeowChat(payload: {
           null,
           2
         ),
+        diffItems: result.diffItems,
       });
       if (result.changeSet) {
         latestAppliedChangeSet = result.changeSet;
@@ -579,7 +603,7 @@ export async function runResumeowChat(payload: {
 
       await write("tool_result", {
         toolName,
-        summary: result.summary,
+        summary: normalizeAiMessageContent(result.summary),
         changeSet: result.changeSet,
         diffItems: result.diffItems,
         updatedResume: result.updatedResume,
@@ -588,35 +612,47 @@ export async function runResumeowChat(payload: {
   }
 
   let assistantText = "";
-  const finalAssistantResponse = await createChatCompletion({
-    messages: [
-      {
-        role: "system",
-        content: FINAL_ASSISTANT_SYSTEM_PROMPT,
-      },
-      ...recentMessages,
-      {
-        role: "user",
-        content: buildFinalAssistantInput({
-          resume: payload.resume,
-          profile: payload.profile,
-          recentMessages,
-          latestUserMessage,
-          toolResults,
-        }),
-      },
-    ],
-    toolChoice: "none",
-    temperature: 0.4,
-  });
+  const hasEditResult = toolResults.some(
+    (result) => result.toolName === "propose_resume_changes"
+  );
 
-  assistantText = extractTextContent(
-    (finalAssistantResponse as { choices?: Array<{ message?: unknown }> })
-      .choices?.[0]?.message
-  ).trim();
-
-  if (!assistantText || looksLikeActionPayload(assistantText)) {
+  if (hasEditResult) {
     assistantText = buildFallbackAssistantText({ toolResults });
+  } else {
+    const finalAssistantResponse = await createChatCompletion({
+      messages: [
+        {
+          role: "system",
+          content: FINAL_ASSISTANT_SYSTEM_PROMPT,
+        },
+        ...recentMessages,
+        {
+          role: "user",
+          content: buildFinalAssistantInput({
+            resume: payload.resume,
+            profile: payload.profile,
+            recentMessages,
+            latestUserMessage,
+            toolResults,
+          }),
+        },
+      ],
+      toolChoice: "none",
+      temperature: 0.4,
+    });
+
+    assistantText = extractTextContent(
+      (finalAssistantResponse as { choices?: Array<{ message?: unknown }> })
+        .choices?.[0]?.message
+    ).trim();
+
+    if (!assistantText || looksLikeActionPayload(assistantText)) {
+      assistantText = buildFallbackAssistantText({ toolResults });
+    }
+    assistantText = normalizeAiMessageContent(assistantText);
+    if (includesForbiddenFieldOrderLanguage(assistantText)) {
+      assistantText = buildFallbackAssistantText({ toolResults });
+    }
   }
 
   await write("token", { text: assistantText });
@@ -625,7 +661,7 @@ export async function runResumeowChat(payload: {
     userId: payload.userId,
     resumeId: payload.resume.id,
     role: "assistant",
-    content: assistantText,
+    content: normalizeAiMessageContent(assistantText),
     metadata: latestAppliedChangeSet
       ? {
           changeSet: latestAppliedChangeSet,

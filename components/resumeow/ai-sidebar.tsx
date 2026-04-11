@@ -1,10 +1,22 @@
 "use client";
 
-import { KeyboardEvent, useEffect, useRef, useState } from "react";
+import {
+  KeyboardEvent,
+  ReactNode,
+  cloneElement,
+  isValidElement,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import {
+  AI_LINE_BREAK_TOKEN,
+  normalizeAiMessageContent,
+} from "@/lib/ai/resumeow/utils";
 import {
   ResumeAiMessage,
   ResumeChangeSet,
@@ -52,31 +64,66 @@ interface ToolMessageMetadata {
   diffItems?: ResumeChangeSet["diff_items"];
 }
 
+function renderLineBreakTokens(node: ReactNode): ReactNode {
+  if (typeof node === "string") {
+    const parts = node.split(AI_LINE_BREAK_TOKEN);
+    if (parts.length === 1) {
+      return node;
+    }
+
+    return parts.flatMap((part, index) =>
+      index === 0 ? [part] : [<br key={`br-${index}`} />, part]
+    );
+  }
+
+  if (Array.isArray(node)) {
+    return node.map((child, index) => (
+      <span key={index}>{renderLineBreakTokens(child)}</span>
+    ));
+  }
+
+  if (isValidElement<{ children?: ReactNode }>(node)) {
+    return cloneElement(node, {
+      children: renderLineBreakTokens(node.props.children),
+    });
+  }
+
+  return node;
+}
+
 function MarkdownMessage({ content }: { content: string }) {
+  const normalizedContent = normalizeAiMessageContent(content);
+
   return (
     <ReactMarkdown
       remarkPlugins={[remarkGfm]}
       components={{
         p: ({ children }) => (
           <p className="mb-2 whitespace-pre-wrap text-sm leading-6 text-gray-100 last:mb-0">
-            {children}
+            {renderLineBreakTokens(children)}
           </p>
         ),
         strong: ({ children }) => (
-          <strong className="font-semibold text-white">{children}</strong>
+          <strong className="font-semibold text-white">
+            {renderLineBreakTokens(children)}
+          </strong>
         ),
-        em: ({ children }) => <em className="italic text-gray-100">{children}</em>,
+        em: ({ children }) => (
+          <em className="italic text-gray-100">{renderLineBreakTokens(children)}</em>
+        ),
         ul: ({ children }) => (
           <ul className="mb-2 list-disc space-y-1 pl-5 text-sm text-gray-100 last:mb-0">
-            {children}
+            {renderLineBreakTokens(children)}
           </ul>
         ),
         ol: ({ children }) => (
           <ol className="mb-2 list-decimal space-y-1 pl-5 text-sm text-gray-100 last:mb-0">
-            {children}
+            {renderLineBreakTokens(children)}
           </ol>
         ),
-        li: ({ children }) => <li className="leading-6">{children}</li>,
+        li: ({ children }) => (
+          <li className="leading-6">{renderLineBreakTokens(children)}</li>
+        ),
         code: ({ children }) => (
           <code className="rounded bg-gray-800 px-1.5 py-0.5 text-xs text-gray-100">
             {children}
@@ -94,13 +141,21 @@ function MarkdownMessage({ content }: { content: string }) {
             </table>
           </div>
         ),
-        thead: ({ children }) => <thead className="bg-gray-800/80">{children}</thead>,
-        tbody: ({ children }) => <tbody>{children}</tbody>,
-        tr: ({ children }) => <tr className="border-b border-gray-800">{children}</tr>,
-        th: ({ children }) => (
-          <th className="px-3 py-2 font-semibold text-white">{children}</th>
+        thead: ({ children }) => (
+          <thead className="bg-gray-800/80">{renderLineBreakTokens(children)}</thead>
         ),
-        td: ({ children }) => <td className="px-3 py-2 align-top">{children}</td>,
+        tbody: ({ children }) => <tbody>{renderLineBreakTokens(children)}</tbody>,
+        tr: ({ children }) => (
+          <tr className="border-b border-gray-800">{renderLineBreakTokens(children)}</tr>
+        ),
+        th: ({ children }) => (
+          <th className="px-3 py-2 font-semibold text-white">
+            {renderLineBreakTokens(children)}
+          </th>
+        ),
+        td: ({ children }) => (
+          <td className="px-3 py-2 align-top">{renderLineBreakTokens(children)}</td>
+        ),
         a: ({ children, href }) => (
           <a
             href={href}
@@ -108,12 +163,12 @@ function MarkdownMessage({ content }: { content: string }) {
             rel="noreferrer"
             className="text-[#E84A3A] underline decoration-[#E84A3A]/60 underline-offset-2"
           >
-            {children}
+            {renderLineBreakTokens(children)}
           </a>
         ),
       }}
     >
-      {content}
+      {normalizedContent}
     </ReactMarkdown>
   );
 }
@@ -177,14 +232,14 @@ function SidebarMessage({
                   >
                     <div className="flex items-start justify-between gap-3">
                       <p className="text-sm font-semibold text-white">
-                        {finding.title}
+                        {renderLineBreakTokens(finding.title)}
                       </p>
                       <span className="rounded-full bg-gray-800 px-2 py-1 text-[10px] uppercase tracking-wide text-gray-300">
                         {finding.severity}
                       </span>
                     </div>
                     <p className="mt-2 text-xs leading-5 text-gray-300">
-                      {finding.recommendation}
+                      {renderLineBreakTokens(finding.recommendation)}
                     </p>
                   </div>
                 ))}
@@ -195,7 +250,7 @@ function SidebarMessage({
           <div className="space-y-3">
             {isUser ? (
               <p className="whitespace-pre-wrap text-sm leading-6 text-white">
-                {message.content}
+                {normalizeAiMessageContent(message.content)}
               </p>
             ) : (
               <MarkdownMessage content={message.content} />
@@ -263,9 +318,7 @@ function StreamingBubble({ streamingText }: { streamingText: string }) {
           <span>Resumeow AI</span>
           <span className="text-gray-600">typing</span>
         </div>
-        <p className="whitespace-pre-wrap text-sm leading-6 text-gray-100">
-          {streamingText}
-        </p>
+        <MarkdownMessage content={streamingText} />
       </div>
     </div>
   );
@@ -415,12 +468,6 @@ export function ResumeAiSidebar({
       behavior: "smooth",
     });
   }, [messages, streamingText, changeSets]);
-
-  useEffect(() => {
-    if (!isOpen) {
-      setIsSettingsOpen(false);
-    }
-  }, [isOpen]);
 
   const containerClassName = isOpen
     ? "fixed inset-y-0 right-0 z-40 w-full max-w-md translate-x-0 border-l border-gray-800 bg-gray-950/95 shadow-2xl shadow-black/30 backdrop-blur transition-transform lg:sticky lg:top-20 lg:h-[calc(100vh-5rem)] lg:w-auto lg:max-w-none lg:translate-x-0 lg:overflow-hidden lg:rounded-3xl lg:border"
