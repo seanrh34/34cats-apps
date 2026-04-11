@@ -68,13 +68,18 @@ export function reorderResumeSections(
   }
 
   const normalized = normalizeSectionOrder(currentOrder);
+  const draggedIndex = normalized.indexOf(draggedId);
+  const originalTargetIndex = normalized.indexOf(targetId);
   const nextOrder = normalized.filter((sectionId) => sectionId !== draggedId);
   const targetIndex = nextOrder.indexOf(targetId);
 
-  if (targetIndex === -1) {
+  if (draggedIndex === -1 || originalTargetIndex === -1 || targetIndex === -1) {
     return normalized;
   }
 
-  nextOrder.splice(targetIndex, 0, draggedId);
+  const insertionIndex =
+    draggedIndex < originalTargetIndex ? targetIndex + 1 : targetIndex;
+
+  nextOrder.splice(insertionIndex, 0, draggedId);
   return normalizeSectionOrder(nextOrder);
 }
