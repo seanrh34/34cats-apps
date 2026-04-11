@@ -45,6 +45,21 @@ export interface CoCurricularActivity {
   description: string[];
 }
 
+export interface CertificationAward {
+  id: string;
+  name: string;
+  description: string;
+}
+
+export type ResumeSectionId =
+  | "personal"
+  | "education"
+  | "experience"
+  | "cocurricular"
+  | "skills"
+  | "projects"
+  | "certificationsAwards";
+
 export interface ResumeData {
   personalInfo: PersonalInfo;
   education: Education[];
@@ -52,6 +67,8 @@ export interface ResumeData {
   coCurricularActivities?: CoCurricularActivity[];
   skills: Skill[];
   projects?: Project[];
+  certificationsAwards?: CertificationAward[];
+  sectionOrder?: ResumeSectionId[];
 }
 
 export type RagNamespace =
@@ -210,6 +227,16 @@ export const DEFAULT_RESUME_DATA: ResumeData = {
   coCurricularActivities: [],
   skills: [],
   projects: [],
+  certificationsAwards: [],
+  sectionOrder: [
+    "personal",
+    "education",
+    "experience",
+    "cocurricular",
+    "skills",
+    "projects",
+    "certificationsAwards",
+  ],
 };
 
 export const DEFAULT_RESUME_PROFILE: Omit<

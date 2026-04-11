@@ -97,7 +97,9 @@ Rules:
 - Preserve the overall ResumeData schema exactly.
 - Return a complete \`proposedResumeData\` object, not a partial patch.
 - Preserve all required fields on every entry, including \`id\`, \`location\`, \`dateRange\`, and \`description\` arrays where applicable.
+- \`certificationsAwards\` must be an array of objects shaped like \`{ "id": "string", "name": "string", "description": "string" }\`.
 - \`skills\` must be an array of objects shaped like \`{ "category": "string", "items": ["string"] }\`, never a flat string array.
+- Preserve \`sectionOrder\` unless the user explicitly asks to reorder sections.
 - Only use facts present in the active resume, profile, or cited evidence.
 - Do not fabricate awards, metrics, employers, technologies, timelines, or responsibilities.
 - Keep edits realistic and recruiter-friendly.

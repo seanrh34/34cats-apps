@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
 import { useAuth } from "@/contexts/auth-context";
 import {
+  CertificationAward,
   CoCurricularActivity,
   DEFAULT_RESUME_DATA,
   DEFAULT_RESUME_PROFILE,
@@ -16,9 +17,11 @@ import {
   ResumeJobDescription,
   ResumeProfile,
   ResumeData,
+  ResumeSectionId,
   SavedResume,
   Skill,
 } from "@/lib/types/resume";
+import { CertificationsAwardsForm } from "@/components/resumeow/certifications-awards-form";
 import { PersonalInfoForm } from "@/components/resumeow/personal-info-form";
 import { ExperienceForm } from "@/components/resumeow/experience-form";
 import { EducationForm } from "@/components/resumeow/education-form";
@@ -46,14 +49,77 @@ import {
 } from "@/lib/services/resume-ai-client";
 import { generateLatexResume } from "@/lib/latex/template";
 import { ScrollToBottomButton } from "@/components/shared/scroll-to-bottom";
+import { normalizeResumeData, reorderResumeSections } from "@/lib/resume-data";
 
 const PROFILE_PROMPT_DISMISSED_KEY = "resumeowProfilePromptDismissed";
 
+const TAB_CONFIG: Array<{
+  id: ResumeSectionId;
+  label: string;
+  required: boolean;
+}> = [
+  { id: "personal", label: "Personal Info *", required: true },
+  { id: "education", label: "Education *", required: true },
+  { id: "experience", label: "Experience *", required: true },
+  { id: "cocurricular", label: "Co-Curricular", required: false },
+  { id: "skills", label: "Skills", required: false },
+  { id: "projects", label: "Projects", required: false },
+  {
+    id: "certificationsAwards",
+    label: "Certifications & Awards",
+    required: false,
+  },
+];
+
+const TAB_COLOR_CLASSES: Record<
+  ResumeSectionId,
+  { idle: string; active: string }
+> = {
+  personal: {
+    idle: "border-sky-500/30 bg-sky-500/12 text-sky-100 hover:bg-sky-500/18",
+    active: "border-sky-400 bg-sky-500/28 text-white shadow-[0_10px_30px_rgba(14,165,233,0.22)]",
+  },
+  education: {
+    idle:
+      "border-emerald-500/30 bg-emerald-500/12 text-emerald-100 hover:bg-emerald-500/18",
+    active:
+      "border-emerald-400 bg-emerald-500/28 text-white shadow-[0_10px_30px_rgba(16,185,129,0.22)]",
+  },
+  experience: {
+    idle:
+      "border-amber-500/30 bg-amber-500/12 text-amber-100 hover:bg-amber-500/18",
+    active:
+      "border-amber-400 bg-amber-500/28 text-white shadow-[0_10px_30px_rgba(245,158,11,0.22)]",
+  },
+  cocurricular: {
+    idle:
+      "border-fuchsia-500/30 bg-fuchsia-500/12 text-fuchsia-100 hover:bg-fuchsia-500/18",
+    active:
+      "border-fuchsia-400 bg-fuchsia-500/28 text-white shadow-[0_10px_30px_rgba(217,70,239,0.22)]",
+  },
+  skills: {
+    idle:
+      "border-cyan-500/30 bg-cyan-500/12 text-cyan-100 hover:bg-cyan-500/18",
+    active:
+      "border-cyan-400 bg-cyan-500/28 text-white shadow-[0_10px_30px_rgba(6,182,212,0.22)]",
+  },
+  projects: {
+    idle:
+      "border-rose-500/30 bg-rose-500/12 text-rose-100 hover:bg-rose-500/18",
+    active:
+      "border-rose-400 bg-rose-500/28 text-white shadow-[0_10px_30px_rgba(244,63,94,0.22)]",
+  },
+  certificationsAwards: {
+    idle:
+      "border-violet-500/30 bg-violet-500/12 text-violet-100 hover:bg-violet-500/18",
+    active:
+      "border-violet-400 bg-violet-500/28 text-white shadow-[0_10px_30px_rgba(139,92,246,0.22)]",
+  },
+};
+
 export default function ResumeowPage() {
   const { user, loading } = useAuth();
-  const [activeTab, setActiveTab] = useState<
-    "personal" | "education" | "experience" | "cocurricular" | "skills" | "projects"
-  >("personal");
+  const [activeTab, setActiveTab] = useState<ResumeSectionId>("personal");
   const [isGenerating, setIsGenerating] = useState(false);
   const [savedResumes, setSavedResumes] = useState<SavedResume[]>([]);
   const [currentResumeId, setCurrentResumeId] = useState<string | undefined>();
@@ -63,7 +129,9 @@ export default function ResumeowPage() {
   const [showResumeList, setShowResumeList] = useState(false);
   const [cooldownSeconds, setCooldownSeconds] = useState(0);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  const [resumeData, setResumeData] = useState<ResumeData>(DEFAULT_RESUME_DATA);
+  const [resumeData, setResumeData] = useState<ResumeData>(
+    normalizeResumeData(DEFAULT_RESUME_DATA)
+  );
   const [profile, setProfile] = useState<ResumeProfile | null>(null);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isJobDescriptionManagerOpen, setIsJobDescriptionManagerOpen] = useState(false);
@@ -90,6 +158,7 @@ export default function ResumeowPage() {
   const [consumedUndoChangeSetIds, setConsumedUndoChangeSetIds] = useState<string[]>(
     []
   );
+  const [draggedTabId, setDraggedTabId] = useState<ResumeSectionId | null>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -182,6 +251,22 @@ export default function ResumeowPage() {
     }
   }, []);
 
+  const loadResume = useCallback((resume: SavedResume) => {
+    if (isStreaming) {
+      return;
+    }
+
+    setResumeData(normalizeResumeData(resume.resume_data));
+    setResumeTitle(resume.title);
+    setCurrentResumeId(resume.id);
+    setLastSaved(new Date(resume.updated_at));
+    setShowResumeList(false);
+    setHasUnsavedChanges(false);
+    setRateLimitMessage(null);
+    setIsAiDrawerOpen(false);
+    setConsumedUndoChangeSetIds([]);
+  }, [isStreaming]);
+
   const loadResumes = useCallback(async () => {
     try {
       const resumes = await fetchUserResumes();
@@ -193,7 +278,7 @@ export default function ResumeowPage() {
     } catch (error) {
       console.error("Error loading resumes:", error);
     }
-  }, [currentResumeId]);
+  }, [currentResumeId, loadResume]);
 
   const loadAiState = useCallback(async (resumeId: string) => {
     try {
@@ -229,22 +314,6 @@ export default function ResumeowPage() {
     void loadAiState(currentResumeId);
   }, [user, currentResumeId, loadAiState]);
 
-  const loadResume = (resume: SavedResume) => {
-    if (isStreaming) {
-      return;
-    }
-
-    setResumeData(resume.resume_data);
-    setResumeTitle(resume.title);
-    setCurrentResumeId(resume.id);
-    setLastSaved(new Date(resume.updated_at));
-    setShowResumeList(false);
-    setHasUnsavedChanges(false);
-    setRateLimitMessage(null);
-    setIsAiDrawerOpen(false);
-    setConsumedUndoChangeSetIds([]);
-  };
-
   const handleSaveResume = async () => {
     if (!user) return;
     if (isStreaming) {
@@ -253,7 +322,11 @@ export default function ResumeowPage() {
 
     setIsSaving(true);
     try {
-      const saved = await saveResume(resumeData, resumeTitle, currentResumeId);
+      const saved = await saveResume(
+        normalizeResumeData(resumeData),
+        resumeTitle,
+        currentResumeId
+      );
       setCurrentResumeId(saved.id);
       setLastSaved(new Date(saved.updated_at));
       setHasUnsavedChanges(false);
@@ -273,7 +346,7 @@ export default function ResumeowPage() {
       return;
     }
 
-    setResumeData(DEFAULT_RESUME_DATA);
+    setResumeData(normalizeResumeData(DEFAULT_RESUME_DATA));
     setResumeTitle("New Resume");
     setCurrentResumeId(undefined);
     setLastSaved(null);
@@ -353,6 +426,14 @@ export default function ResumeowPage() {
     }
 
     setResumeData({ ...resumeData, projects: data });
+  };
+
+  const updateCertificationsAwards = (data: CertificationAward[]) => {
+    if (isStreaming) {
+      return;
+    }
+
+    setResumeData({ ...resumeData, certificationsAwards: data });
   };
 
   const copyLatexToClipboard = async () => {
@@ -519,7 +600,7 @@ export default function ResumeowPage() {
     setApplyingChangeSetId(changeSetId);
     try {
       const response = await undoChangeSetRequest(changeSetId);
-      setResumeData(response.resume.resume_data);
+      setResumeData(normalizeResumeData(response.resume.resume_data));
       setResumeTitle(response.resume.title);
       setCurrentResumeId(response.resume.id);
       setLastSaved(new Date(response.resume.updated_at));
@@ -625,7 +706,7 @@ export default function ResumeowPage() {
           onToolResult: (payload) => {
             const updatedResume = payload.updatedResume as SavedResume | undefined;
             if (updatedResume) {
-              setResumeData(updatedResume.resume_data);
+              setResumeData(normalizeResumeData(updatedResume.resume_data));
               setResumeTitle(updatedResume.title);
               setCurrentResumeId(updatedResume.id);
               setLastSaved(new Date(updatedResume.updated_at));
@@ -688,14 +769,97 @@ export default function ResumeowPage() {
     }
   };
 
-  const tabs = [
-    { id: "personal", label: "Personal Info *", required: true },
-    { id: "education", label: "Education *", required: true },
-    { id: "experience", label: "Experience *", required: true },
-    { id: "cocurricular", label: "Co-Curricular", required: false },
-    { id: "skills", label: "Skills", required: false },
-    { id: "projects", label: "Projects", required: false },
-  ] as const;
+  const tabs = (resumeData.sectionOrder ?? [])
+    .map((sectionId) => TAB_CONFIG.find((tab) => tab.id === sectionId))
+    .filter((tab): tab is (typeof TAB_CONFIG)[number] => Boolean(tab));
+  const activeTabIndex = tabs.findIndex((tab) => tab.id === activeTab);
+
+  useEffect(() => {
+    if (!tabs.some((tab) => tab.id === activeTab)) {
+      setActiveTab("personal");
+    }
+  }, [activeTab, tabs]);
+
+  const handleTabDrop = (targetTabId: ResumeSectionId) => {
+    if (
+      isAiRunLocked ||
+      !draggedTabId ||
+      draggedTabId === targetTabId ||
+      draggedTabId === "personal" ||
+      targetTabId === "personal"
+    ) {
+      setDraggedTabId(null);
+      return;
+    }
+
+    setResumeData((current) => ({
+      ...current,
+      sectionOrder: reorderResumeSections(
+        current.sectionOrder ?? [],
+        draggedTabId,
+        targetTabId
+      ),
+    }));
+    setDraggedTabId(null);
+  };
+
+  const renderActiveTab = () => {
+    if (activeTab === "personal") {
+      return (
+        <PersonalInfoForm
+          data={resumeData.personalInfo}
+          onChange={updatePersonalInfo}
+        />
+      );
+    }
+
+    if (activeTab === "education") {
+      return (
+        <EducationForm
+          data={resumeData.education}
+          onChange={updateEducation}
+        />
+      );
+    }
+
+    if (activeTab === "experience") {
+      return (
+        <ExperienceForm
+          data={resumeData.experience}
+          onChange={updateExperience}
+        />
+      );
+    }
+
+    if (activeTab === "cocurricular") {
+      return (
+        <CoCurricularForm
+          data={resumeData.coCurricularActivities || []}
+          onChange={updateCoCurricular}
+        />
+      );
+    }
+
+    if (activeTab === "skills") {
+      return <SkillsForm data={resumeData.skills} onChange={updateSkills} />;
+    }
+
+    if (activeTab === "projects") {
+      return (
+        <ProjectsForm
+          data={resumeData.projects || []}
+          onChange={updateProjects}
+        />
+      );
+    }
+
+    return (
+      <CertificationsAwardsForm
+        data={resumeData.certificationsAwards || []}
+        onChange={updateCertificationsAwards}
+      />
+    );
+  };
 
   if (loading) {
     return (
@@ -939,11 +1103,49 @@ export default function ResumeowPage() {
                       <button
                         key={tab.id}
                         onClick={() => setActiveTab(tab.id)}
+                        draggable={!isAiRunLocked && tab.id !== "personal"}
+                        onDragStart={(event) => {
+                          if (tab.id === "personal") {
+                            return;
+                          }
+                          event.dataTransfer.effectAllowed = "move";
+                          event.dataTransfer.setData("text/plain", tab.id);
+                          event.dataTransfer.setDragImage(
+                            event.currentTarget,
+                            event.currentTarget.clientWidth / 2,
+                            event.currentTarget.clientHeight / 2
+                          );
+                          setDraggedTabId(tab.id);
+                        }}
+                        onDragOver={(event) => {
+                          if (
+                            isAiRunLocked ||
+                            !draggedTabId ||
+                            tab.id === "personal" ||
+                            draggedTabId === tab.id
+                          ) {
+                            return;
+                          }
+                          event.preventDefault();
+                          event.dataTransfer.dropEffect = "move";
+                        }}
+                        onDrop={(event) => {
+                          event.preventDefault();
+                          handleTabDrop(tab.id);
+                        }}
+                        onDragEnd={() => setDraggedTabId(null)}
                         disabled={isAiRunLocked}
-                        className={`rounded px-3 py-2.5 text-left text-sm font-medium whitespace-nowrap transition-colors sm:rounded-none sm:px-2 sm:py-2 sm:text-center md:text-sm ${activeTab === tab.id
-                            ? "bg-[#E84A3A] text-white sm:border-b-2 sm:border-[#E84A3A] sm:bg-transparent sm:text-[#E84A3A]"
-                            : "bg-gray-800/50 text-gray-400 hover:bg-gray-700/50 hover:text-white sm:bg-transparent sm:hover:bg-transparent"
+                        className={`rounded-xl border px-3 py-2.5 text-left text-sm font-medium whitespace-nowrap transition-all sm:px-3 sm:py-2 md:text-sm ${tab.id !== "personal" && !isAiRunLocked ? "cursor-grab active:cursor-grabbing" : ""} ${draggedTabId === tab.id ? "scale-[1.02] shadow-2xl ring-2 ring-white/15" : ""} ${activeTab === tab.id
+                            ? TAB_COLOR_CLASSES[tab.id].active
+                            : TAB_COLOR_CLASSES[tab.id].idle
                           }`}
+                        title={
+                          tab.id === "personal"
+                            ? "Personal Info stays first"
+                            : isAiRunLocked
+                              ? undefined
+                              : "Drag to reorder"
+                        }
                       >
                         {tab.label}
                       </button>
@@ -952,59 +1154,30 @@ export default function ResumeowPage() {
                     <p className="mb-4 text-center text-xs text-gray-400 sm:text-sm">
                       * indicates mandatory sections
                     </p>
+                    <p className="mb-4 text-center text-xs text-gray-500 sm:text-sm">
+                      Drag the tabs above left or right to change the order of
+                      the generated resume.
+                    </p>
 
                     <div className="min-h-[400px]">
-                      {activeTab === "personal" ? (
-                        <PersonalInfoForm
-                          data={resumeData.personalInfo}
-                          onChange={updatePersonalInfo}
-                        />
-                      ) : null}
-                      {activeTab === "education" ? (
-                        <EducationForm
-                          data={resumeData.education}
-                          onChange={updateEducation}
-                        />
-                      ) : null}
-                      {activeTab === "experience" ? (
-                        <ExperienceForm
-                          data={resumeData.experience}
-                          onChange={updateExperience}
-                        />
-                      ) : null}
-                      {activeTab === "cocurricular" ? (
-                        <CoCurricularForm
-                          data={resumeData.coCurricularActivities || []}
-                          onChange={updateCoCurricular}
-                        />
-                      ) : null}
-                      {activeTab === "skills" ? (
-                        <SkillsForm data={resumeData.skills} onChange={updateSkills} />
-                      ) : null}
-                      {activeTab === "projects" ? (
-                        <ProjectsForm
-                          data={resumeData.projects || []}
-                          onChange={updateProjects}
-                        />
-                      ) : null}
+                      {renderActiveTab()}
                     </div>
 
                     <div className="mt-6 flex flex-col gap-3 border-t border-gray-700 pt-4 sm:flex-row sm:items-center sm:justify-between md:mt-8 md:pt-6">
                       <Button
                         variant="outline"
                         onClick={() => {
-                          const currentIndex = tabs.findIndex((t) => t.id === activeTab);
-                          if (currentIndex > 0) {
-                            setActiveTab(tabs[currentIndex - 1].id);
+                          if (activeTabIndex > 0) {
+                            setActiveTab(tabs[activeTabIndex - 1].id);
                           }
                         }}
-                        disabled={activeTab === "personal"}
+                        disabled={activeTabIndex <= 0}
                         className="w-full sm:w-auto"
                       >
                         Previous
                       </Button>
 
-                      {activeTab === "projects" ? (
+                      {activeTabIndex === tabs.length - 1 ? (
                         <Button
                           onClick={generateResume}
                           disabled={isGenerating || cooldownSeconds > 0}
@@ -1020,9 +1193,8 @@ export default function ResumeowPage() {
                       ) : (
                         <Button
                           onClick={() => {
-                            const currentIndex = tabs.findIndex((t) => t.id === activeTab);
-                            if (currentIndex < tabs.length - 1) {
-                              setActiveTab(tabs[currentIndex + 1].id);
+                            if (activeTabIndex < tabs.length - 1) {
+                              setActiveTab(tabs[activeTabIndex + 1].id);
                             }
                           }}
                           className="w-full sm:w-auto"
@@ -1040,7 +1212,7 @@ export default function ResumeowPage() {
                   </h3>
                   <ol className="list-decimal space-y-1 pl-5 text-xs text-gray-300 md:text-sm">
                     <li>Fill in your personal information in each tab</li>
-                    <li>Add work experience, education, skills, and projects</li>
+                    <li>Add work experience, education, skills, projects, and certifications as needed</li>
                     <li>Save your resume to unlock the persistent AI assistant</li>
                     <li>Chat naturally with the AI to review, tailor, or rewrite the active resume</li>
                     <li>Generate your final PDF when you are ready</li>

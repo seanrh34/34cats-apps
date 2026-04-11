@@ -4,6 +4,7 @@ import {
   ResumeProfile,
   SavedResume,
 } from "@/lib/types/resume";
+import { normalizeResumeData } from "@/lib/resume-data";
 
 export function splitCommaSeparated(value: string) {
   return value
@@ -93,20 +94,22 @@ export function buildProfileDocument(profile: ResumeProfile) {
 }
 
 export function flattenResumeForText(resume: SavedResume) {
+  const normalizedResumeData = normalizeResumeData(resume.resume_data);
   const lines = [
     `Title: ${resume.title}`,
-    `Full name: ${resume.resume_data.personalInfo.fullName || "N/A"}`,
-    `Email: ${resume.resume_data.personalInfo.email || "N/A"}`,
-    `Phone: ${resume.resume_data.personalInfo.phone || "N/A"}`,
+    `Section order: ${(normalizedResumeData.sectionOrder ?? []).join(", ") || "N/A"}`,
+    `Full name: ${normalizedResumeData.personalInfo.fullName || "N/A"}`,
+    `Email: ${normalizedResumeData.personalInfo.email || "N/A"}`,
+    `Phone: ${normalizedResumeData.personalInfo.phone || "N/A"}`,
   ];
 
-  resume.resume_data.education.forEach((entry, index) => {
+  normalizedResumeData.education.forEach((entry, index) => {
     lines.push(
       `Education ${index + 1}: ${entry.degree} at ${entry.institution} (${entry.dateRange})`
     );
   });
 
-  resume.resume_data.experience.forEach((entry, index) => {
+  normalizedResumeData.experience.forEach((entry, index) => {
     lines.push(
       `Experience ${index + 1}: ${entry.position} at ${entry.company} (${entry.dateRange})`
     );
@@ -117,17 +120,23 @@ export function flattenResumeForText(resume: SavedResume) {
     });
   });
 
-  resume.resume_data.skills.forEach((entry) => {
+  normalizedResumeData.skills.forEach((entry) => {
     lines.push(`Skills ${entry.category}: ${entry.items.join(", ")}`);
   });
 
-  resume.resume_data.projects?.forEach((entry, index) => {
+  normalizedResumeData.projects?.forEach((entry, index) => {
     lines.push(`Project ${index + 1}: ${entry.name} (${entry.link || "no link"})`);
   });
 
-  resume.resume_data.coCurricularActivities?.forEach((entry, index) => {
+  normalizedResumeData.coCurricularActivities?.forEach((entry, index) => {
     lines.push(
       `Activity ${index + 1}: ${entry.position} at ${entry.organization} (${entry.dateRange})`
+    );
+  });
+
+  normalizedResumeData.certificationsAwards?.forEach((entry, index) => {
+    lines.push(
+      `Certification or award ${index + 1}: ${entry.name} (${entry.description || "no description"})`
     );
   });
 
@@ -169,24 +178,38 @@ export function diffResumeData(
   before: ResumeData,
   after: ResumeData
 ): ResumeChangeDiffItem[] {
+  const normalizedBefore = normalizeResumeData(before);
+  const normalizedAfter = normalizeResumeData(after);
   const diffs: ResumeChangeDiffItem[] = [];
 
   collectDiffs(
     "Personal info",
-    before.personalInfo,
-    after.personalInfo,
+    normalizedBefore.personalInfo,
+    normalizedAfter.personalInfo,
     diffs
   );
-  collectDiffs("Education", before.education, after.education, diffs);
-  collectDiffs("Experience", before.experience, after.experience, diffs);
+  collectDiffs("Education", normalizedBefore.education, normalizedAfter.education, diffs);
+  collectDiffs("Experience", normalizedBefore.experience, normalizedAfter.experience, diffs);
   collectDiffs(
     "Co-curricular activities",
-    before.coCurricularActivities ?? [],
-    after.coCurricularActivities ?? [],
+    normalizedBefore.coCurricularActivities ?? [],
+    normalizedAfter.coCurricularActivities ?? [],
     diffs
   );
-  collectDiffs("Skills", before.skills, after.skills, diffs);
-  collectDiffs("Projects", before.projects ?? [], after.projects ?? [], diffs);
+  collectDiffs("Skills", normalizedBefore.skills, normalizedAfter.skills, diffs);
+  collectDiffs("Projects", normalizedBefore.projects ?? [], normalizedAfter.projects ?? [], diffs);
+  collectDiffs(
+    "Certifications & awards",
+    normalizedBefore.certificationsAwards ?? [],
+    normalizedAfter.certificationsAwards ?? [],
+    diffs
+  );
+  collectDiffs(
+    "Section order",
+    normalizedBefore.sectionOrder ?? [],
+    normalizedAfter.sectionOrder ?? [],
+    diffs
+  );
 
   return diffs;
 }

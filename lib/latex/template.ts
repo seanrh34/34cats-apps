@@ -1,11 +1,22 @@
 import { ResumeData } from "@/lib/types/resume";
+import { normalizeResumeData } from "@/lib/resume-data";
 
 /**
  * Generates a LaTeX resume from structured resume data
  * Following the Jake Gutierrez resume template format
  */
 export function generateLatexResume(data: ResumeData): string {
-  const { personalInfo, education, experience, coCurricularActivities, skills, projects } = data;
+  const {
+    personalInfo,
+    education,
+    experience,
+    coCurricularActivities,
+    skills,
+    projects,
+    certificationsAwards,
+    sectionOrder,
+  } = normalizeResumeData(data);
+  const orderedSectionIds = sectionOrder ?? [];
 
   // Helper to escape LaTeX special characters
   const escapeLatex = (text: string): string => {
@@ -24,6 +35,102 @@ export function generateLatexResume(data: ResumeData): string {
     personalInfo.website ? `\\href{https://${escapeLatex(personalInfo.website)}}{\\underline{${escapeLatex(personalInfo.website)}}}` : null,
     personalInfo.github ? `\\href{https://${escapeLatex(personalInfo.github)}}{\\underline{${escapeLatex(personalInfo.github)}}}` : null,
   ].filter(Boolean);
+
+  const latexSections = orderedSectionIds
+    .filter((sectionId) => sectionId !== "personal")
+    .map((sectionId) => {
+      if (sectionId === "education" && education.length > 0) {
+        return `
+%-----------EDUCATION-----------
+\\section{Education}
+  \\resumeSubHeadingListStart
+${education.map(edu => `    \\resumeSubheading
+      {${escapeLatex(edu.institution)}}{${escapeLatex(edu.location)}}
+      {${escapeLatex(edu.degree)}${edu.gpa ? ` (${escapeLatex(edu.gpa)})` : ''}}{${escapeLatex(edu.dateRange)}}`).join('\n')}
+  \\resumeSubHeadingListEnd
+`;
+      }
+
+      if (sectionId === "experience" && experience.length > 0) {
+        return `
+%-----------EXPERIENCE-----------
+\\section{Experience}
+    \\resumeSubHeadingListStart
+${experience.map(exp => `
+    \\resumeSubheading
+    {${escapeLatex(exp.position)}}{${escapeLatex(exp.dateRange)}}
+    {${escapeLatex(exp.company)}}{${escapeLatex(exp.location)}}
+${exp.description.filter(d => d.trim()).length > 0 ? `        \\resumeItemListStart
+${exp.description.filter(d => d.trim()).map(desc => `        \\resumeItem{${escapeLatex(desc)}}`).join('\n')}
+        \\resumeItemListEnd` : ''}`).join('\n')}
+
+    \\resumeSubHeadingListEnd
+`;
+      }
+
+      if (
+        sectionId === "cocurricular" &&
+        coCurricularActivities &&
+        coCurricularActivities.length > 0
+      ) {
+        return `
+%-----------Co-Curricular Activities-----------
+\\section{Co-Curricular Activities}
+    \\resumeSubHeadingListStart
+${coCurricularActivities.map(activity => `
+    \\resumeSubheading
+    {${escapeLatex(activity.position)}}{${escapeLatex(activity.dateRange)}}
+    {${escapeLatex(activity.organization)}}{${escapeLatex(activity.location)}}
+${activity.description.filter(d => d.trim()).length > 0 ? `        \\resumeItemListStart
+${activity.description.filter(d => d.trim()).map(desc => `        \\resumeItem{${escapeLatex(desc)}}`).join('\n')}
+        \\resumeItemListEnd` : ''}`).join('\n')}
+
+    \\resumeSubHeadingListEnd
+`;
+      }
+
+      if (sectionId === "skills" && skills.length > 0) {
+        return `
+%-----------SKILLS-----------
+\\section{Skills}
+\\begin{itemize}[leftmargin=0.15in, label={}]
+  \\item \\small{
+${skills.map(skill => `    \\textbf{${escapeLatex(skill.category)}}{: ${skill.items.map(item => escapeLatex(item)).join(', ')}} \\\\`).join('\n')}
+  }
+\\end{itemize}
+`;
+      }
+
+      if (sectionId === "projects" && projects && projects.length > 0) {
+        return `
+%-----------Relevant Links and Past Works-----------
+\\section{Relevant Projects}
+\\begin{itemize}[leftmargin=0.15in, label={}]
+  \\item \\small{
+${projects.map(proj => `    \\textbf{${escapeLatex(proj.name)}}{: }${proj.link ? `\\href{${escapeLatex(proj.link)}}{${escapeLatex(proj.link)}}` : ''} \\\\`).join('\n')}
+  }
+\\end{itemize}
+`;
+      }
+
+      if (
+        sectionId === "certificationsAwards" &&
+        certificationsAwards &&
+        certificationsAwards.length > 0
+      ) {
+        return `
+%-----------CERTIFICATIONS AND AWARDS-----------
+\\section{Certifications \\& Awards}
+\\begin{itemize}[leftmargin=0.15in, label={}]
+${certificationsAwards.map(entry => `  \\item \\small{\\textbf{${escapeLatex(entry.name)}}${entry.description.trim() ? `{: ${escapeLatex(entry.description)}}` : ""}}`).join('\n')}
+\\end{itemize}
+`;
+      }
+
+      return "";
+    })
+    .filter(Boolean)
+    .join("\n");
 
   return `\\documentclass[letterpaper,11pt]{article}
 
@@ -106,65 +213,7 @@ export function generateLatexResume(data: ResumeData): string {
     \\small ${contactParts.join(' $|$ ')}
 \\end{center}
 
-${education.length > 0 ? `
-%-----------EDUCATION-----------
-\\section{Education}
-  \\resumeSubHeadingListStart
-${education.map(edu => `    \\resumeSubheading
-      {${escapeLatex(edu.institution)}}{${escapeLatex(edu.location)}}
-      {${escapeLatex(edu.degree)}${edu.gpa ? ` (${escapeLatex(edu.gpa)})` : ''}}{${escapeLatex(edu.dateRange)}}`).join('\n')}
-  \\resumeSubHeadingListEnd
-` : ''}
-
-${experience.length > 0 ? `
-%-----------EXPERIENCE-----------
-\\section{Experience}
-    \\resumeSubHeadingListStart
-${experience.map(exp => `
-    \\resumeSubheading
-    {${escapeLatex(exp.position)}}{${escapeLatex(exp.dateRange)}}
-    {${escapeLatex(exp.company)}}{${escapeLatex(exp.location)}}
-${exp.description.filter(d => d.trim()).length > 0 ? `        \\resumeItemListStart
-${exp.description.filter(d => d.trim()).map(desc => `        \\resumeItem{${escapeLatex(desc)}}`).join('\n')}
-        \\resumeItemListEnd` : ''}`).join('\n')}
-
-    \\resumeSubHeadingListEnd
-` : ''}
-
-${coCurricularActivities && coCurricularActivities.length > 0 ? `
-%-----------Co-Curricular Activities-----------
-\\section{Co-Curricular Activities}
-    \\resumeSubHeadingListStart
-${coCurricularActivities.map(activity => `
-    \\resumeSubheading
-    {${escapeLatex(activity.position)}}{${escapeLatex(activity.dateRange)}}
-    {${escapeLatex(activity.organization)}}{${escapeLatex(activity.location)}}
-${activity.description.filter(d => d.trim()).length > 0 ? `        \\resumeItemListStart
-${activity.description.filter(d => d.trim()).map(desc => `        \\resumeItem{${escapeLatex(desc)}}`).join('\n')}
-        \\resumeItemListEnd` : ''}`).join('\n')}
-
-    \\resumeSubHeadingListEnd
-` : ''}
-
-${skills.length > 0 ? `
-%-----------SKILLS-----------
-\\section{Skills}
-\\begin{itemize}[leftmargin=0.15in, label={}]
-  \\item \\small{
-${skills.map(skill => `    \\textbf{${escapeLatex(skill.category)}}{: ${skill.items.map(item => escapeLatex(item)).join(', ')}} \\\\`).join('\n')}
-  }
-\\end{itemize}
-` : ''}
-
-${projects && projects.length > 0 ? `
-%-----------Relevant Links and Past Works-----------
-\\section{Relevant Projects}
-\\begin{itemize}[leftmargin=0.15in, label={}]
-  \\item \\small{
-${projects.map(proj => `    \\textbf{${escapeLatex(proj.name)}}{: }${proj.link ? `\\href{${escapeLatex(proj.link)}}{${escapeLatex(proj.link)}}` : ''} \\\\`).join('\n')}
-  }
-\\end{itemize}
-` : ''}
+${latexSections}
 
 \\end{document}`;
 }
