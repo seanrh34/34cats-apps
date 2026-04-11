@@ -80,6 +80,19 @@ export async function saveJobDescriptionRequest(payload: {
   return parseJsonResponse<{ jobDescription: ResumeJobDescription }>(response);
 }
 
+export async function deleteJobDescriptionRequest(id: string) {
+  const response = await fetch("/api/resumeow/job-descriptions", {
+    method: "DELETE",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    credentials: "include",
+    body: JSON.stringify({ id }),
+  });
+
+  return parseJsonResponse<{ success: boolean; id: string }>(response);
+}
+
 export async function applyChangeSetRequest(changeSetId: string) {
   const response = await fetch(`/api/resumeow/change-sets/${changeSetId}/apply`, {
     method: "POST",

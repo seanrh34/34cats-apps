@@ -26,6 +26,7 @@ import { SkillsForm } from "@/components/resumeow/skills-form";
 import { ProjectsForm } from "@/components/resumeow/projects-form";
 import { CoCurricularForm } from "@/components/resumeow/cocurricular-form";
 import { ResumeAiSidebar } from "@/components/resumeow/ai-sidebar";
+import { JobDescriptionManagerModal } from "@/components/resumeow/job-description-manager-modal";
 import { ProfileModal } from "@/components/resumeow/profile-modal";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -35,6 +36,7 @@ import {
   saveResume,
 } from "@/lib/services/resume-service";
 import {
+  deleteJobDescriptionRequest,
   fetchResumeAiState,
   fetchResumeProfile,
   saveJobDescriptionRequest,
@@ -64,6 +66,7 @@ export default function ResumeowPage() {
   const [resumeData, setResumeData] = useState<ResumeData>(DEFAULT_RESUME_DATA);
   const [profile, setProfile] = useState<ResumeProfile | null>(null);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [isJobDescriptionManagerOpen, setIsJobDescriptionManagerOpen] = useState(false);
   const [hasDismissedProfilePrompt, setHasDismissedProfilePrompt] =
     useState(false);
   const [isSavingProfile, setIsSavingProfile] = useState(false);
@@ -451,6 +454,7 @@ export default function ResumeowPage() {
   };
 
   const handleSaveJobDescription = async (payload: {
+    id?: string;
     title: string;
     company: string;
     role: string;
@@ -474,6 +478,28 @@ export default function ResumeowPage() {
     } catch (error) {
       console.error("Failed to save job description", error);
       alert("Failed to save job description. Please try again.");
+    } finally {
+      setIsSavingJobDescription(false);
+    }
+  };
+
+  const handleDeleteJobDescription = async (jobDescriptionId: string) => {
+    if (isStreaming) {
+      return;
+    }
+
+    setIsSavingJobDescription(true);
+    try {
+      await deleteJobDescriptionRequest(jobDescriptionId);
+      if (selectedJobDescriptionId === jobDescriptionId) {
+        setSelectedJobDescriptionId("");
+      }
+      if (currentResumeId) {
+        await loadAiState(currentResumeId);
+      }
+    } catch (error) {
+      console.error("Failed to delete job description", error);
+      alert("Failed to delete job description. Please try again.");
     } finally {
       setIsSavingJobDescription(false);
     }
@@ -738,6 +764,15 @@ export default function ResumeowPage() {
         onSave={handleSaveProfile}
         isSaving={isSavingProfile}
         isLocked={isAiRunLocked}
+      />
+      <JobDescriptionManagerModal
+        open={isJobDescriptionManagerOpen}
+        onClose={() => setIsJobDescriptionManagerOpen(false)}
+        isLocked={isAiRunLocked}
+        jobDescriptions={jobDescriptions}
+        onSaveJobDescription={handleSaveJobDescription}
+        onDeleteJobDescription={handleDeleteJobDescription}
+        isSavingJobDescription={isSavingJobDescription}
       />
 
       <div className="container mx-auto px-4 py-12">
@@ -1043,6 +1078,12 @@ export default function ResumeowPage() {
                   }
                   setIsProfileModalOpen(true);
                 }}
+                onOpenJobDescriptionManager={() => {
+                  if (isAiRunLocked) {
+                    return;
+                  }
+                  setIsJobDescriptionManagerOpen(true);
+                }}
                 jobDescriptions={jobDescriptions}
                 selectedJobDescriptionId={selectedJobDescriptionId}
                 onSelectedJobDescriptionChange={(value) => {
@@ -1051,8 +1092,6 @@ export default function ResumeowPage() {
                   }
                   setSelectedJobDescriptionId(value);
                 }}
-                onSaveJobDescription={handleSaveJobDescription}
-                isSavingJobDescription={isSavingJobDescription}
                 rateLimitMessage={rateLimitMessage}
                 activeProcessLabel={activeProcessLabel}
                 errorMessage={chatErrorMessage}

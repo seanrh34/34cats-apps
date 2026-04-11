@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireUser } from "@/lib/supabase/require-user";
 import {
+  deleteJobDescription,
+  deleteRagDocumentBySourceKey,
   listJobDescriptions,
   saveJobDescription,
 } from "@/lib/services/resume-server-service";
@@ -51,5 +53,34 @@ export async function POST(request: Request) {
 
   return NextResponse.json({
     jobDescription,
+  });
+}
+
+export async function DELETE(request: Request) {
+  const { user, error } = await requireUser();
+  if (!user) {
+    return NextResponse.json({ error }, { status: 401 });
+  }
+
+  const body = await request.json().catch(() => null);
+  const id =
+    body && typeof body.id === "string" && body.id.trim()
+      ? body.id.trim()
+      : null;
+
+  if (!id) {
+    return NextResponse.json(
+      { error: "Missing job description id" },
+      { status: 400 }
+    );
+  }
+
+  const supabase = createAdminClient();
+  await deleteJobDescription(supabase, user.id, id);
+  await deleteRagDocumentBySourceKey(supabase, `job-description:${id}`, user.id);
+
+  return NextResponse.json({
+    success: true,
+    id,
   });
 }

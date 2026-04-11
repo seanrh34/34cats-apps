@@ -29,16 +29,10 @@ interface ResumeAiSidebarProps {
   consumedUndoChangeSetIds?: string[];
   profile: ResumeProfile | null;
   onOpenProfile: () => void;
+  onOpenJobDescriptionManager: () => void;
   jobDescriptions: ResumeJobDescription[];
   selectedJobDescriptionId?: string | null;
   onSelectedJobDescriptionChange: (value: string) => void;
-  onSaveJobDescription: (payload: {
-    title: string;
-    company: string;
-    role: string;
-    content: string;
-  }) => Promise<void>;
-  isSavingJobDescription: boolean;
   rateLimitMessage?: string | null;
   activeProcessLabel?: string | null;
   errorMessage?: string | null;
@@ -164,7 +158,7 @@ function SidebarMessage({
               ? "You"
               : isTool
                 ? message.tool_name?.replace(/_/g, " ") ?? "Tool"
-                : "Resume AI"}
+                : "Resumeow AI"}
           </span>
           <span className={isUser ? "text-white/50" : "text-gray-600"}>
             {new Date(message.created_at).toLocaleTimeString()}
@@ -266,12 +260,116 @@ function StreamingBubble({ streamingText }: { streamingText: string }) {
     <div className="flex justify-start">
       <div className="max-w-[88%] rounded-2xl rounded-bl-md border border-gray-800 bg-gray-900/90 px-4 py-3 shadow-sm">
         <div className="mb-2 flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.2em] text-gray-500">
-          <span>Resume AI</span>
+          <span>Resumeow AI</span>
           <span className="text-gray-600">typing</span>
         </div>
         <p className="whitespace-pre-wrap text-sm leading-6 text-gray-100">
           {streamingText}
         </p>
+      </div>
+    </div>
+  );
+}
+
+function ResumeAiSettingsModal({
+  open,
+  onClose,
+  isLocked,
+  jobDescriptions,
+  selectedJobDescriptionId,
+  onSelectedJobDescriptionChange,
+  onOpenManage,
+}: {
+  open: boolean;
+  onClose: () => void;
+  isLocked: boolean;
+  jobDescriptions: ResumeJobDescription[];
+  selectedJobDescriptionId?: string | null;
+  onSelectedJobDescriptionChange: (value: string) => void;
+  onOpenManage: () => void;
+}) {
+  if (!open) {
+    return null;
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 backdrop-blur-sm">
+      <div className="w-full max-w-2xl overflow-hidden rounded-2xl border border-gray-700 bg-gray-900 shadow-2xl">
+        <div className="border-b border-gray-800 px-5 py-4">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h3 className="text-base font-semibold text-white">Settings</h3>
+              <p className="mt-1 text-xs text-gray-400">
+                Manage Resumeow AI customizations to tailor feedback and edits to your needs.
+              </p>
+            </div>
+            <Button variant="ghost" size="sm" onClick={onClose}>
+              Close
+            </Button>
+          </div>
+        </div>
+
+        <div className="max-h-[75vh] space-y-4 overflow-y-auto px-5 py-4">
+          <Card className="border border-gray-800 bg-gray-900/60 p-4">
+            <div className="mb-3">
+              <h4 className="text-sm font-semibold text-white">Specific Job Description</h4>
+              <p className="mt-1 text-xs text-gray-400">
+                Add a specific job description to use as context for Resumeow AI. This can help tailor feedback and edits to a particular role you&apos;re targeting.
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.2em] text-gray-500">
+                  Selected Job Description
+                </label>
+                <select
+                  value={selectedJobDescriptionId ?? ""}
+                  onChange={(event) => {
+                    if (isLocked) {
+                      return;
+                    }
+                    onSelectedJobDescriptionChange(event.target.value);
+                  }}
+                  disabled={isLocked}
+                  className="h-11 w-full rounded-xl border border-gray-700 bg-gray-900/80 px-4 text-sm text-white focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#E84A3A]"
+                >
+                  <option value="">No job description selected</option>
+                  {jobDescriptions.map((job) => (
+                    <option key={job.id} value={job.id}>
+                      {job.title}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex items-center justify-between rounded-2xl border border-gray-800 bg-gray-900/70 px-3 py-3">
+                <div>
+                  <p className="text-sm font-medium text-white">
+                    Saved job descriptions
+                  </p>
+                  <p className="text-xs text-gray-400">
+                    Add, edit, or remove job contexts used by Resume AI.
+                  </p>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    if (isLocked) {
+                      return;
+                    }
+                    onClose();
+                    onOpenManage();
+                  }}
+                  disabled={isLocked}
+                >
+                  Manage
+                </Button>
+              </div>
+            </div>
+          </Card>
+        </div>
       </div>
     </div>
   );
@@ -294,23 +392,16 @@ export function ResumeAiSidebar({
   consumedUndoChangeSetIds,
   profile,
   onOpenProfile,
+  onOpenJobDescriptionManager,
   jobDescriptions,
   selectedJobDescriptionId,
   onSelectedJobDescriptionChange,
-  onSaveJobDescription,
-  isSavingJobDescription,
   rateLimitMessage,
   activeProcessLabel,
   errorMessage,
   isLocked = false,
 }: ResumeAiSidebarProps) {
-  const [jobDraft, setJobDraft] = useState({
-    title: "",
-    company: "",
-    role: "",
-    content: "",
-  });
-  const [isJobComposerOpen, setIsJobComposerOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -324,6 +415,12 @@ export function ResumeAiSidebar({
       behavior: "smooth",
     });
   }, [messages, streamingText, changeSets]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setIsSettingsOpen(false);
+    }
+  }, [isOpen]);
 
   const containerClassName = isOpen
     ? "fixed inset-y-0 right-0 z-40 w-full max-w-md translate-x-0 border-l border-gray-800 bg-gray-950/95 shadow-2xl shadow-black/30 backdrop-blur transition-transform lg:sticky lg:top-20 lg:h-[calc(100vh-5rem)] lg:w-auto lg:max-w-none lg:translate-x-0 lg:overflow-hidden lg:rounded-3xl lg:border"
@@ -346,151 +443,45 @@ export function ResumeAiSidebar({
         <div className="border-b border-gray-800 px-4 py-4">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <h2 className="text-lg font-semibold text-white">Resume AI</h2>
+              <h2 className="text-lg font-semibold text-white">Resumeow AI</h2>
               <p className="mt-1 text-xs leading-5 text-gray-400">
                 Chat naturally. I&apos;ll interpret your prompt, review the current
                 resume, and draft grounded changes when needed.
               </p>
             </div>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={onOpenProfile}
-                disabled={isLocked}
-              >
-                {profile ? "Profile" : "Set Up"}
-              </Button>
+            <div className="flex items-start gap-2">
+              <div className="flex flex-col gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={onOpenProfile}
+                  disabled={isLocked}
+                >
+                  {profile ? "Profile" : "Set Up"}
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    if (isLocked) {
+                      return;
+                    }
+                    setIsSettingsOpen(true);
+                  }}
+                  disabled={isLocked}
+                >
+                  Settings
+                </Button>
+              </div>
               <Button variant="ghost" size="sm" onClick={onClose} className="lg:hidden">
                 Close
               </Button>
             </div>
           </div>
+        </div>
 
-          <div className="mt-4 space-y-3">
-            <div>
-              <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.2em] text-gray-500">
-                Job Context
-              </label>
-              <select
-                value={selectedJobDescriptionId ?? ""}
-                onChange={(event) => {
-                  if (isLocked) {
-                    return;
-                  }
-                  onSelectedJobDescriptionChange(event.target.value);
-                }}
-                disabled={isLocked}
-                className="h-11 w-full rounded-xl border border-gray-700 bg-gray-900/80 px-4 text-sm text-white focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#E84A3A]"
-              >
-                <option value="">No job description selected</option>
-                {jobDescriptions.map((job) => (
-                  <option key={job.id} value={job.id}>
-                    {job.title}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="flex items-center justify-between rounded-2xl border border-gray-800 bg-gray-900/70 px-3 py-3">
-              <div>
-                <p className="text-sm font-medium text-white">Saved job descriptions</p>
-                <p className="text-xs text-gray-400">
-                  Add one if you want the AI to tailor edits to a role.
-                </p>
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  if (isLocked) {
-                    return;
-                  }
-                  setIsJobComposerOpen((current) => !current);
-                }}
-                disabled={isLocked}
-              >
-                {isJobComposerOpen ? "Hide" : "Add"}
-              </Button>
-            </div>
-
-            {isJobComposerOpen ? (
-              <Card className="border border-gray-800 bg-gray-900/60 p-4">
-                <div className="space-y-3">
-                  <input
-                    value={jobDraft.title}
-                    onChange={(event) =>
-                      setJobDraft((current) => ({
-                        ...current,
-                        title: event.target.value,
-                      }))
-                    }
-                    disabled={isLocked || isSavingJobDescription}
-                    placeholder="Title"
-                    className="h-10 w-full rounded-xl border border-gray-700 bg-gray-800/60 px-3 text-sm text-white placeholder:text-gray-500 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#E84A3A]"
-                  />
-                  <div className="grid grid-cols-2 gap-3">
-                    <input
-                      value={jobDraft.company}
-                      onChange={(event) =>
-                        setJobDraft((current) => ({
-                          ...current,
-                          company: event.target.value,
-                        }))
-                      }
-                      disabled={isLocked || isSavingJobDescription}
-                      placeholder="Company"
-                      className="h-10 w-full rounded-xl border border-gray-700 bg-gray-800/60 px-3 text-sm text-white placeholder:text-gray-500 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#E84A3A]"
-                    />
-                    <input
-                      value={jobDraft.role}
-                      onChange={(event) =>
-                        setJobDraft((current) => ({
-                          ...current,
-                          role: event.target.value,
-                        }))
-                      }
-                      disabled={isLocked || isSavingJobDescription}
-                      placeholder="Role"
-                      className="h-10 w-full rounded-xl border border-gray-700 bg-gray-800/60 px-3 text-sm text-white placeholder:text-gray-500 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#E84A3A]"
-                    />
-                  </div>
-                  <textarea
-                    value={jobDraft.content}
-                    onChange={(event) =>
-                      setJobDraft((current) => ({
-                        ...current,
-                        content: event.target.value,
-                      }))
-                    }
-                    disabled={isLocked || isSavingJobDescription}
-                    placeholder="Paste the job description here..."
-                    className="min-h-28 w-full rounded-xl border border-gray-700 bg-gray-800/60 px-3 py-3 text-sm text-white placeholder:text-gray-500 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#E84A3A]"
-                  />
-                  <Button
-                    size="sm"
-                    isLoading={isSavingJobDescription}
-                    onClick={async () => {
-                      if (isLocked) {
-                        return;
-                      }
-                      await onSaveJobDescription(jobDraft);
-                      setJobDraft({
-                        title: "",
-                        company: "",
-                        role: "",
-                        content: "",
-                      });
-                      setIsJobComposerOpen(false);
-                    }}
-                    disabled={isLocked || !jobDraft.content.trim()}
-                  >
-                    Save Job Description
-                  </Button>
-                </div>
-              </Card>
-            ) : null}
-
+        <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4">
+          <div className="space-y-4">
             {chatDisabledReason ? (
               <p className="rounded-xl border border-gray-800 bg-gray-900/70 px-3 py-2 text-xs text-gray-400">
                 {chatDisabledReason}
@@ -502,12 +493,8 @@ export function ResumeAiSidebar({
                 {rateLimitMessage}
               </p>
             ) : null}
-          </div>
-        </div>
 
-        <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4">
-          {messages.length === 0 && !streamingText && !activeProcessLabel && !errorMessage ? (
-            <div className="space-y-4">
+            {messages.length === 0 && !streamingText && !activeProcessLabel && !errorMessage ? (
               <div className="rounded-2xl border border-dashed border-gray-800 bg-gray-900/50 p-4">
                 <p className="text-sm text-white">
                   Try prompts like:
@@ -535,49 +522,49 @@ export function ResumeAiSidebar({
                   ))}
                 </div>
               </div>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {messages.map((message) => (
-                <SidebarMessage
-                  key={message.id}
-                  message={message}
-                  onUndoChangeSet={onUndoChangeSet}
-                  applyingChangeSetId={applyingChangeSetId}
-                  consumedUndoChangeSetIds={consumedUndoChangeSetIds}
-                  changeSets={changeSets}
-                  isLocked={isLocked}
-                />
-              ))}
-              {activeProcessLabel ? (
-                <div className="flex justify-start">
-                  <div className="max-w-[88%] rounded-2xl rounded-bl-md border border-gray-800 bg-gray-900/90 px-4 py-3 shadow-sm">
-                    <div className="mb-2 flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.2em] text-gray-500">
-                      <span>Resume AI</span>
-                      <span className="text-gray-600">working</span>
+            ) : (
+              <>
+                {messages.map((message) => (
+                  <SidebarMessage
+                    key={message.id}
+                    message={message}
+                    onUndoChangeSet={onUndoChangeSet}
+                    applyingChangeSetId={applyingChangeSetId}
+                    consumedUndoChangeSetIds={consumedUndoChangeSetIds}
+                    changeSets={changeSets}
+                    isLocked={isLocked}
+                  />
+                ))}
+                {activeProcessLabel ? (
+                  <div className="flex justify-start">
+                    <div className="max-w-[88%] rounded-2xl rounded-bl-md border border-gray-800 bg-gray-900/90 px-4 py-3 shadow-sm">
+                      <div className="mb-2 flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.2em] text-gray-500">
+                        <span>Resumeow AI</span>
+                        <span className="text-gray-600">working</span>
+                      </div>
+                      <p className="text-sm leading-6 text-gray-100">
+                        {activeProcessLabel}
+                      </p>
                     </div>
-                    <p className="text-sm leading-6 text-gray-100">
-                      {activeProcessLabel}
-                    </p>
                   </div>
-                </div>
-              ) : null}
-              {streamingText ? <StreamingBubble streamingText={streamingText} /> : null}
-              {errorMessage ? (
-                <div className="flex justify-start">
-                  <div className="max-w-[88%] rounded-2xl rounded-bl-md border border-red-500/30 bg-red-500/10 px-4 py-3 shadow-sm">
-                    <div className="mb-2 flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.2em] text-red-200/80">
-                      <span>Resume AI</span>
-                      <span className="text-red-200/60">error</span>
+                ) : null}
+                {streamingText ? <StreamingBubble streamingText={streamingText} /> : null}
+                {errorMessage ? (
+                  <div className="flex justify-start">
+                    <div className="max-w-[88%] rounded-2xl rounded-bl-md border border-red-500/30 bg-red-500/10 px-4 py-3 shadow-sm">
+                      <div className="mb-2 flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.2em] text-red-200/80">
+                        <span>Resumeow AI</span>
+                        <span className="text-red-200/60">error</span>
+                      </div>
+                      <p className="text-sm leading-6 text-red-100">
+                        {errorMessage}
+                      </p>
                     </div>
-                    <p className="text-sm leading-6 text-red-100">
-                      {errorMessage}
-                    </p>
                   </div>
-                </div>
-              ) : null}
-            </div>
-          )}
+                ) : null}
+              </>
+            )}
+          </div>
         </div>
 
         <div className="border-t border-gray-800 bg-gray-950/90 px-4 py-4">
@@ -588,7 +575,7 @@ export function ResumeAiSidebar({
               onKeyDown={handleChatKeyDown}
               placeholder={
                 chatDisabled
-                  ? "Save this resume to start chatting with Resume AI."
+                  ? "Save this resume to start chatting with Resumeow AI."
                   : "Ask for feedback, tailoring, or changes to the current resume..."
               }
               disabled={chatDisabled || isStreaming}
@@ -609,6 +596,16 @@ export function ResumeAiSidebar({
           </div>
         </div>
       </div>
+
+      <ResumeAiSettingsModal
+        open={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        isLocked={isLocked}
+        jobDescriptions={jobDescriptions}
+        selectedJobDescriptionId={selectedJobDescriptionId}
+        onSelectedJobDescriptionChange={onSelectedJobDescriptionChange}
+        onOpenManage={onOpenJobDescriptionManager}
+      />
     </aside>
   );
 }

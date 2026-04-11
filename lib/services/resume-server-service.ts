@@ -450,6 +450,20 @@ export async function saveJobDescription(
   return mapJobDescriptionRow(data as DatabaseRow);
 }
 
+export async function deleteJobDescription(
+  supabase: DatabaseClient,
+  userId: string,
+  jobDescriptionId: string
+) {
+  const { error } = await supabase
+    .from("resume_job_descriptions")
+    .delete()
+    .eq("id", jobDescriptionId)
+    .eq("user_id", userId);
+
+  assertNoError(error, "Failed to delete job description");
+}
+
 export async function upsertRagDocument(
   supabase: DatabaseClient,
   payload: {
@@ -501,6 +515,21 @@ export async function getRagDocumentBySourceKey(
 
   assertNoError(error, "Failed to fetch RAG document");
   return data ? mapRagDocumentRow(data as DatabaseRow) : null;
+}
+
+export async function deleteRagDocumentBySourceKey(
+  supabase: DatabaseClient,
+  sourceKey: string,
+  userId?: string | null
+) {
+  let query = supabase.from("rag_documents").delete().eq("source_key", sourceKey);
+
+  if (userId) {
+    query = query.eq("user_id", userId);
+  }
+
+  const { error } = await query;
+  assertNoError(error, "Failed to delete RAG document by source key");
 }
 
 export async function replaceRagChunks(
