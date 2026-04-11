@@ -13,6 +13,7 @@ import {
   runProposeResumeChangesTool,
   runReviewResumeTool,
 } from "@/lib/ai/resumeow/tools";
+import { evaluateResumeGuardrails } from "@/lib/ai/resumeow/guardrails";
 import { sseEvent } from "@/lib/ai/resumeow/utils";
 import {
   insertAiMessage,
@@ -397,6 +398,39 @@ export async function runResumeowChat(payload: {
     role: "user",
     content: latestUserMessage,
   });
+
+  const guardrailDecision = evaluateResumeGuardrails({
+    message: latestUserMessage,
+    actionHint: payload.actionHint ?? null,
+  });
+  if (!guardrailDecision.allowed) {
+    console.warn("Resumeow guardrail blocked prompt", {
+      userId: payload.userId,
+      resumeId: payload.resume.id,
+      category: guardrailDecision.category,
+      code: guardrailDecision.code,
+    });
+
+    const assistantMessage = await insertAiMessage(payload.supabase, {
+      userId: payload.userId,
+      resumeId: payload.resume.id,
+      role: "assistant",
+      content: guardrailDecision.refusalMessage,
+      metadata: {
+        guardrail: {
+          blocked: true,
+          category: guardrailDecision.category,
+          code: guardrailDecision.code,
+        },
+      },
+    });
+
+    await write("token", { text: guardrailDecision.refusalMessage });
+    await write("assistant_done", {
+      message: assistantMessage,
+    });
+    return;
+  }
 
   const persistedMessages = await listAiMessages(
     payload.supabase,

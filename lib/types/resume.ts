@@ -127,6 +127,16 @@ export interface ResumeChangeSet {
   applied_at?: string | null;
 }
 
+export interface ResumeAiGuardrailMetadata {
+  blocked: true;
+  category: "scope" | "safety";
+  code: "out_of_scope" | "explicit_content";
+}
+
+export interface ResumeAiMessageMetadata extends Record<string, unknown> {
+  guardrail?: ResumeAiGuardrailMetadata;
+}
+
 export interface ResumeAiMessage {
   id: string;
   user_id: string;
@@ -135,7 +145,7 @@ export interface ResumeAiMessage {
   content: string;
   tool_name?: string | null;
   tool_call_id?: string | null;
-  metadata?: Record<string, unknown> | null;
+  metadata?: ResumeAiMessageMetadata | null;
   created_at: string;
 }
 
