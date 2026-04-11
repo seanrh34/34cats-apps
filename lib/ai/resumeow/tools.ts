@@ -20,9 +20,11 @@ import {
   ResumeData,
   ResumeCitation,
   ResumeProfile,
+  ResumeSectionId,
   SavedResume,
 } from "@/lib/types/resume";
 import { SupabaseClient } from "@supabase/supabase-js";
+import { normalizeSectionOrder } from "@/lib/resume-data";
 
 const personalInfoSchema = z.object({
   fullName: z.string(),
@@ -62,6 +64,12 @@ const projectSchema = z.object({
   link: z.string().optional(),
 });
 
+const certificationAwardSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  description: z.string(),
+});
+
 const activitySchema = z.object({
   id: z.string(),
   position: z.string(),
@@ -78,6 +86,20 @@ const resumeDataSchema = z.object({
   coCurricularActivities: z.array(activitySchema).optional(),
   skills: z.array(skillSchema),
   projects: z.array(projectSchema).optional(),
+  certificationsAwards: z.array(certificationAwardSchema).optional(),
+  sectionOrder: z
+    .array(
+      z.enum([
+        "personal",
+        "education",
+        "experience",
+        "cocurricular",
+        "skills",
+        "projects",
+        "certificationsAwards",
+      ])
+    )
+    .optional(),
 });
 
 const reviewSchema = z.object({
@@ -302,6 +324,36 @@ function normalizeActivities(
   });
 }
 
+function normalizeCertificationsAwards(
+  value: unknown,
+  fallback: NonNullable<ResumeData["certificationsAwards"]>
+): NonNullable<ResumeData["certificationsAwards"]> {
+  if (!Array.isArray(value)) {
+    return fallback;
+  }
+
+  return value.map((entry, index) => {
+    const source = getObjectValue(entry);
+    const fallbackEntry = fallback[index];
+
+    return {
+      id: asString(source?.id, fallbackEntry?.id ?? randomUUID()),
+      name: asString(source?.name, fallbackEntry?.name ?? ""),
+      description: asString(
+        source?.description,
+        fallbackEntry?.description ?? ""
+      ),
+    };
+  });
+}
+
+function normalizeResumeSectionOrder(
+  value: unknown,
+  fallback: ResumeSectionId[] | undefined
+) {
+  return normalizeSectionOrder(value ?? fallback ?? []);
+}
+
 function normalizeProposedResumeData(
   value: unknown,
   fallback: ResumeData
@@ -318,6 +370,14 @@ function normalizeProposedResumeData(
     ),
     skills: normalizeSkills(source?.skills, fallback.skills),
     projects: normalizeProjects(source?.projects, fallback.projects ?? []),
+    certificationsAwards: normalizeCertificationsAwards(
+      source?.certificationsAwards,
+      fallback.certificationsAwards ?? []
+    ),
+    sectionOrder: normalizeResumeSectionOrder(
+      source?.sectionOrder,
+      fallback.sectionOrder
+    ),
   };
 }
 
