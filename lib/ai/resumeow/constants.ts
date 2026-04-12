@@ -41,51 +41,6 @@ export const RETRIEVAL_LIMITS = {
 
 export const MAX_HISTORY_MESSAGES = 8;
 
-export const RESUME_SCOPE_KEYWORDS = [
-  "resume",
-  "cv",
-  "curriculum vitae",
-  "work experience",
-  "experience",
-  "education",
-  "skills",
-  "projects",
-  "bullet",
-  "achievements",
-  "job description",
-  "job post",
-  "hiring manager",
-  "ats",
-  "tailor",
-  "application",
-  "career summary",
-  "professional summary",
-  "cover letter",
-] as const;
-
-export const RESUME_FOLLOW_UP_EDIT_KEYWORDS = [
-  "edit",
-  "update",
-  "rewrite",
-  "refine",
-  "improve",
-  "shorten",
-  "expand",
-  "tailor",
-  "fix",
-  "change",
-  "reword",
-] as const;
-
-export const RESUME_FOLLOW_UP_REFERENCE_KEYWORDS = [
-  "this",
-  "that",
-  "it",
-  "these",
-  "those",
-  "my current one",
-] as const;
-
 export const EXPLICIT_OR_INAPPROPRIATE_KEYWORDS = [
   "porn",
   "porno",
@@ -110,6 +65,8 @@ export const EXPLICIT_OR_INAPPROPRIATE_KEYWORDS = [
 export const RESUME_GUARDRAIL_REFUSAL_MESSAGES = {
   scope:
     "I can only help with resume-related advice, review, and edits. Try asking me to review your current resume, tailor it to a role, or rewrite a specific section.",
+  clarify:
+    "I’m not fully sure whether you mean your active resume here. If you want, I can review it, apply earlier recommendations, or tailor it to your selected job description.",
   safety:
     "I can’t help with explicit or inappropriate content. If you want, I can still help improve your resume in a professional way.",
 } as const;

@@ -75,6 +75,10 @@ function getFallbackModel() {
   return process.env.OPENROUTER_MODEL_FALLBACK?.trim() || null;
 }
 
+function getFirstPrimaryModel() {
+  return getPrimaryModels()[0];
+}
+
 function isRateLimitError(error: unknown) {
   if (error instanceof OpenRouterRequestError && error.status === 429) {
     return true;
@@ -127,7 +131,38 @@ export async function createChatCompletion(payload: {
   tools?: OpenRouterTool[];
   temperature?: number;
   toolChoice?: "auto" | "none";
+  modelOverride?: string;
 }) {
+  const modelOverride =
+    payload.modelOverride === "__PRIMARY_FIRST__"
+      ? getFirstPrimaryModel()
+      : payload.modelOverride?.trim() || null;
+
+  if (modelOverride) {
+    const response = await fetch(OPENROUTER_CHAT_URL, {
+      method: "POST",
+      headers: getAuthHeaders(),
+      body: JSON.stringify({
+        model: modelOverride,
+        messages: payload.messages,
+        tools: payload.tools,
+        tool_choice: payload.toolChoice ?? "auto",
+        parallel_tool_calls: false,
+        temperature: payload.temperature ?? 0.2,
+      }),
+    });
+
+    if (!response.ok) {
+      const body = await response.text();
+      throw new OpenRouterRequestError(body || `OpenRouter error ${response.status}`, {
+        status: response.status,
+        responseBody: body,
+      });
+    }
+
+    return response.json();
+  }
+
   return fetchWithFallback(async (model) => {
     const response = await fetch(OPENROUTER_CHAT_URL, {
       method: "POST",

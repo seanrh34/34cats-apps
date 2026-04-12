@@ -1,4 +1,5 @@
-import { evaluateResumeGuardrails } from "@/lib/ai/resumeow/guardrails";
+import { classifyResumeScope } from "@/lib/ai/resumeow/guardrails-scope";
+import { evaluateSafetyGuardrails } from "@/lib/ai/resumeow/guardrails";
 import { createOrchestratorEventWriter } from "@/lib/ai/resumeow/orchestrator/events";
 import { runResumeowOrchestrator } from "@/lib/ai/resumeow/orchestrator/run";
 import {
@@ -70,33 +71,104 @@ export async function runResumeowChat(payload: {
     content: latestUserMessage,
   });
 
-  const guardrailDecision = evaluateResumeGuardrails({
+  const safetyDecision = evaluateSafetyGuardrails({
     message: latestUserMessage,
-    actionHint: payload.actionHint ?? null,
   });
-  if (!guardrailDecision.allowed) {
+  if (!safetyDecision.allowed) {
     console.warn("Resumeow guardrail blocked prompt", {
       userId: payload.userId,
       resumeId: payload.resume.id,
-      category: guardrailDecision.category,
-      code: guardrailDecision.code,
+      category: safetyDecision.category,
+      code: safetyDecision.code,
     });
 
     const assistantMessage = await insertAiMessage(payload.supabase, {
       userId: payload.userId,
       resumeId: payload.resume.id,
       role: "assistant",
-      content: guardrailDecision.refusalMessage,
+      content: safetyDecision.refusalMessage,
       metadata: {
         guardrail: {
           blocked: true,
-          category: guardrailDecision.category,
-          code: guardrailDecision.code,
+          category: safetyDecision.category,
+          code: safetyDecision.code,
         },
       },
     });
 
-    await eventWriter.write("token", { text: guardrailDecision.refusalMessage });
+    await eventWriter.write("token", { text: safetyDecision.refusalMessage });
+    await eventWriter.write("assistant_done", {
+      message: assistantMessage,
+    });
+    return;
+  }
+
+  const persistedMessages = await listAiMessages(
+    payload.supabase,
+    payload.userId,
+    payload.resume.id
+  );
+  const recentMessages = persistedMessages
+    .filter((message) => message.role === "user" || message.role === "assistant")
+    .slice(-8)
+    .map((message) => ({
+      role: message.role,
+      content: message.content,
+    })) as Array<{ role: "user" | "assistant"; content: string }>;
+
+  const recentContextWithoutLatest =
+    recentMessages.length > 0 &&
+    recentMessages[recentMessages.length - 1]?.role === "user" &&
+    recentMessages[recentMessages.length - 1]?.content === latestUserMessage
+      ? recentMessages.slice(0, -1)
+      : recentMessages;
+
+  const scopeDecision = await classifyResumeScope({
+    latestUserMessage,
+    recentMessages: recentContextWithoutLatest,
+    actionHint: payload.actionHint ?? null,
+    hasSelectedJobDescription: Boolean(payload.jobDescriptionId),
+    activeResumeTitle: payload.resume.title,
+  });
+
+  console.info("Resumeow scope decision", {
+    userId: payload.userId,
+    resumeId: payload.resume.id,
+    latestUserMessage,
+    recentMessageCount: recentContextWithoutLatest.length,
+    decision: scopeDecision.decision,
+    reasonCode: scopeDecision.reasonCode,
+  });
+
+  if (scopeDecision.decision !== "in_scope") {
+    const code =
+      scopeDecision.decision === "clarify"
+        ? "needs_scope_clarification"
+        : "out_of_scope";
+
+    console.warn("Resumeow scope guardrail stopped prompt", {
+      userId: payload.userId,
+      resumeId: payload.resume.id,
+      category: "scope",
+      code,
+      reasonCode: scopeDecision.reasonCode,
+    });
+
+    const assistantMessage = await insertAiMessage(payload.supabase, {
+      userId: payload.userId,
+      resumeId: payload.resume.id,
+      role: "assistant",
+      content: scopeDecision.assistantMessage,
+      metadata: {
+        guardrail: {
+          blocked: true,
+          category: "scope",
+          code,
+        },
+      },
+    });
+
+    await eventWriter.write("token", { text: scopeDecision.assistantMessage });
     await eventWriter.write("assistant_done", {
       message: assistantMessage,
     });

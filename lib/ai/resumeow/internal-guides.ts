@@ -3,7 +3,7 @@ export const INTERNAL_RESUME_GUIDES = [
     sourceKey: "internal-guide:truthfulness",
     title: "Resume Truthfulness Guardrail",
     content:
-      "Never invent responsibilities, metrics, awards, technologies, leadership scope, or timelines. If evidence is missing, ask the user for clarification. Prefer preserving factual accuracy over making a bullet sound stronger.",
+      "Never invent responsibilities, metrics, awards, technologies, leadership scope, or timelines. Treat concrete facts that the user explicitly provides in the current edit request as allowed evidence about their own background. Ask for clarification only when the user's request is ambiguous, internally inconsistent, or still missing the details needed for a safe edit. Prefer preserving factual accuracy over making a bullet sound stronger.",
   },
   {
     sourceKey: "internal-guide:tailoring",

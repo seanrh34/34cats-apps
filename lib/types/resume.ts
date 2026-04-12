@@ -198,7 +198,7 @@ export interface ResumeChangeSet {
 export interface ResumeAiGuardrailMetadata {
   blocked: true;
   category: "scope" | "safety";
-  code: "out_of_scope" | "explicit_content";
+  code: "out_of_scope" | "explicit_content" | "needs_scope_clarification";
 }
 
 export interface ResumeAiMessageMetadata extends Record<string, unknown> {

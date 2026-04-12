@@ -285,19 +285,6 @@ export async function runResumeowOrchestrator(payload: {
     latestAppliedResult: null,
   };
 
-  await insertAiMessage(payload.supabase, {
-    userId: payload.userId,
-    resumeId: payload.resume.id,
-    role: "user",
-    content: payload.latestUserMessage,
-    metadata: {
-      orchestration: {
-        runId,
-        kind: "planner_note",
-      },
-    },
-  });
-
   const persistedMessages = await listAiMessages(
     payload.supabase,
     payload.userId,
@@ -363,6 +350,17 @@ export async function runResumeowOrchestrator(payload: {
     const args = parseToolArguments(toolCall);
     const stepLabel = toolDefinition.buildStepLabel(args, state);
 
+    console.info("Resumeow orchestrator tool_start", {
+      runId,
+      userId: payload.userId,
+      resumeId: payload.resume.id,
+      stepNumber,
+      toolName: toolDefinition.name,
+      toolDisplayName: toolDefinition.displayName,
+      stepLabel,
+      args,
+    });
+
     await enforceToolLimits({
       supabase: payload.supabase,
       userId: payload.userId,
@@ -391,6 +389,19 @@ export async function runResumeowOrchestrator(payload: {
       },
       args
     );
+
+    console.info("Resumeow orchestrator tool_result", {
+      runId,
+      userId: payload.userId,
+      resumeId: payload.resume.id,
+      stepNumber,
+      toolName: result.toolName,
+      toolDisplayName: result.toolDisplayName,
+      summary: result.summary,
+      patchOperations: result.patchOperations?.length ?? 0,
+      mutatedResume: result.mutatedResume ?? false,
+      diffItems: result.diffItems?.length ?? 0,
+    });
 
     state.toolResults.push(result);
     if (result.patchOperations?.length) {
@@ -465,6 +476,19 @@ export async function runResumeowOrchestrator(payload: {
         reason: payload.latestUserMessage,
       }
     );
+
+    console.info("Resumeow orchestrator tool_result", {
+      runId,
+      userId: payload.userId,
+      resumeId: payload.resume.id,
+      stepNumber,
+      toolName: result.toolName,
+      toolDisplayName: result.toolDisplayName,
+      summary: result.summary,
+      patchOperations: result.patchOperations?.length ?? 0,
+      mutatedResume: result.mutatedResume ?? false,
+      diffItems: result.diffItems?.length ?? 0,
+    });
     state.toolResults.push(result);
     latestAppliedResult = result;
     latestAppliedChangeSet = result.changeSet ?? null;
@@ -524,6 +548,14 @@ export async function runResumeowOrchestrator(payload: {
       changeSet: latestAppliedChangeSet,
       diffItems: latestAppliedResult?.diffItems,
     },
+  });
+
+  console.info("Resumeow orchestrator assistant_done", {
+    runId,
+    userId: payload.userId,
+    resumeId: payload.resume.id,
+    mutatedResume: Boolean(latestAppliedResult?.updatedResume),
+    finalAssistantPreview: finalAssistantText.slice(0, 200),
   });
 
   await payload.writer.write("assistant_done", {

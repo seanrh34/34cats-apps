@@ -1,31 +1,25 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { evaluateResumeGuardrails } from "./guardrails";
+import { evaluateSafetyGuardrails } from "./guardrails";
 
-test("allows resume review/edit requests", () => {
-  const decision = evaluateResumeGuardrails({
+test("allows non-explicit prompts to continue past the safety layer", () => {
+  const decision = evaluateSafetyGuardrails({
     message: "Review my resume and improve my experience bullets for ATS.",
   });
 
   assert.equal(decision.allowed, true);
 });
 
-test("blocks out-of-scope general knowledge prompts", () => {
-  const decision = evaluateResumeGuardrails({
+test("does not hard-block general knowledge prompts at the safety layer", () => {
+  const decision = evaluateSafetyGuardrails({
     message: "What is the mass of the sun?",
   });
 
-  assert.equal(decision.allowed, false);
-  if (decision.allowed) {
-    return;
-  }
-
-  assert.equal(decision.category, "scope");
-  assert.equal(decision.code, "out_of_scope");
+  assert.equal(decision.allowed, true);
 });
 
 test("blocks explicit or inappropriate prompts", () => {
-  const decision = evaluateResumeGuardrails({
+  const decision = evaluateSafetyGuardrails({
     message: "Write an explicit sexual message for me.",
   });
 
@@ -39,7 +33,7 @@ test("blocks explicit or inappropriate prompts", () => {
 });
 
 test("safety block takes precedence over resume intent", () => {
-  const decision = evaluateResumeGuardrails({
+  const decision = evaluateSafetyGuardrails({
     message:
       "Rewrite my resume summary and include explicit sexual content in it.",
   });

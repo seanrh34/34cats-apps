@@ -11,6 +11,35 @@ import {
   serializeSavedResume,
 } from "@/lib/ai/resumeow/utils";
 
+function inferRequestMode(payload: {
+  latestUserMessage: string;
+  actionHint?: "review" | "edit" | null;
+}) {
+  if (payload.actionHint) {
+    return payload.actionHint;
+  }
+
+  const normalized = payload.latestUserMessage.toLowerCase();
+
+  if (
+    /\b(review|critique|assess|evaluate|feedback|analy[sz]e|inspect|score)\b/.test(
+      normalized
+    )
+  ) {
+    return "review";
+  }
+
+  if (
+    /\b(edit|rewrite|revise|update|fix|improve|tailor|optimi[sz]e|implement|apply|change)\b/.test(
+      normalized
+    )
+  ) {
+    return "edit";
+  }
+
+  return "unclear";
+}
+
 export const ORCHESTRATOR_SYSTEM_PROMPT = `You are Resumeow's agentic orchestration model.
 
 You may think step by step and choose tools deliberately, but you must stay inside Resumeow's scope and guardrails.
@@ -20,6 +49,7 @@ Core rules:
 - Never answer out-of-scope or inappropriate requests. Guardrails run before you, but you must still stay in scope.
 - Use tools to inspect evidence before making claims.
 - Never invent facts, achievements, employers, metrics, technologies, dates, or responsibilities.
+- The user's current edit request counts as first-class evidence about their own resume. You may apply facts the user explicitly provides in the latest prompt without asking them to re-prove those facts.
 - If evidence is missing, ask a concise clarification question instead of guessing.
 - Field ordering inside sections is fixed by Resumeow's renderer and must never be changed or praised.
 - You may suggest or change section order only at the sectionOrder level, and Personal Info must remain first.
@@ -28,6 +58,8 @@ Core rules:
 - Mutation tools prepare structured patch operations only. They do not commit changes.
 - Call apply_resume_patch only after at least one safe, grounded patch has been prepared.
 - If no change should be made, explain why clearly.
+- If the user is asking for a review, critique, or assessment, provide the best grounded review you can from the existing evidence. Do not ask for extra details just because those details could help with future edits.
+- Only ask clarification questions when the user is explicitly asking you to make resume changes and the missing facts block a safe, truthful edit.
 - Be concise and practical in the final user-facing response.`;
 
 export function buildOrchestratorUserPrompt(payload: {
@@ -37,10 +69,16 @@ export function buildOrchestratorUserPrompt(payload: {
   actionHint?: "review" | "edit" | null;
   jobDescriptionId?: string | null;
 }) {
+  const inferredRequestMode = inferRequestMode({
+    latestUserMessage: payload.latestUserMessage,
+    actionHint: payload.actionHint ?? null,
+  });
+
   return `Active resume title: ${payload.resume.title}
 Active resume revision: ${payload.resume.resume_revision}
 Selected job description id: ${payload.jobDescriptionId ?? "none"}
 Action hint: ${payload.actionHint ?? "none"}
+Inferred request mode: ${inferredRequestMode}
 Saved profile available: ${payload.profile ? "yes" : "no"}
 
 Latest user request:
@@ -83,6 +121,8 @@ Rules:
 - Field ordering inside sections is fixed and must not be described as an improvement.
 - Section order feedback is allowed, but Personal Info must remain first.
 - If something is missing, say that directly.
+- This is a review tool. Do not ask the user follow-up questions or hold back the review pending extra details.
+- If evidence is limited, state the limitation as a finding and continue with the best grounded review you can.
 - Omit findings that are not useful.
 - Use "score" only when this tool naturally produces one; otherwise set it to 0.
 ${(payload.extraRules ?? []).map((rule) => `- ${rule}`).join("\n")}
@@ -132,9 +172,14 @@ Rules:
 - Preserve all required fields on every entry, including ids.
 - Keep section field ordering fixed. Do not change or describe within-section field order.
 - You may change sectionOrder only at the section/tab level, while keeping Personal Info first.
-- Only use facts present in the working resume, saved profile, selected job description, or cited evidence.
+- You may use facts from the user's current instruction as first-class evidence for this edit request.
+- Otherwise, only use facts present in the working resume, saved profile, selected job description, or cited evidence.
 - Do not fabricate content.
-- If the requested change cannot be fulfilled safely, keep the resume mostly unchanged and explain the limitation in the summary.
+- Do not reject a change just because the fact came directly from the user's current prompt.
+- If the user gives new concrete resume facts in this prompt, prefer incorporating them faithfully over asking them to repeat or verify them.
+- Make every safe, grounded improvement you can from the existing evidence before asking for anything else.
+- If some requested improvements need missing facts, still apply any safe subset of changes and explain the remaining limitation in the summary.
+- Only ask for clarification when the user's request is ambiguous, internally inconsistent, or still lacks the concrete facts needed for any safe material edit.
 ${(payload.extraRules ?? []).map((rule) => `- ${rule}`).join("\n")}
 
 Working resume:
@@ -176,4 +221,3 @@ export function serializeCitations(citations: ResumeCitation[] = []) {
     excerpt: citation.excerpt,
   }));
 }
-
