@@ -3,6 +3,7 @@
 import {
   Fragment,
   KeyboardEvent,
+  useLayoutEffect,
   ReactNode,
   cloneElement,
   isValidElement,
@@ -510,10 +511,51 @@ export function ResumeAiSidebar({
 }: ResumeAiSidebarProps) {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement | null>(null);
+  const shouldAutoScrollRef = useRef(true);
+  const previousMessageCountRef = useRef(messages.length);
+  const previousLastMessageIdRef = useRef(messages[messages.length - 1]?.id ?? null);
+  const previousChangeSetCountRef = useRef(changeSets.length);
 
   useEffect(() => {
     const node = scrollRef.current;
     if (!node) {
+      return;
+    }
+
+    const handleScroll = () => {
+      const distanceFromBottom =
+        node.scrollHeight - node.scrollTop - node.clientHeight;
+      shouldAutoScrollRef.current = distanceFromBottom <= 80;
+    };
+
+    handleScroll();
+    node.addEventListener("scroll", handleScroll);
+
+    return () => {
+      node.removeEventListener("scroll", handleScroll);
+    };
+  }, []);
+
+  useLayoutEffect(() => {
+    const node = scrollRef.current;
+    if (!node) {
+      return;
+    }
+
+    const latestMessageId = messages[messages.length - 1]?.id ?? null;
+    const hasNewMessage =
+      messages.length !== previousMessageCountRef.current ||
+      latestMessageId !== previousLastMessageIdRef.current;
+    const hasNewChangeSet = changeSets.length !== previousChangeSetCountRef.current;
+    const shouldAutoScroll =
+      Boolean(streamingText) ||
+      ((hasNewMessage || hasNewChangeSet) && shouldAutoScrollRef.current);
+
+    previousMessageCountRef.current = messages.length;
+    previousLastMessageIdRef.current = latestMessageId;
+    previousChangeSetCountRef.current = changeSets.length;
+
+    if (!shouldAutoScroll) {
       return;
     }
 
