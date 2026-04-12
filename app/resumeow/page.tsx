@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { useAuth } from "@/contexts/auth-context";
 import {
@@ -348,6 +348,7 @@ export default function ResumeowPage() {
     []
   );
   const [draggedTabId, setDraggedTabId] = useState<ResumeSectionId | null>(null);
+  const hasAutoSelectedInitialResumeRef = useRef(false);
 
   const appendProcessUpdate = useCallback((update: ProcessUpdate) => {
     setProcessUpdates((current) => {
@@ -476,9 +477,17 @@ export default function ResumeowPage() {
       const resumes = await fetchUserResumes();
       setSavedResumes(resumes);
 
-      if (resumes.length > 0 && !currentResumeId) {
+      if (
+        !hasAutoSelectedInitialResumeRef.current &&
+        resumes.length > 0 &&
+        !currentResumeId
+      ) {
+        hasAutoSelectedInitialResumeRef.current = true;
         loadResume(resumes[0]);
+        return;
       }
+
+      hasAutoSelectedInitialResumeRef.current = true;
     } catch (error) {
       console.error("Error loading resumes:", error);
     }
@@ -497,6 +506,7 @@ export default function ResumeowPage() {
 
   useEffect(() => {
     if (!user) {
+      hasAutoSelectedInitialResumeRef.current = false;
       setProfile(null);
       setMessages([]);
       setChangeSets([]);
