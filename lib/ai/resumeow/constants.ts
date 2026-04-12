@@ -12,15 +12,25 @@ export const RATE_LIMIT_CONFIG = {
     limit: 20,
     windowSeconds: 5 * 60,
   },
-  review_resume: {
-    limit: 10,
+  orchestrator_steps: {
+    limit: 60,
+    windowSeconds: 5 * 60,
+  },
+  analysis_tools: {
+    limit: 20,
     windowSeconds: 60 * 60,
   },
-  propose_resume_changes: {
+  mutation_tools: {
+    limit: 15,
+    windowSeconds: 60 * 60,
+  },
+  apply_resume_patch: {
     limit: 10,
     windowSeconds: 60 * 60,
   },
 } as const;
+
+export const MAX_ORCHESTRATOR_STEPS = 5;
 
 export const RETRIEVAL_LIMITS = {
   user_resume_history: 4,

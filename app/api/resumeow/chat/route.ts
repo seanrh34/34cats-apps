@@ -62,36 +62,6 @@ export async function POST(request: NextRequest) {
   }
 
   const actionHint = body.actionHint ?? null;
-  if (actionHint === "review") {
-    const reviewLimit = await enforceRateLimit(supabase, user.id, "review_resume");
-    if (!reviewLimit.allowed) {
-      return NextResponse.json(
-        {
-          error: "Review rate limit exceeded",
-          rateLimit: reviewLimit,
-        },
-        { status: 429 }
-      );
-    }
-  }
-
-  if (actionHint === "edit") {
-    const editLimit = await enforceRateLimit(
-      supabase,
-      user.id,
-      "propose_resume_changes"
-    );
-    if (!editLimit.allowed) {
-      return NextResponse.json(
-        {
-          error: "Edit rate limit exceeded",
-          rateLimit: editLimit,
-        },
-        { status: 429 }
-      );
-    }
-  }
-
   const resume = await getResumeById(supabase, user.id, body.resumeId);
   if (!resume) {
     return NextResponse.json({ error: "Resume not found" }, { status: 404 });
@@ -119,12 +89,6 @@ export async function POST(request: NextRequest) {
           actionHint,
           jobDescriptionId: body.jobDescriptionId ?? null,
           writer,
-          skipToolRateLimits:
-            actionHint === "review"
-              ? ["review_resume"]
-              : actionHint === "edit"
-                ? ["propose_resume_changes"]
-                : [],
         });
       } catch (chatError) {
         const encoder = new TextEncoder();

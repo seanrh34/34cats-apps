@@ -110,6 +110,57 @@ export interface ResumeCitation {
   excerpt?: string;
 }
 
+export type ResumeAiToolName =
+  | "get_active_resume"
+  | "get_user_profile"
+  | "get_resume_history"
+  | "get_target_job_context"
+  | "retrieve_relevant_experience"
+  | "review_resume_overall"
+  | "check_resume_against_job"
+  | "find_weak_bullets"
+  | "suggest_missing_content"
+  | "detect_repetition_or_wordiness"
+  | "validate_factual_consistency"
+  | "check_format_constraints"
+  | "score_ats_alignment"
+  | "rewrite_bullet"
+  | "improve_summary_section"
+  | "tailor_resume_to_job"
+  | "reorder_resume_sections"
+  | "apply_resume_patch";
+
+export interface ResumePatchOperation {
+  type: "replace_resume_data";
+  reason: string;
+  summary: string;
+  resume_data: ResumeData;
+  citations?: ResumeCitation[];
+}
+
+export interface ResumeAiToolResult {
+  toolName: ResumeAiToolName;
+  toolDisplayName: string;
+  summary: string;
+  citations?: ResumeCitation[];
+  data?: Record<string, unknown>;
+  patchOperations?: ResumePatchOperation[];
+  updatedResume?: SavedResume | null;
+  changeSet?: ResumeChangeSet | null;
+  diffItems?: ResumeChangeDiffItem[];
+  mutatedResume?: boolean;
+}
+
+export interface ResumeAiRunMetadata {
+  runId: string;
+  stepNumber?: number;
+  toolName?: ResumeAiToolName | null;
+  toolDisplayName?: string | null;
+  kind?: "guardrail" | "tool_result" | "planner_note" | "final";
+  mutatedResume?: boolean;
+  stepLabel?: string | null;
+}
+
 export interface ResumeReviewFinding {
   id: string;
   category: "content" | "clarity" | "impact" | "tailoring" | "format";
@@ -152,6 +203,15 @@ export interface ResumeAiGuardrailMetadata {
 
 export interface ResumeAiMessageMetadata extends Record<string, unknown> {
   guardrail?: ResumeAiGuardrailMetadata;
+  orchestration?: ResumeAiRunMetadata;
+  changeSet?: ResumeChangeSet;
+  diffItems?: ResumeChangeDiffItem[];
+  findings?: Array<{
+    id: string;
+    title: string;
+    severity: string;
+    recommendation: string;
+  }>;
 }
 
 export interface ResumeAiMessage {
@@ -205,7 +265,7 @@ export interface RagChunk {
 }
 
 export interface ResumeAiRateLimitStatus {
-  action: "chat_requests" | "review_resume" | "propose_resume_changes";
+  action: string;
   allowed: boolean;
   current_count: number;
   limit_value: number;

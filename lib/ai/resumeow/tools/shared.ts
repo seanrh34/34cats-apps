@@ -1,96 +1,88 @@
-import { z } from "zod";
 import { randomUUID } from "crypto";
-import {
-  createChangeSet,
-  getJobDescriptionById,
-  saveResumeForUser,
-  updateChangeSetStatus,
-} from "@/lib/services/resume-server-service";
+import { z } from "zod";
 import { createChatCompletion } from "@/lib/ai/resumeow/openrouter";
 import {
-  buildChangePrompt,
-  buildReviewPrompt,
-} from "@/lib/ai/resumeow/prompts";
-import {
-  buildSafeChangeSummary,
-  diffResumeData,
+  buildProfileDocument,
   extractJsonFromText,
+  flattenResumeForText,
   normalizeAiMessageContent,
-  sanitizeChangeSummary,
-  sanitizeReviewOutput,
+  splitCommaSeparated,
 } from "@/lib/ai/resumeow/utils";
-import { retrieveSupportingContext, syncResumeToRag } from "@/lib/ai/resumeow/rag";
 import {
-  ResumeData,
   ResumeCitation,
+  ResumeData,
+  ResumePatchOperation,
   ResumeProfile,
   ResumeSectionId,
   SavedResume,
 } from "@/lib/types/resume";
-import { SupabaseClient } from "@supabase/supabase-js";
 import { normalizeSectionOrder } from "@/lib/resume-data";
 
-const personalInfoSchema = z.object({
-  fullName: z.string(),
-  email: z.string(),
-  phone: z.string(),
-  linkedin: z.string().optional(),
-  github: z.string().optional(),
-  website: z.string().optional(),
-});
-
-const experienceSchema = z.object({
-  id: z.string(),
-  position: z.string(),
-  dateRange: z.string(),
-  company: z.string(),
-  location: z.string(),
-  description: z.array(z.string()),
-});
-
-const educationSchema = z.object({
-  id: z.string(),
-  institution: z.string(),
-  location: z.string(),
-  degree: z.string(),
-  gpa: z.string().optional(),
-  dateRange: z.string(),
-});
-
-const skillSchema = z.object({
-  category: z.string(),
-  items: z.array(z.string()),
-});
-
-const projectSchema = z.object({
-  id: z.string(),
-  name: z.string(),
-  link: z.string().optional(),
-});
-
-const certificationAwardSchema = z.object({
-  id: z.string(),
-  name: z.string(),
-  description: z.string(),
-});
-
-const activitySchema = z.object({
-  id: z.string(),
-  position: z.string(),
-  dateRange: z.string(),
-  organization: z.string(),
-  location: z.string(),
-  description: z.array(z.string()),
-});
-
-const resumeDataSchema = z.object({
-  personalInfo: personalInfoSchema,
-  education: z.array(educationSchema),
-  experience: z.array(experienceSchema),
-  coCurricularActivities: z.array(activitySchema).optional(),
-  skills: z.array(skillSchema),
-  projects: z.array(projectSchema).optional(),
-  certificationsAwards: z.array(certificationAwardSchema).optional(),
+export const resumeDataSchema = z.object({
+  personalInfo: z.object({
+    fullName: z.string(),
+    email: z.string(),
+    phone: z.string(),
+    linkedin: z.string().optional(),
+    github: z.string().optional(),
+    website: z.string().optional(),
+  }),
+  education: z.array(
+    z.object({
+      id: z.string(),
+      institution: z.string(),
+      location: z.string(),
+      degree: z.string(),
+      gpa: z.string().optional(),
+      dateRange: z.string(),
+    })
+  ),
+  experience: z.array(
+    z.object({
+      id: z.string(),
+      position: z.string(),
+      dateRange: z.string(),
+      company: z.string(),
+      location: z.string(),
+      description: z.array(z.string()),
+    })
+  ),
+  coCurricularActivities: z
+    .array(
+      z.object({
+        id: z.string(),
+        position: z.string(),
+        dateRange: z.string(),
+        organization: z.string(),
+        location: z.string(),
+        description: z.array(z.string()),
+      })
+    )
+    .optional(),
+  skills: z.array(
+    z.object({
+      category: z.string(),
+      items: z.array(z.string()),
+    })
+  ),
+  projects: z
+    .array(
+      z.object({
+        id: z.string(),
+        name: z.string(),
+        link: z.string().optional(),
+      })
+    )
+    .optional(),
+  certificationsAwards: z
+    .array(
+      z.object({
+        id: z.string(),
+        name: z.string(),
+        description: z.string(),
+      })
+    )
+    .optional(),
   sectionOrder: z
     .array(
       z.enum([
@@ -106,32 +98,27 @@ const resumeDataSchema = z.object({
     .optional(),
 });
 
-const reviewSchema = z.object({
+export const analysisResultSchema = z.object({
   summary: z.string(),
-  findings: z.array(
-    z.object({
-      id: z.string(),
-      category: z.enum(["content", "clarity", "impact", "tailoring", "format"]),
-      severity: z.enum(["low", "medium", "high"]),
-      title: z.string(),
-      rationale: z.string(),
-      recommendation: z.string(),
-      citation_ids: z.array(z.string()).default([]),
-    })
-  ),
+  findings: z
+    .array(
+      z.object({
+        id: z.string(),
+        severity: z.enum(["low", "medium", "high"]),
+        title: z.string(),
+        recommendation: z.string(),
+        citation_ids: z.array(z.string()).default([]),
+      })
+    )
+    .default([]),
+  score: z.number().min(0).max(100).default(0),
 });
 
-const changeSchema = z.object({
-  summary: z.string(),
-  proposedResumeData: resumeDataSchema,
-  citation_ids: z.array(z.string()).default([]),
-});
+type JsonRecord = Record<string, unknown>;
 
-function getObjectValue(
-  value: unknown
-): Record<string, unknown> | null {
+function getObjectValue(value: unknown): JsonRecord | null {
   if (typeof value === "object" && value !== null && !Array.isArray(value)) {
-    return value as Record<string, unknown>;
+    return value as JsonRecord;
   }
 
   return null;
@@ -165,11 +152,8 @@ function asStringArray(value: unknown, fallback: string[] = []) {
   }
 
   if (typeof value === "string") {
-    const normalized = value
-      .split(/\n|,/)
-      .map((entry) => entry.trim())
-      .filter(Boolean);
-    return normalized.length > 0 ? normalized : fallback;
+    const items = splitCommaSeparated(value);
+    return items.length > 0 ? items : fallback;
   }
 
   return fallback;
@@ -282,7 +266,7 @@ function normalizeSkills(
 function normalizeProjects(
   value: unknown,
   fallback: NonNullable<ResumeData["projects"]>
-): NonNullable<ResumeData["projects"]> {
+) {
   if (!Array.isArray(value)) {
     return fallback;
   }
@@ -302,7 +286,7 @@ function normalizeProjects(
 function normalizeActivities(
   value: unknown,
   fallback: NonNullable<ResumeData["coCurricularActivities"]>
-): NonNullable<ResumeData["coCurricularActivities"]> {
+) {
   if (!Array.isArray(value)) {
     return fallback;
   }
@@ -331,7 +315,7 @@ function normalizeActivities(
 function normalizeCertificationsAwards(
   value: unknown,
   fallback: NonNullable<ResumeData["certificationsAwards"]>
-): NonNullable<ResumeData["certificationsAwards"]> {
+) {
   if (!Array.isArray(value)) {
     return fallback;
   }
@@ -358,7 +342,7 @@ function normalizeResumeSectionOrder(
   return normalizeSectionOrder(value ?? fallback ?? []);
 }
 
-function normalizeProposedResumeData(
+export function normalizeProposedResumeData(
   value: unknown,
   fallback: ResumeData
 ): ResumeData {
@@ -385,7 +369,7 @@ function normalizeProposedResumeData(
   };
 }
 
-function extractTextContent(message: unknown) {
+export function extractTextContent(message: unknown) {
   if (!message || typeof message !== "object") {
     return "";
   }
@@ -408,52 +392,7 @@ function extractTextContent(message: unknown) {
   return "";
 }
 
-function mapCitationIds(
-  citationIds: string[],
-  sources: Array<{
-    citationId: string;
-    namespace: ResumeCitation["source_type"];
-    sourceLabel: string;
-    documentId?: string;
-    chunkId?: string;
-    content: string;
-  }>
-): ResumeCitation[] {
-  return citationIds
-    .map((citationId) => {
-      const match = sources.find((source) => source.citationId === citationId);
-      if (!match) {
-        return null;
-      }
-
-      return {
-        source_type: match.namespace,
-        source_label: match.sourceLabel,
-        document_id: match.documentId,
-        chunk_id: match.chunkId,
-        excerpt: match.content.slice(0, 220),
-      } satisfies ResumeCitation;
-    })
-    .filter((value) => value !== null);
-}
-
-function buildContextBlock(
-  sources: Array<{
-    citationId: string;
-    namespace: string;
-    sourceLabel: string;
-    content: string;
-  }>
-) {
-  return sources
-    .map(
-      (source) =>
-        `[${source.citationId}] ${source.sourceLabel} (${source.namespace})\n${source.content}`
-    )
-    .join("\n\n");
-}
-
-async function requestStructuredJsonContent(payload: {
+export async function requestStructuredJsonContent(payload: {
   prompt: string;
   emptyResponseError: string;
 }) {
@@ -500,156 +439,74 @@ async function requestStructuredJsonContent(payload: {
   throw new Error(payload.emptyResponseError);
 }
 
-export async function runReviewResumeTool(payload: {
-  supabase: SupabaseClient;
-  userId: string;
-  resume: SavedResume;
-  profile: ResumeProfile | null;
-  jobDescriptionId?: string | null;
-  focus: string;
-}) {
-  const { sources, selectedJobDescription } = await retrieveSupportingContext(
-    payload.supabase,
-    {
-      userId: payload.userId,
-      activeResume: payload.resume,
-      profile: payload.profile,
-      query: payload.focus,
-      selectedJobDescriptionId: payload.jobDescriptionId,
-    }
-  );
-
-  const content = await requestStructuredJsonContent({
-    prompt: buildReviewPrompt({
-      resume: payload.resume,
-      profile: payload.profile,
-      jobDescription: selectedJobDescription,
-      userInstruction: payload.focus,
-      contextBlock: buildContextBlock(sources),
-    }),
-    emptyResponseError:
-      "Resumeow AI returned an empty review response. Please try again.",
-  });
-  const parsed = reviewSchema.parse(JSON.parse(extractJsonFromText(content)));
-  const sanitizedReview = sanitizeReviewOutput({
-    summary: parsed.summary,
-    findings: parsed.findings.map((finding) => ({
-      ...finding,
-      citations: mapCitationIds(finding.citation_ids, sources),
-    })),
-  });
-
-  return {
-    summary: sanitizedReview.summary,
-    findings: sanitizedReview.findings,
-    selectedJobDescription,
-    citationsCatalog: sources,
-  };
-}
-
-export async function runProposeResumeChangesTool(payload: {
-  supabase: SupabaseClient;
-  userId: string;
-  resume: SavedResume;
-  profile: ResumeProfile | null;
-  jobDescriptionId?: string | null;
-  instruction: string;
-}) {
-  const { sources, selectedJobDescription } = await retrieveSupportingContext(
-    payload.supabase,
-    {
-      userId: payload.userId,
-      activeResume: payload.resume,
-      profile: payload.profile,
-      query: payload.instruction,
-      selectedJobDescriptionId: payload.jobDescriptionId,
-    }
-  );
-
-  const content = await requestStructuredJsonContent({
-    prompt: buildChangePrompt({
-      resume: payload.resume,
-      profile: payload.profile,
-      jobDescription: selectedJobDescription,
-      userInstruction: payload.instruction,
-      contextBlock: buildContextBlock(sources),
-    }),
-    emptyResponseError:
-      "Resumeow AI returned an empty edit response. Please try again.",
-  });
-  const rawParsed = JSON.parse(extractJsonFromText(content)) as Record<string, unknown>;
-  const normalizedParsed = {
-    ...rawParsed,
-    proposedResumeData: normalizeProposedResumeData(
-      rawParsed.proposedResumeData,
-      payload.resume.resume_data
-    ),
-  };
-  const parsed = changeSchema.parse(normalizedParsed);
-  const diffItems = diffResumeData(
-    payload.resume.resume_data,
-    parsed.proposedResumeData
-  );
-  const sanitizedSummary = sanitizeChangeSummary(parsed.summary, diffItems);
-
-  if (diffItems.length === 0) {
-    return {
-      summary: sanitizedSummary || buildSafeChangeSummary(diffItems),
-      changeSet: null,
-      diffItems,
-      updatedResume: null,
-      selectedJobDescription,
-    };
-  }
-
-  const changeSet = await createChangeSet(payload.supabase, {
-    userId: payload.userId,
-    resumeId: payload.resume.id,
-    baseResumeRevision: payload.resume.resume_revision,
-    prompt: payload.instruction,
-    summary: normalizeAiMessageContent(sanitizedSummary),
-    previousResumeData: payload.resume.resume_data,
-    proposedResumeData: parsed.proposedResumeData,
-    diffItems: diffItems as unknown as Record<string, unknown>[],
-    citations: mapCitationIds(parsed.citation_ids, sources) as unknown as Record<
-      string,
-      unknown
-    >[],
-  });
-
-  const updatedResume = await saveResumeForUser(
-    payload.supabase,
-    payload.userId,
-    payload.resume.title,
-    parsed.proposedResumeData,
-    payload.resume.id
-  );
-
-  const appliedChangeSet = await updateChangeSetStatus(
-    payload.supabase,
-    payload.userId,
-    changeSet.id,
-    "applied"
-  );
-  await syncResumeToRag(payload.supabase, updatedResume);
-
-  return {
-    summary: sanitizedSummary || buildSafeChangeSummary(diffItems),
-    changeSet: appliedChangeSet,
-    diffItems,
-    updatedResume,
-    selectedJobDescription,
-  };
-}
-
-export async function loadSelectedJobDescription(
-  supabase: SupabaseClient,
-  userId: string,
-  jobDescriptionId?: string | null
+export function parseStructuredJson<T>(
+  content: string,
+  schema: z.ZodSchema<T>
 ) {
-  if (!jobDescriptionId) {
-    return null;
-  }
-
-  return getJobDescriptionById(supabase, userId, jobDescriptionId);
+  return schema.parse(JSON.parse(extractJsonFromText(content)));
 }
+
+export function mapCitationIds(
+  citationIds: string[],
+  sources: Array<{
+    citationId: string;
+    namespace: ResumeCitation["source_type"];
+    sourceLabel: string;
+    documentId?: string;
+    chunkId?: string;
+    content: string;
+  }>
+): ResumeCitation[] {
+  return citationIds
+    .map((citationId) => {
+      const match = sources.find((source) => source.citationId === citationId);
+      if (!match) {
+        return null;
+      }
+
+      return {
+        source_type: match.namespace,
+        source_label: match.sourceLabel,
+        document_id: match.documentId,
+        chunk_id: match.chunkId,
+        excerpt: match.content.slice(0, 220),
+      } satisfies ResumeCitation;
+    })
+    .filter((value) => value !== null);
+}
+
+export function buildWorkingResume(
+  resume: SavedResume,
+  resumeData: ResumeData
+): SavedResume {
+  return {
+    ...resume,
+    resume_data: resumeData,
+  };
+}
+
+export function createReplaceResumePatchOperation(payload: {
+  resumeData: ResumeData;
+  summary: string;
+  reason: string;
+  citations?: ResumeCitation[];
+}): ResumePatchOperation {
+  return {
+    type: "replace_resume_data",
+    summary: normalizeAiMessageContent(payload.summary),
+    reason: payload.reason,
+    resume_data: payload.resumeData,
+    citations: payload.citations ?? [],
+  };
+}
+
+export function buildContextSummaryBlocks(payload: {
+  activeResume: SavedResume;
+  profile: ResumeProfile | null;
+}) {
+  return {
+    activeResumeText: flattenResumeForText(payload.activeResume),
+    profileText: payload.profile ? buildProfileDocument(payload.profile) : "",
+  };
+}
+
