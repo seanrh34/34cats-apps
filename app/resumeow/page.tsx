@@ -315,6 +315,7 @@ export default function ResumeowPage() {
   const [rateLimitMessage, setRateLimitMessage] = useState<string | null>(null);
   const [chatErrorMessage, setChatErrorMessage] = useState<string | null>(null);
   const [activeProcessLabel, setActiveProcessLabel] = useState<string | null>(null);
+  const [processUpdates, setProcessUpdates] = useState<string[]>([]);
   const [isAiDrawerOpen, setIsAiDrawerOpen] = useState(false);
   const [isSavingJobDescription, setIsSavingJobDescription] = useState(false);
   const [applyingChangeSetId, setApplyingChangeSetId] = useState<string | null>(
@@ -830,6 +831,7 @@ export default function ResumeowPage() {
     setRateLimitMessage(null);
     setChatErrorMessage(null);
     setActiveProcessLabel(null);
+    setProcessUpdates([]);
     setIsStreaming(true);
     setStreamingText("");
     setIsAiDrawerOpen(true);
@@ -870,10 +872,34 @@ export default function ResumeowPage() {
             setActiveProcessLabel(null);
             setStreamingText((current) => current + token);
           },
+          onPlannerNote: (payload) => {
+            const label =
+              typeof payload.label === "string" ? payload.label.trim() : "";
+            if (!label) {
+              return;
+            }
+
+            setActiveProcessLabel(label);
+            setProcessUpdates((current) => {
+              if (current[current.length - 1] === label) {
+                return current;
+              }
+
+              return [...current, label].slice(-6);
+            });
+          },
           onToolStart: (payload) => {
             const stepLabel =
               typeof payload.stepLabel === "string" ? payload.stepLabel : null;
-            setActiveProcessLabel(stepLabel || "Working on your request...");
+            const nextLabel = stepLabel || "Working on your request...";
+            setActiveProcessLabel(nextLabel);
+            setProcessUpdates((current) => {
+              if (current[current.length - 1] === nextLabel) {
+                return current;
+              }
+
+              return [...current, nextLabel].slice(-6);
+            });
           },
           onToolResult: (payload) => {
             const updatedResume = payload.updatedResume as SavedResume | undefined;
@@ -885,11 +911,18 @@ export default function ResumeowPage() {
               setHasUnsavedChanges(false);
               void loadResumes();
             }
-            setActiveProcessLabel(
+            const nextLabel =
               typeof payload.stepLabel === "string"
                 ? `${payload.stepLabel.replace(/\.\.\.$/, "")} done. Preparing the final response...`
-                : "Preparing the final response..."
-            );
+                : "Preparing the final response...";
+            setActiveProcessLabel(nextLabel);
+            setProcessUpdates((current) => {
+              if (current[current.length - 1] === nextLabel) {
+                return current;
+              }
+
+              return [...current, nextLabel].slice(-6);
+            });
           },
           onAssistantDone: ({ message }) => {
             setMessages((current) => {
@@ -899,9 +932,11 @@ export default function ResumeowPage() {
               return [...withoutTempAssistantNoise, message];
             });
             setActiveProcessLabel(null);
+            setProcessUpdates([]);
           },
           onError: (payload) => {
             setActiveProcessLabel(null);
+            setProcessUpdates([]);
             setChatErrorMessage(payload.message);
             if (payload.rateLimit) {
               const rateLimit = payload.rateLimit as {
@@ -919,6 +954,7 @@ export default function ResumeowPage() {
     } catch (error) {
       console.error("Failed to send chat message", error);
       setActiveProcessLabel(null);
+      setProcessUpdates([]);
       const retryAfter =
         typeof error === "object" &&
           error !== null &&
@@ -1438,6 +1474,7 @@ export default function ResumeowPage() {
                 }}
                 rateLimitMessage={rateLimitMessage}
                 activeProcessLabel={activeProcessLabel}
+                processUpdates={processUpdates}
                 errorMessage={chatErrorMessage}
                 isLocked={isAiRunLocked}
               />

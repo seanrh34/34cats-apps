@@ -64,6 +64,10 @@ export async function runResumeowChat(payload: {
   const latestUserMessage = getLatestUserText(payload.inputMessages);
   const eventWriter = createOrchestratorEventWriter(payload.writer);
 
+  await eventWriter.write("planner_note", {
+    label: "Reading your message and checking Resumeow's safety guardrails...",
+  });
+
   await insertAiMessage(payload.supabase, {
     userId: payload.userId,
     resumeId: payload.resume.id,
@@ -102,6 +106,10 @@ export async function runResumeowChat(payload: {
     });
     return;
   }
+
+  await eventWriter.write("planner_note", {
+    label: "Checking whether this request is within Resumeow's resume workflow...",
+  });
 
   const persistedMessages = await listAiMessages(
     payload.supabase,
@@ -174,6 +182,10 @@ export async function runResumeowChat(payload: {
     });
     return;
   }
+
+  await eventWriter.write("planner_note", {
+    label: "Starting the agent workflow and choosing the best next step...",
+  });
 
   await runResumeowOrchestrator({
     supabase: payload.supabase,

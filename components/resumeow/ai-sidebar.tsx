@@ -48,6 +48,7 @@ interface ResumeAiSidebarProps {
   onSelectedJobDescriptionChange: (value: string) => void;
   rateLimitMessage?: string | null;
   activeProcessLabel?: string | null;
+  processUpdates?: string[];
   errorMessage?: string | null;
   isLocked?: boolean;
 }
@@ -452,6 +453,7 @@ export function ResumeAiSidebar({
   onSelectedJobDescriptionChange,
   rateLimitMessage,
   activeProcessLabel,
+  processUpdates = [],
   errorMessage,
   isLocked = false,
 }: ResumeAiSidebarProps) {
@@ -590,9 +592,33 @@ export function ResumeAiSidebar({
                         <span>Resumeow AI</span>
                         <span className="text-gray-600">working</span>
                       </div>
-                      <p className="text-sm leading-6 text-gray-100">
-                        {activeProcessLabel}
-                      </p>
+                      {processUpdates.length > 0 ? (
+                        <div className="space-y-2">
+                          {processUpdates.map((update, index) => {
+                            const isLatest = index === processUpdates.length - 1;
+
+                            return (
+                              <div
+                                key={`${update}-${index}`}
+                                className={`flex items-start gap-2 text-sm leading-6 ${
+                                  isLatest ? "text-gray-100" : "text-gray-400"
+                                }`}
+                              >
+                                <span
+                                  className={`mt-2 inline-block h-1.5 w-1.5 rounded-full ${
+                                    isLatest ? "bg-[#E84A3A] animate-pulse" : "bg-gray-600"
+                                  }`}
+                                />
+                                <span>{update}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <p className="text-sm leading-6 text-gray-100">
+                          {activeProcessLabel}
+                        </p>
+                      )}
                     </div>
                   </div>
                 ) : null}

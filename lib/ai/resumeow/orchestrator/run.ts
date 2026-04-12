@@ -260,6 +260,50 @@ function buildFallbackAssistantText(payload: {
   return "I reviewed the request but need a little more detail before I can safely continue.";
 }
 
+async function runWithProgress<T>(payload: {
+  writer: OrchestratorEventWriter;
+  label: string;
+  heartbeatLabel?: string;
+  intervalMs?: number;
+}, operation: () => Promise<T>) {
+  const intervalMs = payload.intervalMs ?? 2500;
+
+  await payload.writer.write("planner_note", {
+    label: payload.label,
+  });
+
+  let finished = false;
+  let timer: ReturnType<typeof setTimeout> | null = null;
+
+  const queueHeartbeat = () => {
+    if (finished) {
+      return;
+    }
+
+    timer = setTimeout(() => {
+      if (finished) {
+        return;
+      }
+
+      void payload.writer.write("planner_note", {
+        label: payload.heartbeatLabel ?? payload.label,
+      });
+      queueHeartbeat();
+    }, intervalMs);
+  };
+
+  queueHeartbeat();
+
+  try {
+    return await operation();
+  } finally {
+    finished = true;
+    if (timer) {
+      clearTimeout(timer);
+    }
+  }
+}
+
 export async function runResumeowOrchestrator(payload: {
   supabase: SupabaseClient;
   userId: string;
@@ -321,12 +365,26 @@ export async function runResumeowOrchestrator(payload: {
   let latestAppliedChangeSet: ResumeChangeSet | null = null;
 
   for (let stepNumber = 1; stepNumber <= MAX_ORCHESTRATOR_STEPS; stepNumber += 1) {
-    const response = await createChatCompletion({
-      messages: conversation as OpenRouterMessage[],
-      tools: getResumeowToolOpenRouterDefinitions(),
-      toolChoice: "auto",
-      temperature: 0.2,
-    });
+    const response = await runWithProgress(
+      {
+        writer: payload.writer,
+        label:
+          stepNumber === 1
+            ? "Understanding your request and deciding what to inspect first..."
+            : "Reviewing the latest evidence and choosing the next best step...",
+        heartbeatLabel:
+          stepNumber === 1
+            ? "Still planning the best next step for your resume..."
+            : "Still reasoning through the latest evidence and tool results...",
+      },
+      () =>
+        createChatCompletion({
+          messages: conversation as OpenRouterMessage[],
+          tools: getResumeowToolOpenRouterDefinitions(),
+          toolChoice: "auto",
+          temperature: 0.2,
+        })
+    );
 
     const assistantResponseMessage = extractResponseMessage(response);
     const assistantText = normalizeAiMessageContent(
@@ -381,13 +439,21 @@ export async function runResumeowOrchestrator(payload: {
       mutating: toolDefinition.mutating,
     });
 
-    const result = await toolDefinition.execute(
+    const result = await runWithProgress(
       {
-        supabase: payload.supabase,
-        userId: payload.userId,
-        state,
+        writer: payload.writer,
+        label: stepLabel,
+        heartbeatLabel: `Still working: ${stepLabel.replace(/\.\.\.$/, "...")}`,
       },
-      args
+      () =>
+        toolDefinition.execute(
+          {
+            supabase: payload.supabase,
+            userId: payload.userId,
+            state,
+          },
+          args
+        )
     );
 
     console.info("Resumeow orchestrator tool_result", {
@@ -466,15 +532,24 @@ export async function runResumeowOrchestrator(payload: {
       mutating: true,
     });
 
-    const result = await applyToolDefinition.execute(
+    const result = await runWithProgress(
       {
-        supabase: payload.supabase,
-        userId: payload.userId,
-        state,
+        writer: payload.writer,
+        label: stepLabel,
+        heartbeatLabel:
+          "Still applying grounded updates and saving them to the active resume...",
       },
-      {
-        reason: payload.latestUserMessage,
-      }
+      () =>
+        applyToolDefinition.execute(
+          {
+            supabase: payload.supabase,
+            userId: payload.userId,
+            state,
+          },
+          {
+            reason: payload.latestUserMessage,
+          }
+        )
     );
 
     console.info("Resumeow orchestrator tool_result", {
@@ -529,6 +604,10 @@ export async function runResumeowOrchestrator(payload: {
       latestAppliedChangeSet,
     });
   }
+
+  await payload.writer.write("planner_note", {
+    label: "Writing the final response for you...",
+  });
 
   await payload.writer.write("token", {
     text: finalAssistantText,

@@ -126,6 +126,7 @@ export async function streamResumeChat(
   },
   handlers: {
     onToken: (token: string) => void;
+    onPlannerNote?: (payload: Record<string, unknown>) => void;
     onToolStart?: (payload: Record<string, unknown>) => void;
     onToolResult?: (payload: Record<string, unknown>) => void;
     onAssistantDone?: (payload: { message: ResumeAiMessage }) => void;
@@ -178,6 +179,10 @@ export async function streamResumeChat(
 
       if (name === "token") {
         handlers.onToken(data.text ?? "");
+      }
+
+      if (name === "planner_note") {
+        handlers.onPlannerNote?.(data);
       }
 
       if (name === "tool_start") {
