@@ -20,10 +20,16 @@ import {
 } from "@/lib/ai/resumeow/utils";
 import {
   ResumeAiMessage,
+  ResumeAiProcessPhase,
   ResumeChangeSet,
   ResumeJobDescription,
   ResumeProfile,
 } from "@/lib/types/resume";
+
+type ProcessUpdate = {
+  phase: ResumeAiProcessPhase;
+  label: string;
+};
 
 interface ResumeAiSidebarProps {
   isOpen: boolean;
@@ -48,7 +54,7 @@ interface ResumeAiSidebarProps {
   onSelectedJobDescriptionChange: (value: string) => void;
   rateLimitMessage?: string | null;
   activeProcessLabel?: string | null;
-  processUpdates?: string[];
+  processUpdates?: ProcessUpdate[];
   errorMessage?: string | null;
   isLocked?: boolean;
 }
@@ -65,6 +71,51 @@ interface ToolMessageMetadata {
   changeSet?: ResumeChangeSet;
   diffItems?: ResumeChangeSet["diff_items"];
 }
+
+const PROCESS_PHASE_STYLES: Record<
+  ResumeAiProcessPhase,
+  {
+    badge: string;
+    activeDot: string;
+    idleDot: string;
+    activeText: string;
+    idleText: string;
+    label: string;
+  }
+> = {
+  planning: {
+    badge: "border-sky-500/30 bg-sky-500/10 text-sky-200",
+    activeDot: "bg-sky-400",
+    idleDot: "bg-sky-900/80",
+    activeText: "text-sky-100",
+    idleText: "text-sky-200/70",
+    label: "PLAN",
+  },
+  context: {
+    badge: "border-emerald-500/30 bg-emerald-500/10 text-emerald-200",
+    activeDot: "bg-emerald-400",
+    idleDot: "bg-emerald-900/80",
+    activeText: "text-emerald-100",
+    idleText: "text-emerald-200/70",
+    label: "CTX",
+  },
+  reasoning: {
+    badge: "border-amber-500/30 bg-amber-500/10 text-amber-200",
+    activeDot: "bg-amber-400",
+    idleDot: "bg-amber-900/80",
+    activeText: "text-amber-100",
+    idleText: "text-amber-200/70",
+    label: "RSN",
+  },
+  apply: {
+    badge: "border-rose-500/30 bg-rose-500/10 text-rose-200",
+    activeDot: "bg-rose-400",
+    idleDot: "bg-rose-900/80",
+    activeText: "text-rose-100",
+    idleText: "text-rose-200/70",
+    label: "APY",
+  },
+};
 
 function renderLineBreakTokens(node: ReactNode): ReactNode {
   if (typeof node === "string") {
@@ -596,20 +647,38 @@ export function ResumeAiSidebar({
                         <div className="space-y-2">
                           {processUpdates.map((update, index) => {
                             const isLatest = index === processUpdates.length - 1;
+                            const phaseStyle = PROCESS_PHASE_STYLES[update.phase];
 
                             return (
                               <div
-                                key={`${update}-${index}`}
-                                className={`flex items-start gap-2 text-sm leading-6 ${
-                                  isLatest ? "text-gray-100" : "text-gray-400"
+                                key={`${update.phase}-${update.label}-${index}`}
+                                className={`flex items-start gap-2 rounded-xl border px-2.5 py-2 text-sm leading-6 ${
+                                  isLatest
+                                    ? "border-gray-700 bg-black/20"
+                                    : "border-transparent bg-transparent"
                                 }`}
                               >
                                 <span
-                                  className={`mt-2 inline-block h-1.5 w-1.5 rounded-full ${
-                                    isLatest ? "bg-[#E84A3A] animate-pulse" : "bg-gray-600"
+                                  className={`mt-0.5 inline-flex shrink-0 items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold tracking-[0.18em] ${phaseStyle.badge}`}
+                                >
+                                  {phaseStyle.label}
+                                </span>
+                                <span
+                                  className={`mt-2 inline-block h-1.5 w-1.5 shrink-0 rounded-full ${
+                                    isLatest
+                                      ? `${phaseStyle.activeDot} animate-pulse`
+                                      : phaseStyle.idleDot
                                   }`}
                                 />
-                                <span>{update}</span>
+                                <span
+                                  className={
+                                    isLatest
+                                      ? phaseStyle.activeText
+                                      : phaseStyle.idleText
+                                  }
+                                >
+                                  {update.label}
+                                </span>
                               </div>
                             );
                           })}

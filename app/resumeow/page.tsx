@@ -13,6 +13,7 @@ import {
   PersonalInfo,
   Project,
   ResumeAiMessage,
+  ResumeAiProcessPhase,
   ResumeChangeSet,
   ResumeJobDescription,
   ResumeProfile,
@@ -52,6 +53,11 @@ import { ScrollToBottomButton } from "@/components/shared/scroll-to-bottom";
 import { normalizeResumeData, reorderResumeSections } from "@/lib/resume-data";
 
 const PROFILE_PROMPT_DISMISSED_KEY = "resumeowProfilePromptDismissed";
+
+type ProcessUpdate = {
+  phase: ResumeAiProcessPhase;
+  label: string;
+};
 
 const TAB_CONFIG: Array<{
   id: ResumeSectionId;
@@ -315,7 +321,7 @@ export default function ResumeowPage() {
   const [rateLimitMessage, setRateLimitMessage] = useState<string | null>(null);
   const [chatErrorMessage, setChatErrorMessage] = useState<string | null>(null);
   const [activeProcessLabel, setActiveProcessLabel] = useState<string | null>(null);
-  const [processUpdates, setProcessUpdates] = useState<string[]>([]);
+  const [processUpdates, setProcessUpdates] = useState<ProcessUpdate[]>([]);
   const [isAiDrawerOpen, setIsAiDrawerOpen] = useState(false);
   const [isSavingJobDescription, setIsSavingJobDescription] = useState(false);
   const [applyingChangeSetId, setApplyingChangeSetId] = useState<string | null>(
@@ -325,6 +331,21 @@ export default function ResumeowPage() {
     []
   );
   const [draggedTabId, setDraggedTabId] = useState<ResumeSectionId | null>(null);
+
+  const appendProcessUpdate = useCallback((update: ProcessUpdate) => {
+    setProcessUpdates((current) => {
+      const previous = current[current.length - 1];
+      if (
+        previous &&
+        previous.label === update.label &&
+        previous.phase === update.phase
+      ) {
+        return current;
+      }
+
+      return [...current, update].slice(-6);
+    });
+  }, []);
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -879,26 +900,33 @@ export default function ResumeowPage() {
               return;
             }
 
-            setActiveProcessLabel(label);
-            setProcessUpdates((current) => {
-              if (current[current.length - 1] === label) {
-                return current;
-              }
+            const phase =
+              payload.phase === "context" ||
+              payload.phase === "reasoning" ||
+              payload.phase === "apply"
+                ? payload.phase
+                : "planning";
 
-              return [...current, label].slice(-6);
+            setActiveProcessLabel(label);
+            appendProcessUpdate({
+              phase,
+              label,
             });
           },
           onToolStart: (payload) => {
             const stepLabel =
               typeof payload.stepLabel === "string" ? payload.stepLabel : null;
             const nextLabel = stepLabel || "Working on your request...";
+            const phase =
+              payload.phase === "context" ||
+              payload.phase === "reasoning" ||
+              payload.phase === "apply"
+                ? payload.phase
+                : "reasoning";
             setActiveProcessLabel(nextLabel);
-            setProcessUpdates((current) => {
-              if (current[current.length - 1] === nextLabel) {
-                return current;
-              }
-
-              return [...current, nextLabel].slice(-6);
+            appendProcessUpdate({
+              phase,
+              label: nextLabel,
             });
           },
           onToolResult: (payload) => {
@@ -915,13 +943,16 @@ export default function ResumeowPage() {
               typeof payload.stepLabel === "string"
                 ? `${payload.stepLabel.replace(/\.\.\.$/, "")} done. Preparing the final response...`
                 : "Preparing the final response...";
+            const phase =
+              payload.phase === "context" ||
+              payload.phase === "reasoning" ||
+              payload.phase === "apply"
+                ? payload.phase
+                : "reasoning";
             setActiveProcessLabel(nextLabel);
-            setProcessUpdates((current) => {
-              if (current[current.length - 1] === nextLabel) {
-                return current;
-              }
-
-              return [...current, nextLabel].slice(-6);
+            appendProcessUpdate({
+              phase,
+              label: nextLabel,
             });
           },
           onAssistantDone: ({ message }) => {

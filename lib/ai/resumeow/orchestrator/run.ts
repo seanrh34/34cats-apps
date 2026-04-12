@@ -22,6 +22,7 @@ import {
 } from "@/lib/services/resume-server-service";
 import {
   ResumeAiMessage,
+  ResumeAiProcessPhase,
   ResumeAiToolResult,
   ResumeChangeSet,
   ResumeProfile,
@@ -167,11 +168,26 @@ async function enforceToolLimits(payload: {
   }
 }
 
+function getProcessPhaseForToolCategory(
+  category: "context" | "analysis" | "mutation" | "apply"
+): ResumeAiProcessPhase {
+  if (category === "context") {
+    return "context";
+  }
+
+  if (category === "mutation" || category === "apply") {
+    return "apply";
+  }
+
+  return "reasoning";
+}
+
 function buildToolMessageMetadata(payload: {
   runId: string;
   stepNumber: number;
   result: ResumeAiToolResult;
   stepLabel: string;
+  phase: ResumeAiProcessPhase;
 }) {
   const findings = Array.isArray(payload.result.data?.findings)
     ? (payload.result.data?.findings as Array<{
@@ -191,6 +207,7 @@ function buildToolMessageMetadata(payload: {
       kind: "tool_result" as const,
       mutatedResume: payload.result.mutatedResume ?? false,
       stepLabel: payload.stepLabel,
+      phase: payload.phase,
     },
     findings,
     changeSet: payload.result.changeSet,
@@ -202,10 +219,12 @@ function buildToolResultPayload(payload: {
   stepNumber: number;
   stepLabel: string;
   result: ResumeAiToolResult;
+  phase: ResumeAiProcessPhase;
 }) {
   return {
     stepNumber: payload.stepNumber,
     stepLabel: payload.stepLabel,
+    phase: payload.phase,
     toolName: payload.result.toolName,
     toolDisplayName: payload.result.toolDisplayName,
     summary: payload.result.summary,
@@ -263,13 +282,16 @@ function buildFallbackAssistantText(payload: {
 async function runWithProgress<T>(payload: {
   writer: OrchestratorEventWriter;
   label: string;
+  phase: ResumeAiProcessPhase;
   heartbeatLabel?: string;
+  heartbeatPhase?: ResumeAiProcessPhase;
   intervalMs?: number;
 }, operation: () => Promise<T>) {
   const intervalMs = payload.intervalMs ?? 2500;
 
   await payload.writer.write("planner_note", {
     label: payload.label,
+    phase: payload.phase,
   });
 
   let finished = false;
@@ -287,6 +309,7 @@ async function runWithProgress<T>(payload: {
 
       void payload.writer.write("planner_note", {
         label: payload.heartbeatLabel ?? payload.label,
+        phase: payload.heartbeatPhase ?? payload.phase,
       });
       queueHeartbeat();
     }, intervalMs);
@@ -372,10 +395,12 @@ export async function runResumeowOrchestrator(payload: {
           stepNumber === 1
             ? "Understanding your request and deciding what to inspect first..."
             : "Reviewing the latest evidence and choosing the next best step...",
+        phase: "planning",
         heartbeatLabel:
           stepNumber === 1
             ? "Still planning the best next step for your resume..."
             : "Still reasoning through the latest evidence and tool results...",
+        heartbeatPhase: stepNumber === 1 ? "planning" : "reasoning",
       },
       () =>
         createChatCompletion({
@@ -407,6 +432,7 @@ export async function runResumeowOrchestrator(payload: {
 
     const args = parseToolArguments(toolCall);
     const stepLabel = toolDefinition.buildStepLabel(args, state);
+    const phase = getProcessPhaseForToolCategory(toolDefinition.category);
 
     console.info("Resumeow orchestrator tool_start", {
       runId,
@@ -436,6 +462,7 @@ export async function runResumeowOrchestrator(payload: {
       toolName: toolDefinition.name,
       toolDisplayName: toolDefinition.displayName,
       stepLabel,
+      phase,
       mutating: toolDefinition.mutating,
     });
 
@@ -443,7 +470,9 @@ export async function runResumeowOrchestrator(payload: {
       {
         writer: payload.writer,
         label: stepLabel,
+        phase,
         heartbeatLabel: `Still working: ${stepLabel.replace(/\.\.\.$/, "...")}`,
+        heartbeatPhase: phase,
       },
       () =>
         toolDefinition.execute(
@@ -495,6 +524,7 @@ export async function runResumeowOrchestrator(payload: {
         stepNumber,
         result,
         stepLabel,
+        phase,
       }),
     });
 
@@ -504,6 +534,7 @@ export async function runResumeowOrchestrator(payload: {
         stepNumber,
         stepLabel,
         result,
+        phase,
       })
     );
 
@@ -517,6 +548,7 @@ export async function runResumeowOrchestrator(payload: {
   if (!latestAppliedResult && state.pendingPatchOperations.length > 0) {
     const stepNumber = state.toolResults.length + 1;
     const stepLabel = applyToolDefinition.buildStepLabel({}, state);
+    const phase = getProcessPhaseForToolCategory("apply");
 
     await enforceToolLimits({
       supabase: payload.supabase,
@@ -529,6 +561,7 @@ export async function runResumeowOrchestrator(payload: {
       toolName: applyToolDefinition.name,
       toolDisplayName: applyToolDefinition.displayName,
       stepLabel,
+      phase,
       mutating: true,
     });
 
@@ -536,8 +569,10 @@ export async function runResumeowOrchestrator(payload: {
       {
         writer: payload.writer,
         label: stepLabel,
+        phase,
         heartbeatLabel:
           "Still applying grounded updates and saving them to the active resume...",
+        heartbeatPhase: "apply",
       },
       () =>
         applyToolDefinition.execute(
@@ -579,6 +614,7 @@ export async function runResumeowOrchestrator(payload: {
         stepNumber,
         result,
         stepLabel,
+        phase,
       }),
     });
 
@@ -588,6 +624,7 @@ export async function runResumeowOrchestrator(payload: {
         stepNumber,
         stepLabel,
         result,
+        phase,
       })
     );
   }
@@ -607,6 +644,7 @@ export async function runResumeowOrchestrator(payload: {
 
   await payload.writer.write("planner_note", {
     label: "Writing the final response for you...",
+    phase: "reasoning",
   });
 
   await payload.writer.write("token", {

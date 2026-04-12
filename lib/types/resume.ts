@@ -130,6 +130,12 @@ export type ResumeAiToolName =
   | "reorder_resume_sections"
   | "apply_resume_patch";
 
+export type ResumeAiProcessPhase =
+  | "planning"
+  | "context"
+  | "reasoning"
+  | "apply";
+
 export interface ResumePatchOperation {
   type: "replace_resume_data";
   reason: string;
@@ -159,6 +165,7 @@ export interface ResumeAiRunMetadata {
   kind?: "guardrail" | "tool_result" | "planner_note" | "final";
   mutatedResume?: boolean;
   stepLabel?: string | null;
+  phase?: ResumeAiProcessPhase | null;
 }
 
 export interface ResumeReviewFinding {

@@ -66,6 +66,7 @@ export async function runResumeowChat(payload: {
 
   await eventWriter.write("planner_note", {
     label: "Reading your message and checking Resumeow's safety guardrails...",
+    phase: "planning",
   });
 
   await insertAiMessage(payload.supabase, {
@@ -109,6 +110,7 @@ export async function runResumeowChat(payload: {
 
   await eventWriter.write("planner_note", {
     label: "Checking whether this request is within Resumeow's resume workflow...",
+    phase: "planning",
   });
 
   const persistedMessages = await listAiMessages(
@@ -185,6 +187,7 @@ export async function runResumeowChat(payload: {
 
   await eventWriter.write("planner_note", {
     label: "Starting the agent workflow and choosing the best next step...",
+    phase: "planning",
   });
 
   await runResumeowOrchestrator({
