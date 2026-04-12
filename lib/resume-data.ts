@@ -48,7 +48,15 @@ export function normalizeResumeData(
     experience: resumeData?.experience ?? [],
     coCurricularActivities: resumeData?.coCurricularActivities ?? [],
     skills: resumeData?.skills ?? [],
-    projects: resumeData?.projects ?? [],
+    projects:
+      resumeData?.projects?.map((project) => ({
+        id: project.id,
+        name: project.name,
+        link: project.link ?? "",
+        linkLabel: project.linkLabel ?? project.link ?? "",
+        technologies: project.technologies ?? [],
+        description: project.description ?? [],
+      })) ?? [],
     certificationsAwards: resumeData?.certificationsAwards ?? [],
     sectionOrder: normalizeSectionOrder(resumeData?.sectionOrder),
   };

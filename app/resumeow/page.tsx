@@ -255,7 +255,12 @@ function validateResumeForOutput(resumeData: ResumeData) {
   });
 
   (normalizedResumeData.projects ?? []).forEach((entry, index) => {
-    const hasAnyContent = !isBlank(entry.name) || !isBlank(entry.link);
+    const hasAnyContent =
+      !isBlank(entry.name) ||
+      !isBlank(entry.link) ||
+      !isBlank(entry.linkLabel) ||
+      (entry.technologies ?? []).some((technology) => !isBlank(technology)) ||
+      (entry.description ?? []).some((bullet) => !isBlank(bullet));
 
     if (!hasAnyContent) {
       issues.push(`Project ${index + 1}: fill it in or delete the empty entry.`);
@@ -265,6 +270,18 @@ function validateResumeForOutput(resumeData: ResumeData) {
     if (isBlank(entry.name)) {
       issues.push(`Project ${index + 1}: Project Name is required.`);
     }
+
+    if (!isBlank(entry.linkLabel) && isBlank(entry.link)) {
+      issues.push(`Project ${index + 1}: Link URL is required when Link Label is filled.`);
+    }
+
+    (entry.description ?? []).forEach((bullet, bulletIndex) => {
+      if (isBlank(bullet)) {
+        issues.push(
+          `Project ${index + 1}: remove or fill bullet ${bulletIndex + 1}.`
+        );
+      }
+    });
   });
 
   (normalizedResumeData.certificationsAwards ?? []).forEach((entry, index) => {

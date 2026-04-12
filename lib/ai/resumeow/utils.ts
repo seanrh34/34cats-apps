@@ -151,7 +151,22 @@ export function flattenResumeForText(resume: SavedResume) {
   });
 
   normalizedResumeData.projects?.forEach((entry, index) => {
-    lines.push(`Project ${index + 1}: ${entry.name} (${entry.link || "no link"})`);
+    lines.push(
+      `Project ${index + 1}: ${entry.name} (${entry.link || "no link"})`
+    );
+    if (entry.linkLabel?.trim()) {
+      lines.push(`- Project ${index + 1} link label: ${entry.linkLabel}`);
+    }
+    if ((entry.technologies ?? []).length > 0) {
+      lines.push(
+        `- Project ${index + 1} technologies: ${(entry.technologies ?? []).join(", ")}`
+      );
+    }
+    (entry.description ?? []).forEach((bullet, bulletIndex) => {
+      if (bullet.trim()) {
+        lines.push(`- Project ${index + 1} bullet ${bulletIndex + 1}: ${bullet}`);
+      }
+    });
   });
 
   normalizedResumeData.coCurricularActivities?.forEach((entry, index) => {
@@ -721,12 +736,34 @@ function describeProjectsDiff(diffItem: ResumeChangeDiffItem): EditTableRow[] {
     const changedFields = getChangedScalarFields(previous, entry, [
       ["name", "project name"],
       ["link", "project link"],
+      ["linkLabel", "project link label"],
     ]);
+    const technologiesChanged = !arraysMatch(
+      normalizeStringArray(previous.technologies ?? []),
+      normalizeStringArray(entry.technologies ?? [])
+    );
+    const bulletsChanged = !arraysMatch(
+      normalizeStringArray(previous.description ?? []),
+      normalizeStringArray(entry.description ?? [])
+    );
+    const lines: string[] = [];
 
     if (changedFields.length > 0) {
+      lines.push(`Updated ${joinWithAnd(changedFields)}.`);
+    }
+
+    if (technologiesChanged) {
+      lines.push("Updated the technologies listed for this project.");
+    }
+
+    if (bulletsChanged) {
+      lines.push("Updated the project bullet points.");
+    }
+
+    if (lines.length > 0) {
       rows.push({
         section,
-        change: `Updated ${joinWithAnd(changedFields)}.`,
+        change: lines.join("\n"),
       });
     }
   }

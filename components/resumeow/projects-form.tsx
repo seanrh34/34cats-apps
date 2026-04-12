@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Project } from "@/lib/types/resume";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -11,11 +12,18 @@ interface ProjectsFormProps {
 }
 
 export function ProjectsForm({ data, onChange }: ProjectsFormProps) {
+  const [technologyDrafts, setTechnologyDrafts] = useState<Record<string, string>>(
+    {}
+  );
+
   const addProject = () => {
     const newProject: Project = {
       id: crypto.randomUUID(),
       name: "",
       link: "",
+      linkLabel: "",
+      technologies: [],
+      description: [""],
     };
     onChange([...data, newProject]);
   };
@@ -32,6 +40,100 @@ export function ProjectsForm({ data, onChange }: ProjectsFormProps) {
 
   const removeProject = (id: string) => {
     onChange(data.filter((proj) => proj.id !== id));
+  };
+
+  const updateProjectTechnologies = (id: string, value: string) => {
+    setTechnologyDrafts((current) => ({
+      ...current,
+      [id]: value,
+    }));
+  };
+
+  const commitProjectTechnologies = (id: string) => {
+    const rawValue = technologyDrafts[id] ?? "";
+
+    onChange(
+      data.map((proj) =>
+        proj.id === id
+          ? {
+              ...proj,
+              technologies: rawValue
+                .split(",")
+                .map((item) => item.trim())
+                .filter(Boolean),
+            }
+          : proj
+      )
+    );
+  };
+
+  const addBullet = (id: string) => {
+    onChange(
+      data.map((proj) =>
+        proj.id === id
+          ? {
+              ...proj,
+              description: [...(proj.description ?? []), ""],
+            }
+          : proj
+      )
+    );
+  };
+
+  const updateBullet = (id: string, bulletIndex: number, value: string) => {
+    onChange(
+      data.map((proj) =>
+        proj.id === id
+          ? {
+              ...proj,
+              description: (proj.description ?? []).map((bullet, index) =>
+                index === bulletIndex ? value : bullet
+              ),
+            }
+          : proj
+      )
+    );
+  };
+
+  const removeBullet = (id: string, bulletIndex: number) => {
+    onChange(
+      data.map((proj) =>
+        proj.id === id
+          ? {
+              ...proj,
+              description: (proj.description ?? []).filter(
+                (_, index) => index !== bulletIndex
+              ),
+            }
+          : proj
+      )
+    );
+  };
+
+  const moveBullet = (id: string, bulletIndex: number, direction: -1 | 1) => {
+    onChange(
+      data.map((proj) => {
+        if (proj.id !== id) {
+          return proj;
+        }
+
+        const bullets = [...(proj.description ?? [])];
+        const targetIndex = bulletIndex + direction;
+        if (targetIndex < 0 || targetIndex >= bullets.length) {
+          return proj;
+        }
+
+        [bullets[bulletIndex], bullets[targetIndex]] = [
+          bullets[targetIndex],
+          bullets[bulletIndex],
+        ];
+
+        return {
+          ...proj,
+          description: bullets,
+        };
+      })
+    );
   };
 
   const moveProjectUp = (index: number) => {
@@ -63,7 +165,7 @@ export function ProjectsForm({ data, onChange }: ProjectsFormProps) {
       </div>
 
       <div className="flex justify-between items-center">
-        <h3 className="text-lg font-semibold text-white">Relevant Projects</h3>
+        <h3 className="text-lg font-semibold text-white">Projects</h3>
         <Button onClick={addProject} size="sm" className="bg-green-600 hover:bg-green-700 text-white shadow-lg hover:shadow-xl hover:shadow-green-600/20">
           + Add Project
         </Button>
@@ -129,6 +231,105 @@ export function ProjectsForm({ data, onChange }: ProjectsFormProps) {
                 placeholder="https://github.com/username/project"
               />
             </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-1 text-gray-200">
+                Link Label (optional)
+              </label>
+              <Input
+                value={project.linkLabel || ""}
+                onChange={(e) =>
+                  updateProject(project.id, "linkLabel", e.target.value)
+                }
+                placeholder="GitHub Repo"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-1 text-gray-200">
+                Technologies (optional)
+              </label>
+              <Input
+                value={
+                  technologyDrafts[project.id] ??
+                  (project.technologies ?? []).join(", ")
+                }
+                onChange={(e) =>
+                  updateProjectTechnologies(project.id, e.target.value)
+                }
+                onBlur={() => commitProjectTechnologies(project.id)}
+                placeholder="React, Next.js, Tailwind, Supabase"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <label className="block text-sm font-medium text-gray-200">
+                Project Bullets
+              </label>
+              <Button
+                onClick={() => addBullet(project.id)}
+                size="sm"
+                className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl hover:shadow-blue-600/20"
+              >
+                + Add Bullet
+              </Button>
+            </div>
+
+            {(project.description ?? []).map((bullet, bulletIndex, bullets) => (
+              <div
+                key={`${project.id}-bullet-${bulletIndex}`}
+                className="rounded-lg border border-gray-700 bg-gray-900/30 p-3 space-y-3"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-sm font-medium text-gray-200">
+                    Bullet {bulletIndex + 1}
+                  </p>
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={() => moveBullet(project.id, bulletIndex, -1)}
+                      variant="outline"
+                      size="sm"
+                      disabled={bulletIndex === 0}
+                      title={bulletIndex === 0 ? "Already at the top" : "Move up"}
+                    >
+                      ↑
+                    </Button>
+                    <Button
+                      onClick={() => moveBullet(project.id, bulletIndex, 1)}
+                      variant="outline"
+                      size="sm"
+                      disabled={bulletIndex === bullets.length - 1}
+                      title={
+                        bulletIndex === bullets.length - 1
+                          ? "Already at the bottom"
+                          : "Move down"
+                      }
+                    >
+                      ↓
+                    </Button>
+                    <Button
+                      onClick={() => removeBullet(project.id, bulletIndex)}
+                      size="sm"
+                      className="bg-red-500 hover:bg-red-600 text-white"
+                    >
+                      Remove
+                    </Button>
+                  </div>
+                </div>
+
+                <textarea
+                  value={bullet}
+                  onChange={(e) =>
+                    updateBullet(project.id, bulletIndex, e.target.value)
+                  }
+                  rows={3}
+                  className="w-full rounded-md border border-gray-700 bg-gray-950/60 px-3 py-2 text-sm text-white placeholder:text-gray-500 focus:border-gray-500 focus:outline-none"
+                  placeholder="Describe what you built, how you built it, or the impact it had."
+                />
+              </div>
+            ))}
           </div>
         </div>
       ))}

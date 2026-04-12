@@ -103,13 +103,41 @@ ${skills.map(skill => `    \\textbf{${escapeLatex(skill.category)}}{: ${skill.it
 
       if (sectionId === "projects" && projects && projects.length > 0) {
         return `
-%-----------Relevant Links and Past Works-----------
-\\section{Relevant Projects}
-\\begin{itemize}[leftmargin=0.15in, label={}]
-  \\item \\small{
-${projects.map(proj => `    \\textbf{${escapeLatex(proj.name)}}{: }${proj.link ? `\\href{${escapeLatex(proj.link)}}{${escapeLatex(proj.link)}}` : ''} \\\\`).join('\n')}
-  }
-\\end{itemize}
+%-----------PROJECTS-----------
+\\section{Projects}
+    \\resumeSubHeadingListStart
+${projects.map((proj) => {
+  const linkText = (proj.linkLabel?.trim() || proj.link?.trim() || "");
+  const technologies = (proj.technologies ?? []).filter((item) => item.trim());
+  const bullets = (proj.description ?? []).filter((item) => item.trim());
+  const projectHeadingParts = [
+    `\\textbf{${escapeLatex(proj.name)}}`,
+    proj.link?.trim()
+      ? `\\href{${escapeLatex(proj.link)}}{[${escapeLatex(linkText)}]}`
+      : null,
+    technologies.length > 0
+      ? `\\emph{${technologies.map((item) => escapeLatex(item)).join(", ")}}`
+      : null,
+  ].filter(Boolean);
+
+  const projectHeading = projectHeadingParts
+    .map((part, index) => {
+      if (index === 0) {
+        return part;
+      }
+
+      return `$|$ ${part}`;
+    })
+    .join(" ");
+
+  return `    \\resumeProjectHeading
+    {${projectHeading}}{}
+${bullets.length > 0 ? `        \\resumeItemListStart
+${bullets.map((bullet) => `        \\resumeItem{${escapeLatex(bullet)}}`).join('\n')}
+        \\resumeItemListEnd` : ""}`;
+}).join('\n\n')}
+
+    \\resumeSubHeadingListEnd
 `;
       }
 

@@ -34,6 +34,9 @@ export interface Project {
   id: string;
   name: string;
   link?: string;
+  linkLabel?: string;
+  technologies?: string[];
+  description?: string[];
 }
 
 export interface CoCurricularActivity {

@@ -71,6 +71,9 @@ export const resumeDataSchema = z.object({
         id: z.string(),
         name: z.string(),
         link: z.string().optional(),
+        linkLabel: z.string().optional(),
+        technologies: z.array(z.string()).optional(),
+        description: z.array(z.string()).optional(),
       })
     )
     .optional(),
@@ -279,6 +282,18 @@ function normalizeProjects(
       id: asString(source?.id, fallbackEntry?.id ?? randomUUID()),
       name: asString(source?.name, fallbackEntry?.name ?? ""),
       link: asOptionalString(source?.link, fallbackEntry?.link ?? ""),
+      linkLabel: asOptionalString(
+        source?.linkLabel,
+        fallbackEntry?.linkLabel ?? asString(source?.link, fallbackEntry?.link ?? "")
+      ),
+      technologies: asStringArray(
+        source?.technologies,
+        fallbackEntry?.technologies ?? []
+      ),
+      description: asStringArray(
+        source?.description,
+        fallbackEntry?.description ?? []
+      ),
     };
   });
 }
@@ -509,4 +524,3 @@ export function buildContextSummaryBlocks(payload: {
     profileText: payload.profile ? buildProfileDocument(payload.profile) : "",
   };
 }
-
