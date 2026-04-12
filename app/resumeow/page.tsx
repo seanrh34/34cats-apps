@@ -871,18 +871,9 @@ export default function ResumeowPage() {
             setStreamingText((current) => current + token);
           },
           onToolStart: (payload) => {
-            const toolName = payload.toolName;
-            if (toolName === "review_resume") {
-              setActiveProcessLabel("Reviewing the current resume against your request and retrieved context...");
-              return;
-            }
-
-            if (toolName === "propose_resume_changes") {
-              setActiveProcessLabel("Updating the current resume using your prompt and grounded context...");
-              return;
-            }
-
-            setActiveProcessLabel("Working on your request...");
+            const stepLabel =
+              typeof payload.stepLabel === "string" ? payload.stepLabel : null;
+            setActiveProcessLabel(stepLabel || "Working on your request...");
           },
           onToolResult: (payload) => {
             const updatedResume = payload.updatedResume as SavedResume | undefined;
@@ -894,7 +885,11 @@ export default function ResumeowPage() {
               setHasUnsavedChanges(false);
               void loadResumes();
             }
-            setActiveProcessLabel("Preparing the final response...");
+            setActiveProcessLabel(
+              typeof payload.stepLabel === "string"
+                ? `${payload.stepLabel.replace(/\.\.\.$/, "")} done. Preparing the final response...`
+                : "Preparing the final response..."
+            );
           },
           onAssistantDone: ({ message }) => {
             setMessages((current) => {
@@ -1056,13 +1051,7 @@ export default function ResumeowPage() {
 
   const showProfilePrompt = !profile && !hasDismissedProfilePrompt;
   const isAiRunLocked = isStreaming;
-  const visibleMessages = messages.filter(
-    (message) =>
-      !(
-        message.role === "tool" &&
-        message.tool_name === "propose_resume_changes"
-      )
-  );
+  const visibleMessages = messages;
   const visibleChangeSets = changeSets;
 
   return (

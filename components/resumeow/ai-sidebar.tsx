@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  Fragment,
   KeyboardEvent,
   ReactNode,
   cloneElement,
@@ -78,7 +79,7 @@ function renderLineBreakTokens(node: ReactNode): ReactNode {
 
   if (Array.isArray(node)) {
     return node.map((child, index) => (
-      <span key={index}>{renderLineBreakTokens(child)}</span>
+      <Fragment key={index}>{renderLineBreakTokens(child)}</Fragment>
     ));
   }
 
@@ -220,7 +221,7 @@ function SidebarMessage({
           </span>
         </div>
 
-        {isTool && message.tool_name === "review_resume" ? (
+        {isTool && Array.isArray(metadata.findings) ? (
           <div className="space-y-3">
             <MarkdownMessage content={message.content} />
             {Array.isArray(metadata.findings) && metadata.findings.length > 0 ? (
