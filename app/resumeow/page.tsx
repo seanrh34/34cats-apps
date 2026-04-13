@@ -332,7 +332,6 @@ export default function ResumeowPage() {
     []
   );
   const [selectedJobDescriptionId, setSelectedJobDescriptionId] = useState("");
-  const [chatInput, setChatInput] = useState("");
   const [streamingText, setStreamingText] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
   const [rateLimitMessage, setRateLimitMessage] = useState<string | null>(null);
@@ -870,7 +869,10 @@ export default function ResumeowPage() {
     }
   };
 
-  const handleSendMessage = async (actionHint?: "review" | "edit" | null) => {
+  const handleSendMessage = async (
+    messageText?: string,
+    actionHint?: "review" | "edit" | null
+  ) => {
     if (!currentResumeId) {
       alert("Save this resume first to start an AI conversation.");
       return;
@@ -883,7 +885,7 @@ export default function ResumeowPage() {
           ? "Make changes to improve this resume while staying truthful."
           : "";
 
-    const outgoingText = chatInput.trim() || fallbackPrompt;
+    const outgoingText = (messageText?.trim() ?? "") || fallbackPrompt;
     if (!outgoingText) {
       return;
     }
@@ -900,7 +902,6 @@ export default function ResumeowPage() {
     setIsStreaming(true);
     setStreamingText("");
     setIsAiDrawerOpen(true);
-    setChatInput("");
     setMessages((current) => [
       ...current,
       {
@@ -1518,8 +1519,6 @@ export default function ResumeowPage() {
                     ? "Save this resume first to start a persistent AI thread."
                     : undefined
                 }
-                chatInput={chatInput}
-                onChatInputChange={setChatInput}
                 onSendMessage={handleSendMessage}
                 messages={visibleMessages}
                 streamingText={streamingText}

@@ -40,9 +40,10 @@ interface ResumeAiSidebarProps {
   isStreaming: boolean;
   chatDisabled: boolean;
   chatDisabledReason?: string;
-  chatInput: string;
-  onChatInputChange: (value: string) => void;
-  onSendMessage: (actionHint?: "review" | "edit" | null) => Promise<void>;
+  onSendMessage: (
+    messageText?: string,
+    actionHint?: "review" | "edit" | null
+  ) => Promise<void>;
   messages: ResumeAiMessage[];
   streamingText: string;
   changeSets: ResumeChangeSet[];
@@ -484,6 +485,75 @@ function ResumeAiSettingsModal({
   );
 }
 
+function ChatComposer({
+  chatDisabled,
+  isStreaming,
+  initialDraftText,
+  onSendMessage,
+}: {
+  chatDisabled: boolean;
+  isStreaming: boolean;
+  initialDraftText: string;
+  onSendMessage: (
+    messageText?: string,
+    actionHint?: "review" | "edit" | null
+  ) => Promise<void>;
+}) {
+  const [draftInput, setDraftInput] = useState(initialDraftText);
+
+  const canSend = !chatDisabled && !isStreaming && Boolean(draftInput.trim());
+
+  const handleSend = async (actionHint?: "review" | "edit" | null) => {
+    const outgoingText = draftInput.trim();
+    if (!outgoingText && !actionHint) {
+      return;
+    }
+
+    setDraftInput("");
+    await onSendMessage(outgoingText, actionHint ?? null);
+  };
+
+  const handleChatKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (event.key === "Enter" && !event.shiftKey) {
+      event.preventDefault();
+      if (canSend) {
+        void handleSend(null);
+      }
+    }
+  };
+
+  return (
+    <div className="border-t border-gray-800 bg-gray-950/90 px-4 py-4">
+      <div className="rounded-3xl border border-gray-800 bg-gray-900/90 p-3 shadow-sm">
+        <textarea
+          value={draftInput}
+          onChange={(event) => setDraftInput(event.target.value)}
+          onKeyDown={handleChatKeyDown}
+          placeholder={
+            chatDisabled
+              ? "Save this resume to start chatting with Resumeow AI."
+              : "Ask for feedback, tailoring, or changes to the current resume..."
+          }
+          disabled={chatDisabled || isStreaming}
+          className="min-h-28 w-full resize-none bg-transparent px-1 py-1 text-sm leading-6 text-white placeholder:text-gray-500 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+        />
+        <div className="mt-3 flex items-center justify-between gap-3">
+          <p className="text-xs text-gray-500">
+            Press Enter to send, Shift+Enter for a new line.
+          </p>
+          <Button
+            onClick={() => void handleSend(null)}
+            disabled={!canSend}
+            isLoading={isStreaming}
+          >
+            Send
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function ResumeAiSidebar({
   isOpen,
   onClose,
@@ -492,8 +562,6 @@ export function ResumeAiSidebar({
   isStreaming,
   chatDisabled,
   chatDisabledReason,
-  chatInput,
-  onChatInputChange,
   onSendMessage,
   messages,
   streamingText,
@@ -515,6 +583,10 @@ export function ResumeAiSidebar({
 }: ResumeAiSidebarProps) {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [showJumpToLatest, setShowJumpToLatest] = useState(false);
+  const [prefillRequest, setPrefillRequest] = useState({
+    id: 0,
+    text: "",
+  });
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const shouldAutoScrollRef = useRef(true);
   const previousMessageCountRef = useRef(messages.length);
@@ -619,17 +691,6 @@ export function ResumeAiSidebar({
     ? "fixed inset-y-0 right-0 z-40 w-full max-w-md translate-x-0 border-l border-gray-800 bg-gray-950/95 shadow-2xl shadow-black/30 backdrop-blur transition-transform lg:sticky lg:top-20 lg:h-[calc(100vh-5rem)] lg:w-auto lg:max-w-none lg:translate-x-0 lg:overflow-hidden lg:rounded-3xl lg:border"
     : "fixed inset-y-0 right-0 z-40 w-full max-w-md translate-x-full border-l border-gray-800 bg-gray-950/95 shadow-2xl shadow-black/30 backdrop-blur transition-transform lg:sticky lg:top-20 lg:h-[calc(100vh-5rem)] lg:w-auto lg:max-w-none lg:translate-x-0 lg:overflow-hidden lg:rounded-3xl lg:border";
 
-  const canSend = !chatDisabled && !isStreaming && Boolean(chatInput.trim());
-
-  const handleChatKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
-    if (event.key === "Enter" && !event.shiftKey) {
-      event.preventDefault();
-      if (canSend) {
-        void onSendMessage(null);
-      }
-    }
-  };
-
   return (
     <aside className={containerClassName}>
       <div className="flex h-full flex-col overflow-hidden">
@@ -706,7 +767,10 @@ export function ResumeAiSidebar({
                         if (isLocked) {
                           return;
                         }
-                        onChatInputChange(prompt);
+                        setPrefillRequest((current) => ({
+                          id: current.id + 1,
+                          text: prompt,
+                        }));
                       }}
                       disabled={isLocked}
                       className="rounded-full border border-gray-700 bg-gray-900 px-3 py-2 text-left text-xs text-gray-200 transition-colors hover:border-[#E84A3A]/40 hover:bg-[#E84A3A]/10"
@@ -815,34 +879,13 @@ export function ResumeAiSidebar({
           ) : null}
         </div>
 
-        <div className="border-t border-gray-800 bg-gray-950/90 px-4 py-4">
-          <div className="rounded-3xl border border-gray-800 bg-gray-900/90 p-3 shadow-sm">
-            <textarea
-              value={chatInput}
-              onChange={(event) => onChatInputChange(event.target.value)}
-              onKeyDown={handleChatKeyDown}
-              placeholder={
-                chatDisabled
-                  ? "Save this resume to start chatting with Resumeow AI."
-                  : "Ask for feedback, tailoring, or changes to the current resume..."
-              }
-              disabled={chatDisabled || isStreaming}
-              className="min-h-28 w-full resize-none bg-transparent px-1 py-1 text-sm leading-6 text-white placeholder:text-gray-500 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
-            />
-            <div className="mt-3 flex items-center justify-between gap-3">
-              <p className="text-xs text-gray-500">
-                Press Enter to send, Shift+Enter for a new line.
-              </p>
-              <Button
-                onClick={() => void onSendMessage(null)}
-                disabled={!canSend}
-                isLoading={isStreaming}
-              >
-                Send
-              </Button>
-            </div>
-          </div>
-        </div>
+        <ChatComposer
+          key={`${resumeId ?? "unsaved"}:${prefillRequest.id}`}
+          chatDisabled={chatDisabled}
+          isStreaming={isStreaming}
+          initialDraftText={prefillRequest.text}
+          onSendMessage={onSendMessage}
+        />
       </div>
 
       <ResumeAiSettingsModal
