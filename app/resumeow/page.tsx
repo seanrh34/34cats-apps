@@ -339,6 +339,7 @@ export default function ResumeowPage() {
   const [chatErrorMessage, setChatErrorMessage] = useState<string | null>(null);
   const [activeProcessLabel, setActiveProcessLabel] = useState<string | null>(null);
   const [processUpdates, setProcessUpdates] = useState<ProcessUpdate[]>([]);
+  const [chatScrollRequestKey, setChatScrollRequestKey] = useState(0);
   const [isAiDrawerOpen, setIsAiDrawerOpen] = useState(false);
   const [isSavingJobDescription, setIsSavingJobDescription] = useState(false);
   const [applyingChangeSetId, setApplyingChangeSetId] = useState<string | null>(
@@ -349,6 +350,7 @@ export default function ResumeowPage() {
   );
   const [draggedTabId, setDraggedTabId] = useState<ResumeSectionId | null>(null);
   const hasAutoSelectedInitialResumeRef = useRef(false);
+  const previousResumeIdForChatScrollRef = useRef<string | undefined>(undefined);
 
   const appendProcessUpdate = useCallback((update: ProcessUpdate) => {
     setProcessUpdates((current) => {
@@ -493,12 +495,18 @@ export default function ResumeowPage() {
     }
   }, [currentResumeId, loadResume]);
 
-  const loadAiState = useCallback(async (resumeId: string) => {
+  const loadAiState = useCallback(async (
+    resumeId: string,
+    options?: { scrollToLatest?: boolean }
+  ) => {
     try {
       const payload = await fetchResumeAiState(resumeId);
       setMessages(payload.messages);
       setChangeSets(payload.changeSets);
       setJobDescriptions(payload.jobDescriptions);
+      if (options?.scrollToLatest) {
+        setChatScrollRequestKey((current) => current + 1);
+      }
     } catch (error) {
       console.error("Failed to load AI state", error);
     }
@@ -520,12 +528,21 @@ export default function ResumeowPage() {
 
   useEffect(() => {
     if (!user || !currentResumeId) {
+      previousResumeIdForChatScrollRef.current = currentResumeId;
       setMessages([]);
       setChangeSets([]);
       return;
     }
 
-    void loadAiState(currentResumeId);
+    const shouldScrollToLatest =
+      previousResumeIdForChatScrollRef.current !== undefined &&
+      previousResumeIdForChatScrollRef.current !== currentResumeId;
+
+    previousResumeIdForChatScrollRef.current = currentResumeId;
+
+    void loadAiState(currentResumeId, {
+      scrollToLatest: shouldScrollToLatest,
+    });
   }, [user, currentResumeId, loadAiState]);
 
   const handleSaveResume = async () => {
@@ -1493,6 +1510,7 @@ export default function ResumeowPage() {
               <ResumeAiSidebar
                 isOpen={isAiDrawerOpen}
                 onClose={() => setIsAiDrawerOpen(false)}
+                resumeId={currentResumeId}
                 isStreaming={isStreaming}
                 chatDisabled={!currentResumeId}
                 chatDisabledReason={
@@ -1533,6 +1551,7 @@ export default function ResumeowPage() {
                 rateLimitMessage={rateLimitMessage}
                 activeProcessLabel={activeProcessLabel}
                 processUpdates={processUpdates}
+                scrollToLatestSignal={chatScrollRequestKey}
                 errorMessage={chatErrorMessage}
                 isLocked={isAiRunLocked}
               />

@@ -35,6 +35,8 @@ type ProcessUpdate = {
 interface ResumeAiSidebarProps {
   isOpen: boolean;
   onClose: () => void;
+  resumeId?: string;
+  scrollToLatestSignal?: number;
   isStreaming: boolean;
   chatDisabled: boolean;
   chatDisabledReason?: string;
@@ -485,6 +487,8 @@ function ResumeAiSettingsModal({
 export function ResumeAiSidebar({
   isOpen,
   onClose,
+  resumeId,
+  scrollToLatestSignal = 0,
   isStreaming,
   chatDisabled,
   chatDisabledReason,
@@ -510,11 +514,31 @@ export function ResumeAiSidebar({
   isLocked = false,
 }: ResumeAiSidebarProps) {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [showJumpToLatest, setShowJumpToLatest] = useState(false);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const shouldAutoScrollRef = useRef(true);
   const previousMessageCountRef = useRef(messages.length);
   const previousLastMessageIdRef = useRef(messages[messages.length - 1]?.id ?? null);
   const previousChangeSetCountRef = useRef(changeSets.length);
+  const previousResumeIdRef = useRef<string | undefined>(resumeId);
+
+  const performScrollToLatest = (behavior: ScrollBehavior = "smooth") => {
+    const node = scrollRef.current;
+    if (!node) {
+      return;
+    }
+
+    node.scrollTo({
+      top: node.scrollHeight,
+      behavior,
+    });
+    shouldAutoScrollRef.current = true;
+  };
+
+  const scrollToLatest = (behavior: ScrollBehavior = "smooth") => {
+    performScrollToLatest(behavior);
+    setShowJumpToLatest(false);
+  };
 
   useEffect(() => {
     const node = scrollRef.current;
@@ -525,7 +549,9 @@ export function ResumeAiSidebar({
     const handleScroll = () => {
       const distanceFromBottom =
         node.scrollHeight - node.scrollTop - node.clientHeight;
-      shouldAutoScrollRef.current = distanceFromBottom <= 80;
+      const isNearBottom = distanceFromBottom <= 80;
+      shouldAutoScrollRef.current = isNearBottom;
+      setShowJumpToLatest(!isNearBottom);
     };
 
     handleScroll();
@@ -537,20 +563,47 @@ export function ResumeAiSidebar({
   }, []);
 
   useLayoutEffect(() => {
-    const node = scrollRef.current;
-    if (!node) {
+    if (!scrollToLatestSignal) {
       return;
     }
 
+    const frame = requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        performScrollToLatest("auto");
+      });
+    });
+
+    return () => {
+      cancelAnimationFrame(frame);
+    };
+  }, [scrollToLatestSignal]);
+
+  useLayoutEffect(() => {
+    const messagesReadyForResume =
+      !resumeId ||
+      messages.length === 0 ||
+      messages.every((message) => message.resume_id === resumeId);
+    const changeSetsReadyForResume =
+      !resumeId ||
+      changeSets.length === 0 ||
+      changeSets.every((changeSet) => changeSet.resume_id === resumeId);
+
+    if (!messagesReadyForResume || !changeSetsReadyForResume) {
+      return;
+    }
+
+    const hasResumeChanged = previousResumeIdRef.current !== resumeId;
     const latestMessageId = messages[messages.length - 1]?.id ?? null;
     const hasNewMessage =
       messages.length !== previousMessageCountRef.current ||
       latestMessageId !== previousLastMessageIdRef.current;
     const hasNewChangeSet = changeSets.length !== previousChangeSetCountRef.current;
     const shouldAutoScroll =
+      hasResumeChanged ||
       Boolean(streamingText) ||
       ((hasNewMessage || hasNewChangeSet) && shouldAutoScrollRef.current);
 
+    previousResumeIdRef.current = resumeId;
     previousMessageCountRef.current = messages.length;
     previousLastMessageIdRef.current = latestMessageId;
     previousChangeSetCountRef.current = changeSets.length;
@@ -559,11 +612,8 @@ export function ResumeAiSidebar({
       return;
     }
 
-    node.scrollTo({
-      top: node.scrollHeight,
-      behavior: "smooth",
-    });
-  }, [messages, streamingText, changeSets]);
+    performScrollToLatest(hasResumeChanged ? "auto" : "smooth");
+  }, [resumeId, messages, streamingText, changeSets]);
 
   const containerClassName = isOpen
     ? "fixed inset-y-0 right-0 z-40 w-full max-w-md translate-x-0 border-l border-gray-800 bg-gray-950/95 shadow-2xl shadow-black/30 backdrop-blur transition-transform lg:sticky lg:top-20 lg:h-[calc(100vh-5rem)] lg:w-auto lg:max-w-none lg:translate-x-0 lg:overflow-hidden lg:rounded-3xl lg:border"
@@ -623,8 +673,9 @@ export function ResumeAiSidebar({
           </div>
         </div>
 
-        <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4">
-          <div className="space-y-4">
+        <div className="relative min-h-0 flex-1">
+          <div ref={scrollRef} className="h-full overflow-y-auto px-4 py-4">
+            <div className="space-y-4">
             {chatDisabledReason ? (
               <p className="rounded-xl border border-gray-800 bg-gray-900/70 px-3 py-2 text-xs text-gray-400">
                 {chatDisabledReason}
@@ -749,7 +800,19 @@ export function ResumeAiSidebar({
                 ) : null}
               </>
             )}
+            </div>
           </div>
+          {showJumpToLatest ? (
+            <button
+              type="button"
+              onClick={() => scrollToLatest("smooth")}
+              className="absolute bottom-4 right-4 inline-flex h-11 w-11 items-center justify-center rounded-full border border-gray-700 bg-gray-900/95 text-white shadow-lg transition-colors hover:border-[#E84A3A]/60 hover:bg-gray-800"
+              aria-label="Jump to latest chat"
+              title="Jump to latest chat"
+            >
+              <span className="text-lg leading-none">↓</span>
+            </button>
+          ) : null}
         </div>
 
         <div className="border-t border-gray-800 bg-gray-950/90 px-4 py-4">
