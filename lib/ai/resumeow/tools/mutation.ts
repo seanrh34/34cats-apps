@@ -60,6 +60,7 @@ async function runMutationTool(payload: {
       extraRules: payload.extraRules,
     }),
     emptyResponseError: `${payload.displayName} returned an empty response. Please try again.`,
+    modelBucket: "mutation",
   });
 
   const parsed = parseStructuredJson(content, mutationResultSchema);

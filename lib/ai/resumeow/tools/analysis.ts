@@ -85,6 +85,7 @@ async function runAnalysisTool(payload: {
       extraRules: payload.extraRules,
     }),
     emptyResponseError: `${payload.displayName} returned an empty response. Please try again.`,
+    modelBucket: "analysis",
   });
 
   const parsed = parseStructuredJson(content, analysisResultSchema);

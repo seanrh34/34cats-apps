@@ -218,8 +218,7 @@ export async function classifyResumeScope(payload: {
       ],
       toolChoice: "none",
       temperature: 0,
-      modelOverride:
-        process.env.OPENROUTER_MODEL_GUARDRAILS?.trim() || "__PRIMARY_FIRST__",
+      modelBucket: "guardrails",
     });
 
     const content = (() => {

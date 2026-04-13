@@ -408,6 +408,7 @@ export async function runResumeowOrchestrator(payload: {
           tools: getResumeowToolOpenRouterDefinitions(),
           toolChoice: "auto",
           temperature: 0.2,
+          modelBucket: "orchestrator",
         })
     );
 

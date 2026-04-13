@@ -17,6 +17,7 @@ import {
   SavedResume,
 } from "@/lib/types/resume";
 import { normalizeSectionOrder } from "@/lib/resume-data";
+import { OpenRouterModelBucket } from "@/lib/ai/resumeow/openrouter";
 
 export const resumeDataSchema = z.object({
   personalInfo: z.object({
@@ -410,6 +411,7 @@ export function extractTextContent(message: unknown) {
 export async function requestStructuredJsonContent(payload: {
   prompt: string;
   emptyResponseError: string;
+  modelBucket: OpenRouterModelBucket;
 }) {
   const buildMessages = (followUp?: string) =>
     [
@@ -431,6 +433,7 @@ export async function requestStructuredJsonContent(payload: {
     messages: buildMessages(),
     toolChoice: "none",
     temperature: 0.2,
+    modelBucket: payload.modelBucket,
   });
 
   let content = extractTextContent(firstResponse.choices?.[0]?.message).trim();
@@ -444,6 +447,7 @@ export async function requestStructuredJsonContent(payload: {
     ),
     toolChoice: "none",
     temperature: 0,
+    modelBucket: payload.modelBucket,
   });
 
   content = extractTextContent(retryResponse.choices?.[0]?.message).trim();

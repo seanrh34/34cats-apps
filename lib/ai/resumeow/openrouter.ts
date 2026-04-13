@@ -28,6 +28,12 @@ export interface OpenRouterTool {
   };
 }
 
+export type OpenRouterModelBucket =
+  | "guardrails"
+  | "orchestrator"
+  | "analysis"
+  | "mutation";
+
 class OpenRouterRequestError extends Error {
   status?: number;
   responseBody?: string;
@@ -61,22 +67,58 @@ function parseModelList(value?: string) {
     .filter(Boolean);
 }
 
-function getPrimaryModels() {
-  const models = parseModelList(process.env.OPENROUTER_MODEL_PRIMARY);
+function getBucketPrimaryEnvName(bucket: OpenRouterModelBucket) {
+  switch (bucket) {
+    case "guardrails":
+      return "OPENROUTER_MODEL_GUARDRAILS_PRIMARY";
+    case "orchestrator":
+      return "OPENROUTER_MODEL_ORCHESTRATOR_PRIMARY";
+    case "analysis":
+      return "OPENROUTER_MODEL_ANALYSIS_PRIMARY";
+    case "mutation":
+      return "OPENROUTER_MODEL_MUTATION_PRIMARY";
+  }
+}
+
+function getBucketFallbackEnvName(bucket: OpenRouterModelBucket) {
+  switch (bucket) {
+    case "guardrails":
+      return "OPENROUTER_MODEL_GUARDRAILS_FALLBACK";
+    case "orchestrator":
+      return "OPENROUTER_MODEL_ORCHESTRATOR_FALLBACK";
+    case "analysis":
+      return "OPENROUTER_MODEL_ANALYSIS_FALLBACK";
+    case "mutation":
+      return "OPENROUTER_MODEL_MUTATION_FALLBACK";
+  }
+}
+
+function getPrimaryModels(bucket?: OpenRouterModelBucket) {
+  const bucketValue = bucket
+    ? process.env[getBucketPrimaryEnvName(bucket)]
+    : undefined;
+  const models = parseModelList(bucketValue || process.env.OPENROUTER_MODEL_PRIMARY);
 
   if (models.length === 0) {
-    throw new Error("Missing OPENROUTER_MODEL_PRIMARY");
+    throw new Error(
+      bucket
+        ? `Missing ${getBucketPrimaryEnvName(bucket)} (or legacy OPENROUTER_MODEL_PRIMARY)`
+        : "Missing OPENROUTER_MODEL_PRIMARY"
+    );
   }
 
   return [...new Set(models)];
 }
 
-function getFallbackModel() {
-  return process.env.OPENROUTER_MODEL_FALLBACK?.trim() || null;
-}
+function getFallbackModel(bucket?: OpenRouterModelBucket) {
+  if (bucket) {
+    const bucketFallback = process.env[getBucketFallbackEnvName(bucket)]?.trim();
+    if (bucketFallback) {
+      return bucketFallback;
+    }
+  }
 
-function getFirstPrimaryModel() {
-  return getPrimaryModels()[0];
+  return process.env.OPENROUTER_MODEL_FALLBACK?.trim() || null;
 }
 
 function isRateLimitError(error: unknown) {
@@ -93,11 +135,12 @@ function isRateLimitError(error: unknown) {
 }
 
 async function fetchWithFallback<T>(
-  builder: (model: string) => Promise<T>
+  builder: (model: string) => Promise<T>,
+  bucket?: OpenRouterModelBucket
 ): Promise<T> {
   const errors: string[] = [];
-  const primaryModels = getPrimaryModels();
-  const fallbackModel = getFallbackModel();
+  const primaryModels = getPrimaryModels(bucket);
+  const fallbackModel = getFallbackModel(bucket);
   let allPrimaryFailuresWereRateLimited = true;
 
   for (const model of primaryModels) {
@@ -131,12 +174,10 @@ export async function createChatCompletion(payload: {
   tools?: OpenRouterTool[];
   temperature?: number;
   toolChoice?: "auto" | "none";
+  modelBucket?: OpenRouterModelBucket;
   modelOverride?: string;
 }) {
-  const modelOverride =
-    payload.modelOverride === "__PRIMARY_FIRST__"
-      ? getFirstPrimaryModel()
-      : payload.modelOverride?.trim() || null;
+  const modelOverride = payload.modelOverride?.trim() || null;
 
   if (modelOverride) {
     const response = await fetch(OPENROUTER_CHAT_URL, {
@@ -186,13 +227,14 @@ export async function createChatCompletion(payload: {
     }
 
     return response.json();
-  });
+  }, payload.modelBucket);
 }
 
 export async function streamChatCompletion(
   payload: {
     messages: OpenRouterMessage[];
     temperature?: number;
+    modelBucket?: OpenRouterModelBucket;
   },
   handlers: {
     onToken: (token: string) => Promise<void> | void;
@@ -255,7 +297,7 @@ export async function streamChatCompletion(
     }
 
     return text;
-  });
+  }, payload.modelBucket);
 }
 
 export async function createEmbeddings(values: string[]) {
