@@ -31,6 +31,10 @@ async function runMutationTool(payload: {
   extraRules?: string[];
   context: Parameters<OrchestratorToolDefinition["execute"]>[0];
 }) {
+  console.info("Resumeow mutation tool: retrieval started", {
+    toolName: payload.toolName,
+    resumeId: payload.context.state.baseResume.id,
+  });
   const { sources, selectedJobDescription } = await retrieveSupportingContext(
     payload.context.supabase,
     {
@@ -47,6 +51,12 @@ async function runMutationTool(payload: {
 
   payload.context.state.selectedJobDescription = selectedJobDescription;
 
+  console.info("Resumeow mutation tool: retrieval completed", {
+    toolName: payload.toolName,
+    sources: sources.length,
+    selectedJobDescription: selectedJobDescription?.title ?? null,
+  });
+
   const content = await requestStructuredJsonContent({
     prompt: buildMutationToolPrompt({
       toolName: payload.toolName,
@@ -61,8 +71,12 @@ async function runMutationTool(payload: {
     }),
     emptyResponseError: `${payload.displayName} returned an empty response. Please try again.`,
     modelBucket: "mutation",
+    logLabel: `Resumeow mutation tool ${payload.toolName}`,
   });
 
+  console.info("Resumeow mutation tool: parsing structured response", {
+    toolName: payload.toolName,
+  });
   const parsed = parseStructuredJson(content, mutationResultSchema);
   const proposedResumeData = normalizeProposedResumeData(
     parsed.proposedResumeData,
@@ -75,7 +89,16 @@ async function runMutationTool(payload: {
   const safeSummary = sanitizeChangeSummary(parsed.summary, diffItems);
   const citations = mapCitationIds(parsed.citation_ids, sources);
 
+  console.info("Resumeow mutation tool: diff computed", {
+    toolName: payload.toolName,
+    diffItems: diffItems.length,
+    citations: citations.length,
+  });
+
   if (diffItems.length === 0) {
+    console.info("Resumeow mutation tool: no material changes detected", {
+      toolName: payload.toolName,
+    });
     return {
       toolName: payload.toolName,
       toolDisplayName: payload.displayName,
@@ -89,12 +112,19 @@ async function runMutationTool(payload: {
   }
 
   payload.context.state.workingResumeData = proposedResumeData;
+  console.info("Resumeow mutation tool: updated working resume data in memory", {
+    toolName: payload.toolName,
+  });
 
   const patchOperation = createReplaceResumePatchOperation({
     resumeData: proposedResumeData,
     summary: safeSummary || buildSafeChangeSummary(diffItems),
     reason: payload.instruction,
     citations,
+  });
+
+  console.info("Resumeow mutation tool: prepared patch operation", {
+    toolName: payload.toolName,
   });
 
   return {

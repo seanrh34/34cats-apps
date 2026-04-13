@@ -412,7 +412,9 @@ export async function requestStructuredJsonContent(payload: {
   prompt: string;
   emptyResponseError: string;
   modelBucket: OpenRouterModelBucket;
+  logLabel?: string;
 }) {
+  const logLabel = payload.logLabel ?? "Resumeow structured JSON request";
   const buildMessages = (followUp?: string) =>
     [
       {
@@ -429,6 +431,9 @@ export async function requestStructuredJsonContent(payload: {
         : []),
     ];
 
+  console.info(`${logLabel}: requesting first model response`, {
+    modelBucket: payload.modelBucket,
+  });
   const firstResponse = await createChatCompletion({
     messages: buildMessages(),
     toolChoice: "none",
@@ -438,9 +443,15 @@ export async function requestStructuredJsonContent(payload: {
 
   let content = extractTextContent(firstResponse.choices?.[0]?.message).trim();
   if (content) {
+    console.info(`${logLabel}: received first model response`, {
+      contentLength: content.length,
+    });
     return content;
   }
 
+  console.info(`${logLabel}: first response was empty, retrying`, {
+    modelBucket: payload.modelBucket,
+  });
   const retryResponse = await createChatCompletion({
     messages: buildMessages(
       "Return only valid JSON using the exact schema requested above. Do not leave the response empty."
@@ -452,9 +463,13 @@ export async function requestStructuredJsonContent(payload: {
 
   content = extractTextContent(retryResponse.choices?.[0]?.message).trim();
   if (content) {
+    console.info(`${logLabel}: received retry model response`, {
+      contentLength: content.length,
+    });
     return content;
   }
 
+  console.warn(`${logLabel}: both model responses were empty`);
   throw new Error(payload.emptyResponseError);
 }
 

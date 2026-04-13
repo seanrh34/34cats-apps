@@ -30,6 +30,11 @@ export const applyToolDefinition: OrchestratorToolDefinition<{ reason?: string }
       const latestPatch =
         state.pendingPatchOperations[state.pendingPatchOperations.length - 1];
 
+      console.info("Resumeow apply tool: started", {
+        resumeId: state.baseResume.id,
+        pendingPatchOperations: state.pendingPatchOperations.length,
+      });
+
       if (!latestPatch) {
         return {
           toolName: "apply_resume_patch",
@@ -44,6 +49,10 @@ export const applyToolDefinition: OrchestratorToolDefinition<{ reason?: string }
 
       const finalResumeData = latestPatch.resume_data;
       const diffItems = diffResumeData(state.baseResume.resume_data, finalResumeData);
+      console.info("Resumeow apply tool: diff against live resume computed", {
+        resumeId: state.baseResume.id,
+        diffItems: diffItems.length,
+      });
       if (diffItems.length === 0) {
         return {
           toolName: "apply_resume_patch",
@@ -66,6 +75,9 @@ export const applyToolDefinition: OrchestratorToolDefinition<{ reason?: string }
         (operation) => operation.citations ?? []
       );
 
+      console.info("Resumeow apply tool: creating change set", {
+        resumeId: state.baseResume.id,
+      });
       const changeSet = await createChangeSet(supabase, {
         userId,
         resumeId: state.baseResume.id,
@@ -78,6 +90,9 @@ export const applyToolDefinition: OrchestratorToolDefinition<{ reason?: string }
         citations: citations as unknown as Record<string, unknown>[],
       });
 
+      console.info("Resumeow apply tool: saving updated resume", {
+        resumeId: state.baseResume.id,
+      });
       const updatedResume = await saveResumeForUser(
         supabase,
         userId,
@@ -85,6 +100,9 @@ export const applyToolDefinition: OrchestratorToolDefinition<{ reason?: string }
         finalResumeData,
         state.baseResume.id
       );
+      console.info("Resumeow apply tool: marking change set as applied", {
+        changeSetId: changeSet.id,
+      });
       const appliedChangeSet = await updateChangeSetStatus(
         supabase,
         userId,
@@ -92,9 +110,18 @@ export const applyToolDefinition: OrchestratorToolDefinition<{ reason?: string }
         "applied"
       );
 
+      console.info("Resumeow apply tool: syncing updated resume to RAG", {
+        resumeId: updatedResume.id,
+        revision: updatedResume.resume_revision,
+      });
       await syncResumeToRag(supabase, updatedResume);
 
       state.workingResumeData = updatedResume.resume_data;
+
+      console.info("Resumeow apply tool: completed", {
+        resumeId: updatedResume.id,
+        changeSetId: appliedChangeSet.id,
+      });
 
       return {
         toolName: "apply_resume_patch",

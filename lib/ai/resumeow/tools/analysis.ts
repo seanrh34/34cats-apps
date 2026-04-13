@@ -54,6 +54,10 @@ async function runAnalysisTool(payload: {
   userInstruction: string;
   context: Parameters<OrchestratorToolDefinition["execute"]>[0];
 }) {
+  console.info("Resumeow analysis tool: retrieval started", {
+    toolName: payload.toolName,
+    resumeId: payload.context.state.baseResume.id,
+  });
   const { sources, selectedJobDescription } = await retrieveSupportingContext(
     payload.context.supabase,
     {
@@ -69,6 +73,12 @@ async function runAnalysisTool(payload: {
   );
 
   payload.context.state.selectedJobDescription = selectedJobDescription;
+
+  console.info("Resumeow analysis tool: retrieval completed", {
+    toolName: payload.toolName,
+    sources: sources.length,
+    selectedJobDescription: selectedJobDescription?.title ?? null,
+  });
 
   const content = await requestStructuredJsonContent({
     prompt: buildAnalysisToolPrompt({
@@ -86,8 +96,12 @@ async function runAnalysisTool(payload: {
     }),
     emptyResponseError: `${payload.displayName} returned an empty response. Please try again.`,
     modelBucket: "analysis",
+    logLabel: `Resumeow analysis tool ${payload.toolName}`,
   });
 
+  console.info("Resumeow analysis tool: parsing structured response", {
+    toolName: payload.toolName,
+  });
   const parsed = parseStructuredJson(content, analysisResultSchema);
   const sanitized = sanitizeAnalysisPayload({
     summary: parsed.summary,
@@ -96,6 +110,12 @@ async function runAnalysisTool(payload: {
       citations: mapCitationIds(finding.citation_ids, sources),
     })),
     fallbackSummary: payload.fallbackSummary,
+  });
+
+  console.info("Resumeow analysis tool: completed", {
+    toolName: payload.toolName,
+    findings: sanitized.findings.length,
+    score: parsed.score,
   });
 
   return {

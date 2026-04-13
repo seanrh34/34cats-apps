@@ -256,6 +256,12 @@ export async function retrieveSupportingContext(
     selectedJobDescriptionId?: string | null;
   }
 ) {
+  console.info("Resumeow RAG: retrieveSupportingContext started", {
+    userId: payload.userId,
+    resumeId: payload.activeResume.id,
+    selectedJobDescriptionId: payload.selectedJobDescriptionId ?? null,
+    queryPreview: payload.query.slice(0, 160),
+  });
   const sources: RetrievedSource[] = [];
 
   sources.push({
@@ -276,6 +282,9 @@ export async function retrieveSupportingContext(
 
   let selectedJobDescription: ResumeJobDescription | null = null;
   if (payload.selectedJobDescriptionId) {
+    console.info("Resumeow RAG: loading selected job description", {
+      selectedJobDescriptionId: payload.selectedJobDescriptionId,
+    });
     selectedJobDescription = await getJobDescriptionById(
       supabase,
       payload.userId,
@@ -283,6 +292,9 @@ export async function retrieveSupportingContext(
     );
 
     if (selectedJobDescription) {
+      console.info("Resumeow RAG: selected job description loaded", {
+        title: selectedJobDescription.title,
+      });
       sources.push({
         citationId: `C${sources.length}`,
         namespace: "job_descriptions",
@@ -294,6 +306,7 @@ export async function retrieveSupportingContext(
   }
 
   try {
+    console.info("Resumeow RAG: creating query embedding");
     const [queryEmbedding] = await createEmbeddings([payload.query]);
     if (queryEmbedding) {
       const namespaceOrder: RagNamespace[] = [
@@ -304,6 +317,10 @@ export async function retrieveSupportingContext(
       ];
 
       for (const namespace of namespaceOrder) {
+        console.info("Resumeow RAG: searching namespace", {
+          namespace,
+          matchCount: RETRIEVAL_LIMITS[namespace],
+        });
         const matches = dedupeChunks(
           await searchRagChunks(supabase, {
             embedding: toVectorString(queryEmbedding),
@@ -313,6 +330,11 @@ export async function retrieveSupportingContext(
             matchCount: RETRIEVAL_LIMITS[namespace],
           })
         );
+
+        console.info("Resumeow RAG: namespace search complete", {
+          namespace,
+          matches: matches.length,
+        });
 
         matches.forEach((match) => {
           if (
@@ -341,6 +363,7 @@ export async function retrieveSupportingContext(
   }
 
   if (!sources.some((source) => source.namespace === "internal_resume_guides")) {
+    console.info("Resumeow RAG: injecting fallback internal guides");
     INTERNAL_RESUME_GUIDES.slice(0, 2).forEach((guide) => {
       sources.push({
         citationId: `C${sources.length}`,
@@ -351,6 +374,10 @@ export async function retrieveSupportingContext(
     });
   }
 
+  console.info("Resumeow RAG: retrieveSupportingContext completed", {
+    totalSources: sources.length,
+    selectedJobDescription: selectedJobDescription?.title ?? null,
+  });
   return {
     sources,
     selectedJobDescription,
