@@ -1163,7 +1163,17 @@ export default function ResumeowPage() {
 
   const showProfilePrompt = !profile && !hasDismissedProfilePrompt;
   const isAiRunLocked = isStreaming;
-  const visibleMessages = messages;
+  const visibleMessages = messages.filter((message) => {
+    if (message.role !== "tool") {
+      return true;
+    }
+
+    const findings = Array.isArray(message.metadata?.findings)
+      ? message.metadata.findings
+      : [];
+
+    return findings.length > 0;
+  });
   const visibleChangeSets = changeSets;
 
   return (

@@ -29,6 +29,7 @@ import {
   SavedResume,
 } from "@/lib/types/resume";
 import {
+  buildNoMaterialChangeAssistantMessage,
   buildEditAssistantMessage,
   normalizeAiMessageContent,
 } from "@/lib/ai/resumeow/utils";
@@ -273,10 +274,43 @@ function buildFallbackAssistantText(payload: {
     payload.state.toolResults[payload.state.toolResults.length - 1]?.summary;
 
   if (lastToolSummary) {
+    const lastTool = payload.state.toolResults[payload.state.toolResults.length - 1];
+    if (
+      payload.state.actionHint === "edit" &&
+      (lastTool?.diffItems?.length ?? 0) === 0
+    ) {
+      return buildNoMaterialChangeAssistantMessage({
+        latestUserMessage: payload.state.latestUserMessage,
+        summary: lastToolSummary,
+      });
+    }
+
     return normalizeAiMessageContent(lastToolSummary);
   }
 
   return "I reviewed the request but need a little more detail before I can safely continue.";
+}
+
+function shouldOverrideWithNoMaterialEditMessage(payload: {
+  state: OrchestratorState;
+  latestAppliedResult?: ResumeAiToolResult | null;
+}) {
+  if (payload.latestAppliedResult?.diffItems?.length) {
+    return false;
+  }
+
+  const lastTool = payload.state.toolResults[payload.state.toolResults.length - 1];
+  if (!lastTool) {
+    return false;
+  }
+
+  const isEditLikeRequest =
+    payload.state.actionHint === "edit" ||
+    /\b(edit|rewrite|revise|update|fix|improve|tailor|optimi[sz]e|implement|apply|change)\b/i.test(
+      payload.state.latestUserMessage
+    );
+
+  return isEditLikeRequest && (lastTool.diffItems?.length ?? 0) === 0;
 }
 
 async function runWithProgress<T>(payload: {
@@ -481,6 +515,12 @@ export async function runResumeowOrchestrator(payload: {
             supabase: payload.supabase,
             userId: payload.userId,
             state,
+            notifyProgress: async (progressPayload) => {
+              await payload.writer.write("planner_note", {
+                label: progressPayload.label,
+                phase: progressPayload.phase ?? phase,
+              });
+            },
           },
           args
         )
@@ -581,6 +621,12 @@ export async function runResumeowOrchestrator(payload: {
             supabase: payload.supabase,
             userId: payload.userId,
             state,
+            notifyProgress: async (progressPayload) => {
+              await payload.writer.write("planner_note", {
+                label: progressPayload.label,
+                phase: progressPayload.phase ?? phase,
+              });
+            },
           },
           {
             reason: payload.latestUserMessage,
@@ -634,6 +680,18 @@ export async function runResumeowOrchestrator(payload: {
     finalAssistantText = buildEditAssistantMessage({
       summary: latestAppliedResult.summary,
       diffItems: latestAppliedResult.diffItems,
+    });
+  } else if (
+    shouldOverrideWithNoMaterialEditMessage({
+      state,
+      latestAppliedResult,
+    })
+  ) {
+    const lastToolSummary =
+      state.toolResults[state.toolResults.length - 1]?.summary ?? null;
+    finalAssistantText = buildNoMaterialChangeAssistantMessage({
+      latestUserMessage: state.latestUserMessage,
+      summary: lastToolSummary,
     });
   } else if (!finalAssistantText) {
     finalAssistantText = buildFallbackAssistantText({

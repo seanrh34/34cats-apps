@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "node --import ./scripts/test-register-alias.mjs --test --experimental-strip-types lib/ai/resumeow/*.test.ts lib/ai/resumeow/tools/*.test.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.8.0",

@@ -6,8 +6,7 @@ import {
   createReplaceResumePatchOperation,
   mapCitationIds,
   normalizeProposedResumeData,
-  parseStructuredJson,
-  requestStructuredJsonContent,
+  requestStructuredOutput,
   resumeDataSchema,
 } from "@/lib/ai/resumeow/tools/shared";
 import {
@@ -57,7 +56,7 @@ async function runMutationTool(payload: {
     selectedJobDescription: selectedJobDescription?.title ?? null,
   });
 
-  const content = await requestStructuredJsonContent({
+  const { parsed } = await requestStructuredOutput({
     prompt: buildMutationToolPrompt({
       toolName: payload.toolName,
       purpose: payload.purpose,
@@ -69,15 +68,22 @@ async function runMutationTool(payload: {
       contextBlock: buildToolContextBlock(sources),
       extraRules: payload.extraRules,
     }),
-    emptyResponseError: `${payload.displayName} returned an empty response. Please try again.`,
+    toolName: payload.toolName,
+    toolDisplayName: payload.displayName,
+    schema: mutationResultSchema,
     modelBucket: "mutation",
     logLabel: `Resumeow mutation tool ${payload.toolName}`,
+    onProgress: async (label) => {
+      await payload.context.notifyProgress?.({
+        label,
+        phase: "apply",
+      });
+    },
   });
 
   console.info("Resumeow mutation tool: parsing structured response", {
     toolName: payload.toolName,
   });
-  const parsed = parseStructuredJson(content, mutationResultSchema);
   const proposedResumeData = normalizeProposedResumeData(
     parsed.proposedResumeData,
     payload.context.state.workingResumeData
@@ -96,13 +102,25 @@ async function runMutationTool(payload: {
   });
 
   if (diffItems.length === 0) {
+    const noMaterialChangeSummary = buildSafeChangeSummary(diffItems);
+
+    if (safeSummary && safeSummary !== noMaterialChangeSummary) {
+      console.warn(
+        "Resumeow mutation tool: model summary claimed changes but diff was empty",
+        {
+          toolName: payload.toolName,
+          modelSummary: safeSummary,
+        }
+      );
+    }
+
     console.info("Resumeow mutation tool: no material changes detected", {
       toolName: payload.toolName,
     });
     return {
       toolName: payload.toolName,
       toolDisplayName: payload.displayName,
-      summary: safeSummary || buildSafeChangeSummary(diffItems),
+      summary: noMaterialChangeSummary,
       citations,
       data: {
         diffItems,

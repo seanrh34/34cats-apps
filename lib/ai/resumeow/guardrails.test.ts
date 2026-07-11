@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { evaluateSafetyGuardrails } from "./guardrails";
+import { evaluateSafetyGuardrails } from "./guardrails.ts";
 
 test("allows non-explicit prompts to continue past the safety layer", () => {
   const decision = evaluateSafetyGuardrails({

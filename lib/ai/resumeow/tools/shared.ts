@@ -1,6 +1,13 @@
 import { randomUUID } from "crypto";
 import { z } from "zod";
-import { createChatCompletion } from "@/lib/ai/resumeow/openrouter";
+import {
+  createChatCompletionForModel,
+  getChatModelCandidates,
+} from "@/lib/ai/resumeow/openrouter";
+import type {
+  OpenRouterFailureClass,
+  OpenRouterModelBucket,
+} from "@/lib/ai/resumeow/openrouter";
 import {
   buildProfileDocument,
   extractJsonFromText,
@@ -9,15 +16,14 @@ import {
   splitCommaSeparated,
 } from "@/lib/ai/resumeow/utils";
 import {
-  ResumeCitation,
-  ResumeData,
-  ResumePatchOperation,
-  ResumeProfile,
-  ResumeSectionId,
-  SavedResume,
+  type ResumeCitation,
+  type ResumeData,
+  type ResumePatchOperation,
+  type ResumeProfile,
+  type ResumeSectionId,
+  type SavedResume,
 } from "@/lib/types/resume";
 import { normalizeSectionOrder } from "@/lib/resume-data";
-import { OpenRouterModelBucket } from "@/lib/ai/resumeow/openrouter";
 
 export const resumeDataSchema = z.object({
   personalInfo: z.object({
@@ -117,6 +123,61 @@ export const analysisResultSchema = z.object({
     .default([]),
   score: z.number().min(0).max(100).default(0),
 });
+
+export type StructuredOutputFailureClass =
+  | OpenRouterFailureClass
+  | "empty_content"
+  | "invalid_json"
+  | "schema_validation_failed";
+
+export interface StructuredOutputAttemptDiagnostic {
+  model: string;
+  isFallback: boolean;
+  attemptNumber: number;
+  strictMode: boolean;
+  durationMs: number;
+  contentLength: number;
+  failureClass?: StructuredOutputFailureClass;
+  errorMessage?: string;
+}
+
+export class StructuredOutputExhaustedError extends Error {
+  readonly toolName: string;
+  readonly toolDisplayName: string;
+  readonly attempts: StructuredOutputAttemptDiagnostic[];
+  readonly dominantFailureClass: StructuredOutputFailureClass | null;
+
+  constructor(payload: {
+    toolName: string;
+    toolDisplayName: string;
+    attempts: StructuredOutputAttemptDiagnostic[];
+    dominantFailureClass: StructuredOutputFailureClass | null;
+  }) {
+    const failureDescription =
+      payload.dominantFailureClass === "empty_content"
+        ? "returned empty responses"
+        : payload.dominantFailureClass === "invalid_json"
+          ? "returned invalid JSON"
+          : payload.dominantFailureClass === "schema_validation_failed"
+            ? "returned JSON that did not match the expected schema"
+            : payload.dominantFailureClass === "rate_limited"
+              ? "hit provider rate limits"
+              : payload.dominantFailureClass === "timeout_or_abort"
+                ? "timed out before completing"
+                : "failed to return a usable response";
+
+    super(
+      `${payload.toolDisplayName} ${failureDescription} after ${
+        payload.attempts.length
+      } attempt${payload.attempts.length === 1 ? "" : "s"}. Please try again.`
+    );
+    this.name = "StructuredOutputExhaustedError";
+    this.toolName = payload.toolName;
+    this.toolDisplayName = payload.toolDisplayName;
+    this.attempts = payload.attempts;
+    this.dominantFailureClass = payload.dominantFailureClass;
+  }
+}
 
 type JsonRecord = Record<string, unknown>;
 
@@ -408,13 +469,109 @@ export function extractTextContent(message: unknown) {
   return "";
 }
 
-export async function requestStructuredJsonContent(payload: {
+function getDominantFailureClass(
+  attempts: StructuredOutputAttemptDiagnostic[]
+): StructuredOutputFailureClass | null {
+  const counts = new Map<StructuredOutputFailureClass, number>();
+
+  attempts.forEach((attempt) => {
+    if (!attempt.failureClass) {
+      return;
+    }
+
+    counts.set(
+      attempt.failureClass,
+      (counts.get(attempt.failureClass) ?? 0) + 1
+    );
+  });
+
+  let winner: StructuredOutputFailureClass | null = null;
+  let highestCount = -1;
+  for (const [failureClass, count] of counts.entries()) {
+    if (count > highestCount) {
+      winner = failureClass;
+      highestCount = count;
+    }
+  }
+
+  return winner;
+}
+
+function getRetryPlannerNote(payload: {
+  failureClass: StructuredOutputFailureClass;
+  nextAction: "retry_same_model" | "switch_model";
+}) {
+  if (payload.nextAction === "retry_same_model") {
+    if (payload.failureClass === "empty_content") {
+      return "The model returned an empty response. Retrying with a stricter structured request...";
+    }
+
+    if (payload.failureClass === "invalid_json") {
+      return "The model returned invalid JSON. Retrying with a stricter structured request...";
+    }
+
+    if (payload.failureClass === "schema_validation_failed") {
+      return "The model returned output in the wrong shape. Retrying with a stricter structured request...";
+    }
+
+    if (payload.failureClass === "rate_limited") {
+      return "That model hit a rate limit. Retrying this step with another configured path...";
+    }
+
+    return "That model failed to return a usable result. Retrying this step...";
+  }
+
+  if (payload.failureClass === "rate_limited") {
+    return "Still working. Switching to a backup model for this step because the previous one was rate limited...";
+  }
+
+  return "Still working. Switching to a backup model for this step...";
+}
+
+function classifyStructuredOutputFailure(error: unknown): StructuredOutputFailureClass {
+  if (error instanceof z.ZodError) {
+    return "schema_validation_failed";
+  }
+
+  if (error instanceof Error) {
+    if (error.message === "Empty JSON payload") {
+      return "empty_content";
+    }
+
+    if (error instanceof SyntaxError) {
+      return "invalid_json";
+    }
+  }
+
+  return "provider_http_error";
+}
+
+async function parseStructuredContent<T>(
+  content: string,
+  schema: z.ZodSchema<T>
+): Promise<T> {
+  return schema.parse(JSON.parse(extractJsonFromText(content)));
+}
+
+export async function requestStructuredOutput<T>(payload: {
   prompt: string;
-  emptyResponseError: string;
+  toolName: string;
+  toolDisplayName: string;
+  schema: z.ZodSchema<T>;
   modelBucket: OpenRouterModelBucket;
   logLabel?: string;
+  onProgress?: (label: string) => Promise<void> | void;
+  createChatCompletionImpl?: typeof createChatCompletionForModel;
+  modelCandidates?: Array<{
+    model: string;
+    isFallback: boolean;
+  }>;
 }) {
   const logLabel = payload.logLabel ?? "Resumeow structured JSON request";
+  const createCompletion =
+    payload.createChatCompletionImpl ?? createChatCompletionForModel;
+  const modelCandidates =
+    payload.modelCandidates ?? getChatModelCandidates(payload.modelBucket);
   const buildMessages = (followUp?: string) =>
     [
       {
@@ -430,47 +587,138 @@ export async function requestStructuredJsonContent(payload: {
           ]
         : []),
     ];
+  const attempts: StructuredOutputAttemptDiagnostic[] = [];
 
-  console.info(`${logLabel}: requesting first model response`, {
-    modelBucket: payload.modelBucket,
-  });
-  const firstResponse = await createChatCompletion({
-    messages: buildMessages(),
-    toolChoice: "none",
-    temperature: 0.2,
-    modelBucket: payload.modelBucket,
-  });
+  for (let modelIndex = 0; modelIndex < modelCandidates.length; modelIndex += 1) {
+    const candidate = modelCandidates[modelIndex];
 
-  let content = extractTextContent(firstResponse.choices?.[0]?.message).trim();
-  if (content) {
-    console.info(`${logLabel}: received first model response`, {
-      contentLength: content.length,
-    });
-    return content;
+    for (let attemptNumber = 1; attemptNumber <= 2; attemptNumber += 1) {
+      const strictMode = modelIndex > 0 || attemptNumber === 2;
+      const startedAt = Date.now();
+
+      try {
+        const response = await createCompletion({
+          model: candidate.model,
+          messages: buildMessages(
+            strictMode
+              ? "Return only valid JSON using the exact schema requested above. Do not leave the response empty."
+              : undefined
+          ),
+          toolChoice: "none",
+          temperature: strictMode ? 0 : 0.2,
+          modelBucket: payload.modelBucket,
+          requestLabel: logLabel,
+          isFallback: candidate.isFallback,
+        });
+
+        const content = extractTextContent(
+          (response as { choices?: Array<{ message?: unknown }> }).choices?.[0]
+            ?.message
+        ).trim();
+
+        if (!content) {
+          const diagnostic: StructuredOutputAttemptDiagnostic = {
+            model: candidate.model,
+            isFallback: candidate.isFallback,
+            attemptNumber,
+            strictMode,
+            durationMs: Date.now() - startedAt,
+            contentLength: 0,
+            failureClass: "empty_content",
+            errorMessage: "The model returned an empty response.",
+          };
+          attempts.push(diagnostic);
+
+          console.warn(`${logLabel}: empty model response`, diagnostic);
+
+          const hasRetryOnSameModel = attemptNumber === 1;
+          const hasAnotherModel = modelIndex < modelCandidates.length - 1;
+          if (hasRetryOnSameModel || hasAnotherModel) {
+            await payload.onProgress?.(
+              getRetryPlannerNote({
+                failureClass: "empty_content",
+                nextAction: hasRetryOnSameModel
+                  ? "retry_same_model"
+                  : "switch_model",
+              })
+            );
+          }
+          continue;
+        }
+
+        const parsed = await parseStructuredContent(content, payload.schema);
+        const diagnostic: StructuredOutputAttemptDiagnostic = {
+          model: candidate.model,
+          isFallback: candidate.isFallback,
+          attemptNumber,
+          strictMode,
+          durationMs: Date.now() - startedAt,
+          contentLength: content.length,
+        };
+        attempts.push(diagnostic);
+
+        console.info(`${logLabel}: structured output succeeded`, diagnostic);
+        return {
+          parsed,
+          attempts,
+          resolvedModel: candidate.model,
+        };
+      } catch (error) {
+        const failureClass =
+          error instanceof Error &&
+          error.message === "The model returned an empty response."
+            ? "empty_content"
+            : classifyStructuredOutputFailure(error);
+        const diagnostic: StructuredOutputAttemptDiagnostic = {
+          model: candidate.model,
+          isFallback: candidate.isFallback,
+          attemptNumber,
+          strictMode,
+          durationMs: Date.now() - startedAt,
+          contentLength: 0,
+          failureClass,
+          errorMessage: error instanceof Error ? error.message : "Unknown error",
+        };
+        attempts.push(diagnostic);
+
+        console.warn(`${logLabel}: structured output attempt failed`, diagnostic);
+
+        const hasRetryOnSameModel =
+          attemptNumber === 1 &&
+          (failureClass === "empty_content" ||
+            failureClass === "invalid_json" ||
+            failureClass === "schema_validation_failed");
+        const hasAnotherModel = modelIndex < modelCandidates.length - 1;
+
+        if (hasRetryOnSameModel || hasAnotherModel) {
+          await payload.onProgress?.(
+            getRetryPlannerNote({
+              failureClass,
+              nextAction: hasRetryOnSameModel
+                ? "retry_same_model"
+                : "switch_model",
+            })
+          );
+          continue;
+        }
+      }
+    }
   }
 
-  console.info(`${logLabel}: first response was empty, retrying`, {
-    modelBucket: payload.modelBucket,
-  });
-  const retryResponse = await createChatCompletion({
-    messages: buildMessages(
-      "Return only valid JSON using the exact schema requested above. Do not leave the response empty."
-    ),
-    toolChoice: "none",
-    temperature: 0,
-    modelBucket: payload.modelBucket,
+  const dominantFailureClass = getDominantFailureClass(attempts);
+  console.error(`${logLabel}: structured output attempts exhausted`, {
+    toolName: payload.toolName,
+    toolDisplayName: payload.toolDisplayName,
+    dominantFailureClass,
+    attempts,
   });
 
-  content = extractTextContent(retryResponse.choices?.[0]?.message).trim();
-  if (content) {
-    console.info(`${logLabel}: received retry model response`, {
-      contentLength: content.length,
-    });
-    return content;
-  }
-
-  console.warn(`${logLabel}: both model responses were empty`);
-  throw new Error(payload.emptyResponseError);
+  throw new StructuredOutputExhaustedError({
+    toolName: payload.toolName,
+    toolDisplayName: payload.toolDisplayName,
+    attempts,
+    dominantFailureClass,
+  });
 }
 
 export function parseStructuredJson<T>(

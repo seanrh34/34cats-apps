@@ -1,8 +1,5 @@
-import {
-  DEFAULT_RESUME_DATA,
-  ResumeData,
-  ResumeSectionId,
-} from "@/lib/types/resume";
+import { DEFAULT_RESUME_DATA } from "@/lib/types/resume";
+import type { ResumeData, ResumeSectionId } from "@/lib/types/resume";
 
 export const DEFAULT_SECTION_ORDER: ResumeSectionId[] = [
   "personal",

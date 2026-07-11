@@ -1,4 +1,4 @@
-import {
+import type {
   CertificationAward,
   CoCurricularActivity,
   Education,
@@ -930,6 +930,31 @@ export function buildEditAssistantMessage(payload: {
 ${rows}
 
 The active resume has been updated. You can undo this AI change if needed.`
+  );
+}
+
+export function buildNoMaterialChangeAssistantMessage(payload: {
+  latestUserMessage: string;
+  summary?: string | null;
+}) {
+  const normalizedRequest = payload.latestUserMessage.toLowerCase();
+  const isEditLikeRequest =
+    /\b(edit|rewrite|revise|update|fix|improve|tailor|optimi[sz]e|implement|apply|change)\b/.test(
+      normalizedRequest
+    );
+
+  const contextualSummary = normalizeAiMessageContent(payload.summary ?? "");
+
+  if (!isEditLikeRequest && contextualSummary) {
+    return contextualSummary;
+  }
+
+  return normalizeAiMessageContent(
+    `${contextualSummary || "I reviewed your request against the active resume and the available evidence."}
+
+I did not apply any material changes because the current resume already appears adequately aligned with this request based on the information available to me.
+
+If you want, I can still take a more aggressive pass by focusing on a specific section, role, or bullet set.`
   );
 }
 

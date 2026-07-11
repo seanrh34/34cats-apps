@@ -5,8 +5,7 @@ import {
   analysisResultSchema,
   buildWorkingResume,
   mapCitationIds,
-  parseStructuredJson,
-  requestStructuredJsonContent,
+  requestStructuredOutput,
 } from "@/lib/ai/resumeow/tools/shared";
 import {
   includesForbiddenFieldOrderLanguage,
@@ -80,7 +79,7 @@ async function runAnalysisTool(payload: {
     selectedJobDescription: selectedJobDescription?.title ?? null,
   });
 
-  const content = await requestStructuredJsonContent({
+  const { parsed } = await requestStructuredOutput({
     prompt: buildAnalysisToolPrompt({
       toolName: payload.toolName,
       purpose: payload.purpose,
@@ -94,15 +93,22 @@ async function runAnalysisTool(payload: {
       contextBlock: buildToolContextBlock(sources),
       extraRules: payload.extraRules,
     }),
-    emptyResponseError: `${payload.displayName} returned an empty response. Please try again.`,
+    toolName: payload.toolName,
+    toolDisplayName: payload.displayName,
+    schema: analysisResultSchema,
     modelBucket: "analysis",
     logLabel: `Resumeow analysis tool ${payload.toolName}`,
+    onProgress: async (label) => {
+      await payload.context.notifyProgress?.({
+        label,
+        phase: "reasoning",
+      });
+    },
   });
 
   console.info("Resumeow analysis tool: parsing structured response", {
     toolName: payload.toolName,
   });
-  const parsed = parseStructuredJson(content, analysisResultSchema);
   const sanitized = sanitizeAnalysisPayload({
     summary: parsed.summary,
     findings: parsed.findings.map((finding) => ({

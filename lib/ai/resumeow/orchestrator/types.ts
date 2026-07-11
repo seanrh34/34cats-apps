@@ -45,6 +45,10 @@ export interface OrchestratorToolExecutionContext {
   supabase: SupabaseClient;
   userId: string;
   state: OrchestratorState;
+  notifyProgress?: (payload: {
+    label: string;
+    phase?: "planning" | "context" | "reasoning" | "apply";
+  }) => Promise<void>;
 }
 
 export interface OrchestratorToolDefinition<TArgs = Record<string, unknown>> {
@@ -60,4 +64,3 @@ export interface OrchestratorToolDefinition<TArgs = Record<string, unknown>> {
     args: TArgs
   ) => Promise<ResumeAiToolResult>;
 }
-
