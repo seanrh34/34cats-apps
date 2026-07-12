@@ -162,6 +162,50 @@ async function runMutationTool(payload: {
   };
 }
 
+// Standalone tool for the user-triggered "Fit to 1 Page" action. Not in the
+// orchestrator registry — only lib/ai/resumeow/trim.ts drives it.
+export const trimResumeToOnePageToolDefinition: OrchestratorToolDefinition<
+  Record<string, unknown>
+> = {
+  name: "trim_resume_to_one_page",
+  displayName: "Trim Resume To One Page",
+  description:
+    "Condense and trim the current resume so the compiled PDF fits on one page while keeping every key fact.",
+  category: "mutation",
+  mutating: false,
+  parameters: {
+    type: "object",
+    properties: {
+      instruction: {
+        type: "string",
+      },
+    },
+    required: ["instruction"],
+    additionalProperties: false,
+  },
+  buildStepLabel: () =>
+    "Condensing the resume so it fits on a single page...",
+  execute(context, args) {
+    return runMutationTool({
+      toolName: "trim_resume_to_one_page",
+      displayName: "Trim Resume To One Page",
+      purpose:
+        "Trim and condense the current resume so the compiled PDF fits on exactly one page, preserving the strongest and most relevant content.",
+      instruction:
+        typeof args.instruction === "string" && args.instruction.trim()
+          ? args.instruction
+          : "Trim the resume so it fits on one PDF page.",
+      extraRules: [
+        "Tighten wordy bullets, merge redundant ones, and cut the least relevant content first.",
+        "Keep every employer, role, degree, and date. Never invent or alter facts.",
+        "Prefer shortening bullets over deleting whole entries; delete an entry only when clearly least relevant.",
+        "Do not remove entire sections unless they are empty.",
+      ],
+      context,
+    });
+  },
+};
+
 export const mutationToolDefinitions: Array<
   OrchestratorToolDefinition<Record<string, unknown>>
 > = [

@@ -351,6 +351,23 @@ export default function ResumeowPage() {
   const hasAutoSelectedInitialResumeRef = useRef(false);
   const previousResumeIdForChatScrollRef = useRef<string | undefined>(undefined);
 
+  const [toast, setToast] = useState<{
+    message: string;
+    tone: "success" | "error" | "info";
+  } | null>(null);
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const notify = useCallback(
+    (message: string, tone: "success" | "error" | "info" = "info") => {
+      setToast({ message, tone });
+      if (toastTimerRef.current) {
+        clearTimeout(toastTimerRef.current);
+      }
+      toastTimerRef.current = setTimeout(() => setToast(null), 6000);
+    },
+    []
+  );
+
   const appendProcessUpdate = useCallback((update: ProcessUpdate) => {
     setProcessUpdates((current) => {
       const previous = current[current.length - 1];
@@ -376,9 +393,10 @@ export default function ResumeowPage() {
     );
   }, []);
 
-  useEffect(() => {
-    setHasUnsavedChanges(true);
-  }, [resumeData, resumeTitle]);
+  // Dirty tracking happens at user-edit sites (updateX handlers, title input,
+  // tab drag) — a resumeData effect also fired on load/undo/AI apply and
+  // spuriously warned about unsaved changes.
+  const markResumeEdited = () => setHasUnsavedChanges(true);
 
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
@@ -562,10 +580,10 @@ export default function ResumeowPage() {
       setHasUnsavedChanges(false);
       await loadResumes();
       await loadAiState(saved.id);
-      alert("Resume saved successfully!");
+      notify("Resume saved successfully!", "success");
     } catch (error) {
       console.error("Error saving resume:", error);
-      alert("Failed to save resume. Please try again.");
+      notify("Failed to save resume. Please try again.", "error");
     } finally {
       setIsSaving(false);
     }
@@ -603,10 +621,10 @@ export default function ResumeowPage() {
       if (id === currentResumeId) {
         handleNewResume();
       }
-      alert("Resume deleted successfully!");
+      notify("Resume deleted successfully!", "success");
     } catch (error) {
       console.error("Error deleting resume:", error);
-      alert("Failed to delete resume. Please try again.");
+      notify("Failed to delete resume. Please try again.", "error");
     }
   };
 
@@ -615,6 +633,7 @@ export default function ResumeowPage() {
       return;
     }
 
+    markResumeEdited();
     setResumeData({ ...resumeData, personalInfo: data });
   };
 
@@ -623,6 +642,7 @@ export default function ResumeowPage() {
       return;
     }
 
+    markResumeEdited();
     setResumeData({ ...resumeData, experience: data });
   };
 
@@ -631,6 +651,7 @@ export default function ResumeowPage() {
       return;
     }
 
+    markResumeEdited();
     setResumeData({ ...resumeData, education: data });
   };
 
@@ -639,6 +660,7 @@ export default function ResumeowPage() {
       return;
     }
 
+    markResumeEdited();
     setResumeData({ ...resumeData, coCurricularActivities: data });
   };
 
@@ -647,6 +669,7 @@ export default function ResumeowPage() {
       return;
     }
 
+    markResumeEdited();
     setResumeData({ ...resumeData, skills: data });
   };
 
@@ -655,6 +678,7 @@ export default function ResumeowPage() {
       return;
     }
 
+    markResumeEdited();
     setResumeData({ ...resumeData, projects: data });
   };
 
@@ -663,14 +687,16 @@ export default function ResumeowPage() {
       return;
     }
 
+    markResumeEdited();
     setResumeData({ ...resumeData, certificationsAwards: data });
   };
 
   const copyLatexToClipboard = async () => {
     const validationIssues = validateResumeForOutput(resumeData);
     if (validationIssues.length > 0) {
-      alert(
-        `Please complete the resume before copying LaTeX:\n\n${validationIssues.join("\n")}`
+      notify(
+        `Please complete the resume before copying LaTeX:\n\n${validationIssues.join("\n")}`,
+        "error"
       );
       return;
     }
@@ -678,26 +704,28 @@ export default function ResumeowPage() {
     try {
       const latexCode = generateLatexResume(resumeData);
       await navigator.clipboard.writeText(latexCode);
-      alert(
-        "LaTeX code copied to clipboard! You can paste it into Overleaf or any LaTeX editor to make custom edits."
+      notify(
+        "LaTeX code copied to clipboard! You can paste it into Overleaf or any LaTeX editor to make custom edits.",
+        "success"
       );
     } catch (error) {
       console.error("Error copying to clipboard:", error);
-      alert("Failed to copy LaTeX code. Please try again.");
+      notify("Failed to copy LaTeX code. Please try again.", "error");
     }
   };
 
   const generateResume = async () => {
     const validationIssues = validateResumeForOutput(resumeData);
     if (validationIssues.length > 0) {
-      alert(
-        `Please complete the resume before generating it:\n\n${validationIssues.join("\n")}`
+      notify(
+        `Please complete the resume before generating it:\n\n${validationIssues.join("\n")}`,
+        "error"
       );
       return;
     }
 
     if (cooldownSeconds > 0) {
-      alert(
+      notify(
         `Please wait ${cooldownSeconds} seconds before generating another resume.`
       );
       return;
@@ -732,13 +760,14 @@ export default function ResumeowPage() {
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
 
-      alert("Resume PDF downloaded successfully!");
+      notify("Resume PDF downloaded successfully!", "success");
     } catch (error) {
       console.error("Error:", error);
-      alert(
+      notify(
         error instanceof Error
           ? error.message
-          : "An error occurred while generating the resume"
+          : "An error occurred while generating the resume",
+        "error"
       );
     } finally {
       setIsGenerating(false);
@@ -764,7 +793,7 @@ export default function ResumeowPage() {
       setHasDismissedProfilePrompt(false);
     } catch (error) {
       console.error("Failed to save profile", error);
-      alert("Failed to save profile. Please try again.");
+      notify("Failed to save profile. Please try again.", "error");
     } finally {
       setIsSavingProfile(false);
     }
@@ -826,7 +855,7 @@ export default function ResumeowPage() {
       }
     } catch (error) {
       console.error("Failed to delete job description", error);
-      alert("Failed to delete job description. Please try again.");
+      notify("Failed to delete job description. Please try again.", "error");
     } finally {
       setIsSavingJobDescription(false);
     }
@@ -853,13 +882,14 @@ export default function ResumeowPage() {
       setHasUnsavedChanges(false);
       await loadResumes();
       await loadAiState(response.resume.id);
-      alert("AI changes undone.");
+      notify("AI changes undone.", "success");
     } catch (error) {
       console.error("Failed to undo AI change set", error);
-      alert(
+      notify(
         error instanceof Error
           ? error.message
-          : "Failed to undo AI changes."
+          : "Failed to undo AI changes.",
+        "error"
       );
       if (currentResumeId) {
         await loadAiState(currentResumeId);
@@ -871,10 +901,10 @@ export default function ResumeowPage() {
 
   const handleSendMessage = async (
     messageText?: string,
-    actionHint?: "review" | "edit" | null
+    actionHint?: "review" | "edit" | "trim" | null
   ) => {
     if (!currentResumeId) {
-      alert("Save this resume first to start an AI conversation.");
+      notify("Save this resume first to start an AI conversation.");
       return;
     }
 
@@ -883,7 +913,9 @@ export default function ResumeowPage() {
         ? "Review my resume and tell me the highest-impact improvements."
         : actionHint === "edit"
           ? "Make changes to improve this resume while staying truthful."
-          : "";
+          : actionHint === "trim"
+            ? "Trim my resume so it fits on one PDF page."
+            : "";
 
     const outgoingText = (messageText?.trim() ?? "") || fallbackPrompt;
     if (!outgoingText) {
@@ -1080,6 +1112,7 @@ export default function ResumeowPage() {
       return;
     }
 
+    markResumeEdited();
     setResumeData((current) => ({
       ...current,
       sectionOrder: reorderResumeSections(
@@ -1178,6 +1211,21 @@ export default function ResumeowPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black">
+      {toast ? (
+        <button
+          type="button"
+          onClick={() => setToast(null)}
+          className={`fixed bottom-6 left-1/2 z-[60] max-w-lg -translate-x-1/2 whitespace-pre-wrap rounded-2xl border px-4 py-3 text-left text-sm shadow-2xl backdrop-blur ${
+            toast.tone === "success"
+              ? "border-emerald-500/40 bg-emerald-950/90 text-emerald-100"
+              : toast.tone === "error"
+                ? "border-red-500/40 bg-red-950/90 text-red-100"
+                : "border-gray-600 bg-gray-900/95 text-gray-100"
+          }`}
+        >
+          {toast.message}
+        </button>
+      ) : null}
       {isGenerating ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
           <div className="rounded-lg border border-gray-700 bg-gray-800 p-8 text-center shadow-2xl">
@@ -1348,6 +1396,7 @@ export default function ResumeowPage() {
                       if (isAiRunLocked) {
                         return;
                       }
+                      markResumeEdited();
                       setResumeTitle(e.target.value);
                     }}
                     disabled={isAiRunLocked}
@@ -1383,6 +1432,28 @@ export default function ResumeowPage() {
                       className="flex-1 sm:flex-none"
                     >
                       Copy LaTeX
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        if (!currentResumeId) {
+                          notify("Save this resume first so the AI can trim it.");
+                          return;
+                        }
+                        if (hasUnsavedChanges) {
+                          notify(
+                            "Save your latest edits first so the AI trims the current version."
+                          );
+                          return;
+                        }
+                        void handleSendMessage(undefined, "trim");
+                      }}
+                      disabled={isAiRunLocked}
+                      variant="outline"
+                      size="sm"
+                      title="Let the AI compile your resume and trim it down to one PDF page"
+                      className="flex-1 border-[#E84A3A]/50 text-[#E84A3A] hover:bg-[#E84A3A]/10 sm:flex-none"
+                    >
+                      Fit to 1 Page
                     </Button>
                   </div>
                 </div>

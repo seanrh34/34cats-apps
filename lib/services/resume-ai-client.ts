@@ -121,7 +121,7 @@ export async function streamResumeChat(
   payload: {
     resumeId: string;
     messages: Array<{ role: string; content: string }>;
-    actionHint?: "review" | "edit" | null;
+    actionHint?: "review" | "edit" | "trim" | null;
     jobDescriptionId?: string | null;
   },
   handlers: {
