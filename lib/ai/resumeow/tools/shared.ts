@@ -571,7 +571,7 @@ export async function requestStructuredOutput<T>(payload: {
   const createCompletion =
     payload.createChatCompletionImpl ?? createChatCompletionForModel;
   const modelCandidates =
-    payload.modelCandidates ?? getChatModelCandidates(payload.modelBucket);
+    payload.modelCandidates ?? (await getChatModelCandidates());
   const buildMessages = (followUp?: string) =>
     [
       {

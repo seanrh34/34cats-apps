@@ -1,9 +1,13 @@
 import {
   OPENROUTER_CHAT_URL,
   OPENROUTER_EMBEDDINGS_URL,
-  DEFAULT_OPENROUTER_EMBEDDING_MODEL,
   EMBEDDING_DIMENSIONS,
 } from "@/lib/ai/resumeow/constants";
+import {
+  FREE_MODEL_COUNT,
+  OPENROUTER_EMBEDDING_MODEL,
+  PAID_FALLBACK_MODEL,
+} from "@/lib/ai/resumeow/models";
 
 export interface OpenRouterMessage {
   role: "system" | "user" | "assistant" | "tool";
@@ -81,65 +85,153 @@ function getAuthHeaders() {
   };
 }
 
-function parseModelList(value?: string) {
-  return (value ?? "")
-    .split(",")
-    .map((model) => model.trim())
-    .filter(Boolean);
+// --- LiteLLM gateway (preferred provider when reachable) -------------------
+// The gateway is only periodically online. We probe it (cached for a short
+// TTL) and route chat completions through it with its single "free" model;
+// any gateway failure marks it down and the request falls back to OpenRouter.
+// Embeddings always use OpenRouter — the gateway does not host the embedding model.
+
+const LITELLM_CHAT_MODEL = "free";
+const GATEWAY_STATUS_TTL_MS = 60_000;
+const GATEWAY_PROBE_TIMEOUT_MS = 2_000;
+
+let gatewayStatus: { healthy: boolean; expiresAt: number } | null = null;
+
+export function resetGatewayHealthCache() {
+  gatewayStatus = null;
 }
 
-function getBucketPrimaryEnvName(bucket: OpenRouterModelBucket) {
-  switch (bucket) {
-    case "guardrails":
-      return "OPENROUTER_MODEL_GUARDRAILS_PRIMARY";
-    case "orchestrator":
-      return "OPENROUTER_MODEL_ORCHESTRATOR_PRIMARY";
-    case "analysis":
-      return "OPENROUTER_MODEL_ANALYSIS_PRIMARY";
-    case "mutation":
-      return "OPENROUTER_MODEL_MUTATION_PRIMARY";
+function getGatewayBaseUrl() {
+  return process.env.LITELLM_BASE_URL?.trim().replace(/\/+$/, "") || null;
+}
+
+function getGatewayHeaders() {
+  return {
+    Authorization: `Bearer ${process.env.LITELLM_API_KEY ?? ""}`,
+    "Content-Type": "application/json",
+  };
+}
+
+function markGatewayDown() {
+  gatewayStatus = { healthy: false, expiresAt: Date.now() + GATEWAY_STATUS_TTL_MS };
+}
+
+async function isGatewayAvailable() {
+  const baseUrl = getGatewayBaseUrl();
+  if (!baseUrl) {
+    return false;
   }
-}
 
-function getBucketFallbackEnvName(bucket: OpenRouterModelBucket) {
-  switch (bucket) {
-    case "guardrails":
-      return "OPENROUTER_MODEL_GUARDRAILS_FALLBACK";
-    case "orchestrator":
-      return "OPENROUTER_MODEL_ORCHESTRATOR_FALLBACK";
-    case "analysis":
-      return "OPENROUTER_MODEL_ANALYSIS_FALLBACK";
-    case "mutation":
-      return "OPENROUTER_MODEL_MUTATION_FALLBACK";
+  if (gatewayStatus && Date.now() < gatewayStatus.expiresAt) {
+    return gatewayStatus.healthy;
   }
+
+  let healthy = false;
+  try {
+    const response = await fetch(`${baseUrl}/v1/models`, {
+      headers: getGatewayHeaders(),
+      signal: AbortSignal.timeout(GATEWAY_PROBE_TIMEOUT_MS),
+    });
+    healthy = response.ok;
+  } catch {
+    healthy = false;
+  }
+
+  gatewayStatus = { healthy, expiresAt: Date.now() + GATEWAY_STATUS_TTL_MS };
+  console.info("Resumeow LiteLLM gateway probe", { baseUrl, healthy });
+  return healthy;
 }
 
-function getPrimaryModels(bucket?: OpenRouterModelBucket) {
-  const bucketValue = bucket
-    ? process.env[getBucketPrimaryEnvName(bucket)]
-    : undefined;
-  const models = parseModelList(bucketValue || process.env.OPENROUTER_MODEL_PRIMARY);
+interface ChatProviderTarget {
+  provider: "litellm" | "openrouter";
+  url: string;
+  headers: Record<string, string>;
+  model: string;
+}
+
+function getOpenRouterTarget(model: string): ChatProviderTarget {
+  return {
+    provider: "openrouter",
+    url: OPENROUTER_CHAT_URL,
+    headers: getAuthHeaders(),
+    model,
+  };
+}
+
+function getGatewayTarget(): ChatProviderTarget {
+  return {
+    provider: "litellm",
+    url: `${getGatewayBaseUrl()}/v1/chat/completions`,
+    headers: getGatewayHeaders(),
+    model: LITELLM_CHAT_MODEL,
+  };
+}
+
+// --- Free model discovery ---------------------------------------------------
+// The top free OpenRouter models are tried in order before the single paid
+// fallback. "Top" = tool-capable :free models, newest first — the public
+// /models endpoint exposes no popularity signal, and tool support is required
+// by the orchestrator. Discovery runs once at the start of each agentic run
+// (refreshFreeModels); every model call in that run reuses the snapshot.
+
+const OPENROUTER_MODELS_URL = "https://openrouter.ai/api/v1/models";
+
+let freeModelsSnapshot: string[] | null = null;
+
+export function resetFreeModelsCache() {
+  freeModelsSnapshot = null;
+}
+
+async function fetchTopFreeModels(): Promise<string[]> {
+  const response = await fetch(OPENROUTER_MODELS_URL, {
+    signal: AbortSignal.timeout(5_000),
+  });
+  if (!response.ok) {
+    throw new Error(`OpenRouter models error ${response.status}`);
+  }
+
+  const json = await response.json();
+  const models = ((json.data ?? []) as Array<{
+    id?: string;
+    created?: number;
+    supported_parameters?: string[];
+  }>)
+    .filter(
+      (model) =>
+        typeof model.id === "string" &&
+        model.id.endsWith(":free") &&
+        (model.supported_parameters ?? []).includes("tools")
+    )
+    .sort((a, b) => (b.created ?? 0) - (a.created ?? 0))
+    .slice(0, FREE_MODEL_COUNT)
+    .map((model) => model.id as string);
 
   if (models.length === 0) {
-    throw new Error(
-      bucket
-        ? `Missing ${getBucketPrimaryEnvName(bucket)} (or legacy OPENROUTER_MODEL_PRIMARY)`
-        : "Missing OPENROUTER_MODEL_PRIMARY"
-    );
+    throw new Error("No tool-capable free models found");
   }
 
-  return [...new Set(models)];
+  return models;
 }
 
-function getFallbackModel(bucket?: OpenRouterModelBucket) {
-  if (bucket) {
-    const bucketFallback = process.env[getBucketFallbackEnvName(bucket)]?.trim();
-    if (bucketFallback) {
-      return bucketFallback;
-    }
+/**
+ * Run free-model discovery once, at the start of an agentic run. All model
+ * calls in the run then reuse the snapshot. On failure, keeps the previous
+ * snapshot if one exists; otherwise the run uses only the paid fallback.
+ */
+export async function refreshFreeModels(): Promise<string[]> {
+  try {
+    freeModelsSnapshot = await fetchTopFreeModels();
+    console.info("Resumeow free model discovery succeeded", {
+      models: freeModelsSnapshot,
+    });
+  } catch (error) {
+    console.warn("Resumeow free model discovery failed", {
+      errorMessage: error instanceof Error ? error.message : "Unknown error",
+      previousSnapshot: freeModelsSnapshot,
+    });
   }
 
-  return process.env.OPENROUTER_MODEL_FALLBACK?.trim() || null;
+  return freeModelsSnapshot ?? [];
 }
 
 function isRateLimitError(error: unknown) {
@@ -169,28 +261,16 @@ export function classifyOpenRouterFailure(error: unknown): OpenRouterFailureClas
   return "provider_http_error";
 }
 
-export function getChatModelCandidates(
-  bucket?: OpenRouterModelBucket
-): OpenRouterModelCandidate[] {
-  const primaryModels = getPrimaryModels(bucket);
-  const fallbackModel = getFallbackModel(bucket);
+export async function getChatModelCandidates(): Promise<
+  OpenRouterModelCandidate[]
+> {
+  // Reuse the run's snapshot; only discover here if the run never primed one.
+  const freeModels = freeModelsSnapshot ?? (await refreshFreeModels());
 
-  const candidates: OpenRouterModelCandidate[] = primaryModels.map((model) => ({
-    model,
-    isFallback: false,
-  }));
-
-  if (
-    fallbackModel &&
-    !primaryModels.includes(fallbackModel)
-  ) {
-    candidates.push({
-      model: fallbackModel,
-      isFallback: true,
-    });
-  }
-
-  return candidates;
+  return [
+    ...freeModels.map((model) => ({ model, isFallback: false })),
+    { model: PAID_FALLBACK_MODEL, isFallback: true },
+  ];
 }
 
 function annotateResolvedModel<T>(
@@ -207,7 +287,7 @@ function annotateResolvedModel<T>(
   return value;
 }
 
-export async function createChatCompletionForModel(payload: {
+interface ChatCompletionPayload {
   model: string;
   messages: OpenRouterMessage[];
   tools?: OpenRouterTool[];
@@ -216,21 +296,28 @@ export async function createChatCompletionForModel(payload: {
   modelBucket?: OpenRouterModelBucket;
   requestLabel?: string;
   isFallback?: boolean;
-}) {
+}
+
+async function executeChatCompletion(
+  payload: ChatCompletionPayload,
+  target: ChatProviderTarget
+) {
   const startedAt = Date.now();
-  console.info("Resumeow OpenRouter attempt_start", {
-    requestLabel: payload.requestLabel ?? "OpenRouter chat completion",
+  const logContext = {
+    requestLabel: payload.requestLabel ?? "Chat completion",
     bucket: payload.modelBucket ?? null,
-    model: payload.model,
+    provider: target.provider,
+    model: target.model,
     isFallback: Boolean(payload.isFallback),
-  });
+  };
+  console.info("Resumeow chat attempt_start", logContext);
 
   try {
-    const response = await fetch(OPENROUTER_CHAT_URL, {
+    const response = await fetch(target.url, {
       method: "POST",
-      headers: getAuthHeaders(),
+      headers: target.headers,
       body: JSON.stringify({
-        model: payload.model,
+        model: target.model,
         messages: payload.messages,
         tools: payload.tools,
         tool_choice: payload.toolChoice ?? "auto",
@@ -241,93 +328,72 @@ export async function createChatCompletionForModel(payload: {
 
     if (!response.ok) {
       const body = await response.text();
-      throw new OpenRouterRequestError(body || `OpenRouter error ${response.status}`, {
-        status: response.status,
-        responseBody: body,
-      });
+      throw new OpenRouterRequestError(
+        body || `${target.provider} error ${response.status}`,
+        {
+          status: response.status,
+          responseBody: body,
+        }
+      );
     }
 
     const json = await response.json();
-    const durationMs = Date.now() - startedAt;
-    console.info("Resumeow OpenRouter attempt_success", {
-      requestLabel: payload.requestLabel ?? "OpenRouter chat completion",
-      bucket: payload.modelBucket ?? null,
-      model: payload.model,
-      isFallback: Boolean(payload.isFallback),
-      durationMs,
+    console.info("Resumeow chat attempt_success", {
+      ...logContext,
+      durationMs: Date.now() - startedAt,
     });
 
     return annotateResolvedModel(json, {
-      model: payload.model,
+      model: target.model,
       isFallback: Boolean(payload.isFallback),
     });
   } catch (error) {
-    const durationMs = Date.now() - startedAt;
-    const failureClass = classifyOpenRouterFailure(error);
-    console.warn("Resumeow OpenRouter attempt_failure", {
-      requestLabel: payload.requestLabel ?? "OpenRouter chat completion",
-      bucket: payload.modelBucket ?? null,
-      model: payload.model,
-      isFallback: Boolean(payload.isFallback),
-      durationMs,
-      failureClass,
-      errorMessage: error instanceof Error ? error.message : "Unknown OpenRouter error",
+    console.warn("Resumeow chat attempt_failure", {
+      ...logContext,
+      durationMs: Date.now() - startedAt,
+      failureClass: classifyOpenRouterFailure(error),
+      errorMessage: error instanceof Error ? error.message : "Unknown provider error",
     });
     throw error;
   }
+}
+
+export async function createChatCompletionForModel(payload: ChatCompletionPayload) {
+  if (await isGatewayAvailable()) {
+    try {
+      return await executeChatCompletion(payload, getGatewayTarget());
+    } catch {
+      // Gateway failed mid-flight: mark it down so subsequent requests skip
+      // the probe, then retry this same request against OpenRouter.
+      markGatewayDown();
+    }
+  }
+
+  return executeChatCompletion(payload, getOpenRouterTarget(payload.model));
 }
 
 export async function runChatModelSequence<T>(payload: {
   bucket?: OpenRouterModelBucket;
   requestLabel: string;
   executor: (candidate: OpenRouterModelCandidate) => Promise<T>;
-  shouldUseFallback?: (primaryAttempts: OpenRouterModelAttempt[]) => boolean;
 }) {
-  const candidates = getChatModelCandidates(payload.bucket);
-  const primaryCandidates = candidates.filter((candidate) => !candidate.isFallback);
-  const fallbackCandidate = candidates.find((candidate) => candidate.isFallback) ?? null;
+  const candidates = await getChatModelCandidates();
   const attempts: OpenRouterModelAttempt[] = [];
 
-  for (const candidate of primaryCandidates) {
+  for (const candidate of candidates) {
     const startedAt = Date.now();
     try {
       const value = await payload.executor(candidate);
       return {
         value,
         model: candidate.model,
-        isFallback: false,
+        isFallback: candidate.isFallback,
         attempts,
       };
     } catch (error) {
       attempts.push({
         model: candidate.model,
-        isFallback: false,
-        durationMs: Date.now() - startedAt,
-        failureClass: classifyOpenRouterFailure(error),
-        errorMessage:
-          error instanceof Error ? error.message : "Unknown OpenRouter error",
-      });
-    }
-  }
-
-  const shouldTryFallback =
-    fallbackCandidate &&
-    (payload.shouldUseFallback?.(attempts) ?? false);
-
-  if (fallbackCandidate && shouldTryFallback) {
-    const startedAt = Date.now();
-    try {
-      const value = await payload.executor(fallbackCandidate);
-      return {
-        value,
-        model: fallbackCandidate.model,
-        isFallback: true,
-        attempts,
-      };
-    } catch (error) {
-      attempts.push({
-        model: fallbackCandidate.model,
-        isFallback: true,
+        isFallback: candidate.isFallback,
         durationMs: Date.now() - startedAt,
         failureClass: classifyOpenRouterFailure(error),
         errorMessage:
@@ -357,9 +423,6 @@ async function fetchWithFallback<T>(
     bucket,
     requestLabel: "OpenRouter chat completion",
     executor: (candidate) => builder(candidate.model),
-    shouldUseFallback: (primaryAttempts) =>
-      primaryAttempts.length > 0 &&
-      primaryAttempts.every((attempt) => attempt.failureClass === "rate_limited"),
   });
 
   return result.value;
@@ -400,76 +463,6 @@ export async function createChatCompletion(payload: {
   }, payload.modelBucket);
 }
 
-export async function streamChatCompletion(
-  payload: {
-    messages: OpenRouterMessage[];
-    temperature?: number;
-    modelBucket?: OpenRouterModelBucket;
-  },
-  handlers: {
-    onToken: (token: string) => Promise<void> | void;
-  }
-) {
-  return fetchWithFallback(async (model) => {
-    const response = await fetch(OPENROUTER_CHAT_URL, {
-      method: "POST",
-      headers: getAuthHeaders(),
-      body: JSON.stringify({
-        model,
-        stream: true,
-        messages: payload.messages,
-        temperature: payload.temperature ?? 0.4,
-      }),
-    });
-
-    if (!response.ok || !response.body) {
-      const body = await response.text();
-      throw new OpenRouterRequestError(body || `OpenRouter error ${response.status}`, {
-        status: response.status,
-        responseBody: body,
-      });
-    }
-
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder();
-    let buffer = "";
-    let text = "";
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) {
-        break;
-      }
-
-      buffer += decoder.decode(value, { stream: true });
-      const events = buffer.split("\n\n");
-      buffer = events.pop() ?? "";
-
-      for (const event of events) {
-        const dataLines = event
-          .split("\n")
-          .filter((line) => line.startsWith("data:"))
-          .map((line) => line.replace(/^data:\s*/, ""));
-
-        for (const line of dataLines) {
-          if (!line || line === "[DONE]") {
-            continue;
-          }
-
-          const parsed = JSON.parse(line);
-          const token = parsed.choices?.[0]?.delta?.content;
-          if (typeof token === "string" && token.length > 0) {
-            text += token;
-            await handlers.onToken(token);
-          }
-        }
-      }
-    }
-
-    return text;
-  }, payload.modelBucket);
-}
-
 export async function createEmbeddings(values: string[]) {
   if (values.length === 0) {
     return [];
@@ -479,9 +472,7 @@ export async function createEmbeddings(values: string[]) {
     method: "POST",
     headers: getAuthHeaders(),
     body: JSON.stringify({
-      model:
-        process.env.OPENROUTER_EMBEDDING_MODEL ??
-        DEFAULT_OPENROUTER_EMBEDDING_MODEL,
+      model: OPENROUTER_EMBEDDING_MODEL,
       input: values,
       encoding_format: "float",
       dimensions: EMBEDDING_DIMENSIONS,

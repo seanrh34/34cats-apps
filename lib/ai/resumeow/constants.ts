@@ -3,8 +3,6 @@ export const OPENROUTER_CHAT_URL =
 export const OPENROUTER_EMBEDDINGS_URL =
   "https://openrouter.ai/api/v1/embeddings";
 
-export const DEFAULT_OPENROUTER_EMBEDDING_MODEL =
-  "baai/bge-m3";
 export const EMBEDDING_DIMENSIONS = 1024;
 
 export const RATE_LIMIT_CONFIG = {
