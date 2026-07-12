@@ -22,7 +22,14 @@ export type ResumeGuardrailDecision =
 
 function includesKeyword(text: string, keyword: string) {
   const normalizedKeyword = keyword.trim().toLowerCase();
-  return normalizedKeyword ? text.includes(normalizedKeyword) : false;
+  if (!normalizedKeyword) {
+    return false;
+  }
+
+  // Whole-word match only: substring matching blocked innocent resume prompts
+  // ("skills" contains "kill", "Sussex" contains "sex").
+  const escaped = normalizedKeyword.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return new RegExp(`\\b${escaped}\\b`, "i").test(text);
 }
 
 function hasAnyKeyword(text: string, keywords: readonly string[]) {

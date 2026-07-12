@@ -18,6 +18,17 @@ test("does not hard-block general knowledge prompts at the safety layer", () => 
   assert.equal(decision.allowed, true);
 });
 
+test("does not block resume words that merely contain a flagged substring", () => {
+  for (const message of [
+    "Add Python to my skills section.",
+    "I studied at Sussex University.",
+    "Highlight my Essex-based internship.",
+  ]) {
+    const decision = evaluateSafetyGuardrails({ message });
+    assert.equal(decision.allowed, true, `should allow: ${message}`);
+  }
+});
+
 test("blocks explicit or inappropriate prompts", () => {
   const decision = evaluateSafetyGuardrails({
     message: "Write an explicit sexual message for me.",

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { jsonRoute } from "@/lib/api-route";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireUser } from "@/lib/supabase/require-user";
 import {
@@ -9,10 +10,10 @@ import {
 } from "@/lib/services/resume-server-service";
 import { syncResumeToRag } from "@/lib/ai/resumeow/rag";
 
-export async function POST(
+export const POST = jsonRoute(async (
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
-) {
+) => {
   const { user, error } = await requireUser();
   if (!user) {
     return NextResponse.json({ error }, { status: 401 });
@@ -75,4 +76,4 @@ export async function POST(
     resume: restoredResume,
     changeSet: revertedChangeSet,
   });
-}
+});

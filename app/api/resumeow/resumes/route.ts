@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { jsonRoute } from "@/lib/api-route";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireUser } from "@/lib/supabase/require-user";
 import {
@@ -7,7 +8,7 @@ import {
 } from "@/lib/services/resume-server-service";
 import { syncResumeToRag } from "@/lib/ai/resumeow/rag";
 
-export async function GET() {
+export const GET = jsonRoute(async () => {
   const { user, error } = await requireUser();
   if (!user) {
     return NextResponse.json({ error }, { status: 401 });
@@ -19,9 +20,9 @@ export async function GET() {
   return NextResponse.json({
     resumes,
   });
-}
+});
 
-export async function POST(request: Request) {
+export const POST = jsonRoute(async (request: Request) => {
   const { user, error } = await requireUser();
   if (!user) {
     return NextResponse.json({ error }, { status: 401 });
@@ -52,4 +53,4 @@ export async function POST(request: Request) {
   return NextResponse.json({
     resume,
   });
-}
+});
