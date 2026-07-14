@@ -53,6 +53,30 @@ import { ScrollToBottomButton } from "@/components/shared/scroll-to-bottom";
 import { normalizeResumeData, reorderResumeSections } from "@/lib/resume-data";
 
 const PROFILE_PROMPT_DISMISSED_KEY = "resumeowProfilePromptDismissed";
+const GETTING_STARTED_DISMISSED_KEY = "resumeowGettingStartedDismissed";
+
+const GETTING_STARTED_STEPS = [
+  {
+    title: "Fill in your details",
+    description:
+      "Work through the tabs below. Personal Info, Education, and Experience (marked *) are required for the PDF.",
+  },
+  {
+    title: "Save your resume",
+    description:
+      "Saving stores your resume and unlocks the AI assistant. You can keep multiple saved versions.",
+  },
+  {
+    title: "Ask the AI for help",
+    description:
+      "Chat on the right to review, tailor, or rewrite your resume. Every AI edit shows a diff and can be undone.",
+  },
+  {
+    title: "Download the PDF",
+    description:
+      "When you're happy, download the LaTeX-compiled PDF or copy the LaTeX source. Use Fit to 1 Page if it runs long.",
+  },
+] as const;
 
 type ProcessUpdate = {
   phase: ResumeAiProcessPhase;
@@ -325,6 +349,7 @@ export default function ResumeowPage() {
   const [isJobDescriptionManagerOpen, setIsJobDescriptionManagerOpen] = useState(false);
   const [hasDismissedProfilePrompt, setHasDismissedProfilePrompt] =
     useState(false);
+  const [showGettingStarted, setShowGettingStarted] = useState(false);
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [messages, setMessages] = useState<ResumeAiMessage[]>([]);
   const [changeSets, setChangeSets] = useState<ResumeChangeSet[]>([]);
@@ -391,7 +416,20 @@ export default function ResumeowPage() {
     setHasDismissedProfilePrompt(
       window.localStorage.getItem(PROFILE_PROMPT_DISMISSED_KEY) === "1"
     );
+    setShowGettingStarted(
+      window.localStorage.getItem(GETTING_STARTED_DISMISSED_KEY) !== "1"
+    );
   }, []);
+
+  const dismissGettingStarted = () => {
+    window.localStorage.setItem(GETTING_STARTED_DISMISSED_KEY, "1");
+    setShowGettingStarted(false);
+  };
+
+  const reopenGettingStarted = () => {
+    window.localStorage.removeItem(GETTING_STARTED_DISMISSED_KEY);
+    setShowGettingStarted(true);
+  };
 
   // Dirty tracking happens at user-edit sites (updateX handlers, title input,
   // tab drag) — a resumeData effect also fired on load/undo/AI apply and
@@ -1318,8 +1356,13 @@ export default function ResumeowPage() {
                   >
                     <div className="flex flex-col items-start justify-between gap-3 sm:flex-row">
                       <div className="w-full flex-1">
-                        <h3 className="mb-2 text-lg font-semibold text-white md:text-xl">
+                        <h3 className="mb-2 flex items-center gap-2 text-lg font-semibold text-white md:text-xl">
                           {resume.title}
+                          {resume.id === currentResumeId ? (
+                            <span className="rounded-full border border-emerald-500/40 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-emerald-300">
+                              Currently open
+                            </span>
+                          ) : null}
                         </h3>
                         <p className="text-xs text-gray-400 md:text-sm">
                           Last updated: {new Date(resume.updated_at).toLocaleString()}
@@ -1335,15 +1378,17 @@ export default function ResumeowPage() {
                           variant="secondary"
                           size="sm"
                           disabled={isAiRunLocked}
+                          title="Open this resume in the editor"
                           className="flex-1 sm:flex-none"
                         >
-                          Edit
+                          Open
                         </Button>
                         <Button
                           onClick={() => handleDeleteResume(resume.id)}
                           variant="outline"
                           size="sm"
                           disabled={isAiRunLocked}
+                          title="Permanently delete this resume and its AI chat history"
                           className="flex-1 sm:flex-none"
                         >
                           Delete
@@ -1365,28 +1410,83 @@ export default function ResumeowPage() {
                     variant="secondary"
                     size="sm"
                     disabled={isAiRunLocked}
+                    title="View and switch between your saved resumes"
                     className="text-xs sm:text-sm"
                   >
-                    {showResumeList ? "Back" : "Resumes"}
+                    {showResumeList ? "Back" : "My Resumes"}
                   </Button>
                   <Button
                     onClick={handleNewResume}
                     variant="outline"
                     size="sm"
                     disabled={isAiRunLocked}
+                    title="Start a blank resume (your saved resumes are kept)"
                     className="text-xs sm:text-sm"
                   >
                     + New
                   </Button>
                   <Button
+                    onClick={reopenGettingStarted}
+                    variant="ghost"
+                    size="sm"
+                    title="Show the getting-started guide again"
+                    className="text-xs text-gray-400 sm:text-sm"
+                  >
+                    ? Guide
+                  </Button>
+                  <Button
                     onClick={() => setIsAiDrawerOpen(true)}
                     variant="ghost"
                     size="sm"
+                    title="Open the AI assistant chat"
                     className="ml-auto text-xs sm:text-sm lg:hidden"
                   >
-                    Open AI
+                    AI Assistant
                   </Button>
                 </div>
+
+                {showGettingStarted ? (
+                  <Card className="border-[#E84A3A]/30 bg-gradient-to-br from-gray-800/60 to-gray-900/60 p-4 md:p-5">
+                    <div className="mb-3 flex items-start justify-between gap-3">
+                      <div>
+                        <h3 className="text-base font-semibold text-white md:text-lg">
+                          Welcome to Resumeow 👋
+                        </h3>
+                        <p className="mt-1 text-xs text-gray-400 md:text-sm">
+                          Four steps from blank page to a polished, AI-reviewed PDF:
+                        </p>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={dismissGettingStarted}
+                        title="Hide this guide (reopen it anytime with ? Guide)"
+                      >
+                        Got it
+                      </Button>
+                    </div>
+                    <ol className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                      {GETTING_STARTED_STEPS.map((step, index) => (
+                        <li
+                          key={step.title}
+                          className="rounded-xl border border-gray-700/80 bg-gray-900/50 p-3"
+                        >
+                          <div className="mb-1.5 flex items-center gap-2">
+                            <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#E84A3A] text-[11px] font-bold text-white">
+                              {index + 1}
+                            </span>
+                            <p className="text-sm font-semibold text-white">
+                              {step.title}
+                            </p>
+                          </div>
+                          <p className="text-xs leading-5 text-gray-400">
+                            {step.description}
+                          </p>
+                        </li>
+                      ))}
+                    </ol>
+                  </Card>
+                ) : null}
 
                 <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center sm:gap-4">
                   <input
@@ -1408,7 +1508,14 @@ export default function ResumeowPage() {
                       onClick={handleSaveResume}
                       disabled={isSaving || isAiRunLocked}
                       size="sm"
-                      className="flex-1 bg-blue-600 text-white shadow-lg hover:bg-blue-700 hover:shadow-xl hover:shadow-blue-600/20 sm:flex-none"
+                      title={
+                        currentResumeId
+                          ? "Save your changes to this resume"
+                          : "Save this resume — saving also unlocks the AI assistant"
+                      }
+                      className={`flex-1 bg-blue-600 text-white shadow-lg hover:bg-blue-700 hover:shadow-xl hover:shadow-blue-600/20 sm:flex-none ${
+                        hasUnsavedChanges && !isSaving ? "ring-2 ring-blue-400/60" : ""
+                      }`}
                     >
                       {isSaving ? "Saving..." : "Save"}
                     </Button>
@@ -1416,19 +1523,20 @@ export default function ResumeowPage() {
                       onClick={generateResume}
                       disabled={isGenerating || cooldownSeconds > 0}
                       size="sm"
+                      title="Compile your resume with LaTeX and download it as a PDF"
                       className="flex-1 sm:flex-none"
                     >
                       {isGenerating
                         ? "Generating..."
                         : cooldownSeconds > 0
                           ? `Wait ${cooldownSeconds}s`
-                          : "Generate Resume"}
+                          : "Download PDF"}
                     </Button>
                     <Button
                       onClick={copyLatexToClipboard}
                       variant="outline"
                       size="sm"
-                      title="Copy LaTeX code to clipboard"
+                      title="Copy the LaTeX source to paste into Overleaf or any LaTeX editor"
                       className="flex-1 sm:flex-none"
                     >
                       Copy LaTeX
@@ -1458,6 +1566,36 @@ export default function ResumeowPage() {
                   </div>
                 </div>
 
+                <p className="flex items-center gap-1.5 text-xs">
+                  {hasUnsavedChanges ? (
+                    <>
+                      <span className="inline-block h-2 w-2 rounded-full bg-amber-400" />
+                      <span className="text-amber-200/90">
+                        Unsaved changes — save to keep them
+                        {currentResumeId
+                          ? " and let the AI see the latest version."
+                          : " and unlock the AI assistant."}
+                      </span>
+                    </>
+                  ) : currentResumeId ? (
+                    <>
+                      <span className="inline-block h-2 w-2 rounded-full bg-emerald-400" />
+                      <span className="text-gray-400">
+                        All changes saved
+                        {lastSaved ? ` · ${lastSaved.toLocaleString()}` : ""}. The AI
+                        assistant is ready on the right.
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="inline-block h-2 w-2 rounded-full bg-gray-500" />
+                      <span className="text-gray-400">
+                        New resume — fill in the tabs below, then Save.
+                      </span>
+                    </>
+                  )}
+                </p>
+
                 <Card className="relative overflow-hidden bg-gray-800/30 p-4 md:p-6">
                   {isAiRunLocked ? (
                     <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/50 px-6 backdrop-blur-[1px]">
@@ -1472,9 +1610,14 @@ export default function ResumeowPage() {
                     </div>
                   ) : null}
                   <div className={isAiRunLocked ? "pointer-events-none select-none opacity-80" : ""}>
-                    <h3 className="mb-2 text-left text-lg font-semibold text-white">
-                      Tabs Ordering
+                    <h3 className="mb-1 text-left text-lg font-semibold text-white">
+                      Resume Sections
                     </h3>
+                    <p className="mb-3 text-left text-xs text-gray-400 sm:text-sm">
+                      Click a tab to edit that section. Sections marked * are
+                      required; drag a tab left or right to change its order in
+                      the final PDF (Personal Info always stays first).
+                    </p>
                     <div className="mb-4 flex flex-col gap-1 sm:mb-4 sm:flex-row sm:gap-2 sm:overflow-x-auto sm:scrollbar-hide">
                     {tabs.map((tab) => (
                       <button
@@ -1528,14 +1671,7 @@ export default function ResumeowPage() {
                       </button>
                     ))}
                     </div>
-                    <p className="mb-2 text-left text-xs text-gray-400 sm:text-sm">
-                      * indicates mandatory sections
-                    </p>
-                    <p className="text-left text-xs text-gray-500 sm:text-sm">
-                      Drag the tabs above left or right to change the order of
-                      the generated resume.
-                    </p>
-                    <div className="mb-4 mt-4 border-b border-gray-700" />
+                    <div className="mb-4 mt-2 border-b border-gray-700" />
 
                     <div className="min-h-[400px]">
                       {renderActiveTab()}
@@ -1571,22 +1707,6 @@ export default function ResumeowPage() {
                   </div>
                 </Card>
 
-                <Card className="border-gray-700 bg-gray-800/50 p-4 md:p-6">
-                  <h3 className="mb-2 text-sm font-semibold text-white md:text-base">
-                    How to use
-                  </h3>
-                  <ol className="list-decimal space-y-1 pl-5 text-xs text-gray-300 md:text-sm">
-                    <li>Fill in your personal information in each tab</li>
-                    <li>Add work experience, education, skills, projects, and certifications as needed</li>
-                    <li>Save your resume to unlock the persistent AI assistant</li>
-                    <li>Chat naturally with the AI to review, tailor, or rewrite the active resume</li>
-                    <li>Generate your final PDF when you are ready</li>
-                  </ol>
-                  <p className="mt-3 text-xs text-gray-400">
-                    Resumeow still compiles your final output with LaTeX for
-                    professional formatting and quality.
-                  </p>
-                </Card>
               </div>
 
               <ResumeAiSidebar

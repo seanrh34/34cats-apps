@@ -408,9 +408,10 @@ function ResumeAiSettingsModal({
         <div className="border-b border-gray-800 px-5 py-4">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <h3 className="text-base font-semibold text-white">Settings</h3>
+              <h3 className="text-base font-semibold text-white">Job Target</h3>
               <p className="mt-1 text-xs text-gray-400">
-                Manage Resumeow AI customizations to tailor feedback and edits to your needs.
+                Give the AI a job description to aim for — reviews and edits
+                will be tailored to that role.
               </p>
             </div>
             <Button variant="ghost" size="sm" onClick={onClose}>
@@ -710,8 +711,13 @@ export function ResumeAiSidebar({
                   size="sm"
                   onClick={onOpenProfile}
                   disabled={isLocked}
+                  title={
+                    profile
+                      ? "Edit your AI profile — background facts the AI uses to keep edits truthful"
+                      : "Set up an AI profile so the AI knows your background and keeps edits truthful"
+                  }
                 >
-                  {profile ? "Profile" : "Set Up"}
+                  {profile ? "Profile" : "Set Up Profile"}
                 </Button>
                 <Button
                   variant="ghost"
@@ -723,8 +729,9 @@ export function ResumeAiSidebar({
                     setIsSettingsOpen(true);
                   }}
                   disabled={isLocked}
+                  title="Add or select a job description for the AI to tailor your resume against"
                 >
-                  Settings
+                  Job Target
                 </Button>
               </div>
               <Button variant="ghost" size="sm" onClick={onClose} className="lg:hidden">
@@ -751,7 +758,12 @@ export function ResumeAiSidebar({
 
             {messages.length === 0 && !streamingText && !activeProcessLabel && !errorMessage ? (
               <div className="rounded-2xl border border-dashed border-gray-800 bg-gray-900/50 p-4">
-                <p className="text-sm text-white">
+                <p className="text-sm leading-6 text-gray-300">
+                  Ask anything about your resume — the AI reads your saved
+                  version, explains each step while it works, and every change
+                  it applies shows a summary with an Undo button.
+                </p>
+                <p className="mt-3 text-sm text-white">
                   Try prompts like:
                 </p>
                 <div className="mt-3 flex flex-wrap gap-2">
