@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "node --import ./scripts/test-register-alias.mjs --test --experimental-strip-types lib/ai/resumeow/*.test.ts lib/ai/resumeow/tools/*.test.ts"
+    "test": "node --import ./scripts/test-register-alias.mjs --test --experimental-strip-types lib/ai/resumeow/*.test.ts lib/ai/resumeow/tools/*.test.ts lib/latex/*.test.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.8.0",
@@ -20,7 +20,8 @@
     "react-markdown": "^10.1.0",
     "remark-gfm": "^4.0.1",
     "tailwind-merge": "^3.4.0",
-    "tar-stream": "^3.1.7"
+    "tar-stream": "^3.1.7",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
@@ -31,7 +32,6 @@
     "eslint": "^9",
     "eslint-config-next": "16.0.4",
     "tailwindcss": "^4",
-    "typescript": "^5",
-    "vitest": "^4.1.10"
+    "typescript": "^5"
   }
 }

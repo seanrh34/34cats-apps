@@ -1,4 +1,4 @@
-import { ResumeData } from "@/lib/types/resume";
+import type { ResumeData } from "@/lib/types/resume";
 import { normalizeResumeData } from "@/lib/resume-data";
 
 /**

@@ -1,6 +1,5 @@
 export const OPENROUTER_CHAT_URL =
   "https://openrouter.ai/api/v1/chat/completions";
-
 export const RATE_LIMIT_CONFIG = {
   chat_requests: {
     limit: 20,

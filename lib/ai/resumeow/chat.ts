@@ -1,5 +1,7 @@
 import { classifyResumeScope } from "@/lib/ai/resumeow/guardrails-scope";
 import { evaluateSafetyGuardrails } from "@/lib/ai/resumeow/guardrails";
+import { refreshFreeModels } from "@/lib/ai/resumeow/openrouter";
+import { runTrimResumeToOnePage } from "@/lib/ai/resumeow/trim";
 import { createOrchestratorEventWriter } from "@/lib/ai/resumeow/orchestrator/events";
 import { runResumeowOrchestrator } from "@/lib/ai/resumeow/orchestrator/run";
 import {
@@ -57,7 +59,7 @@ export async function runResumeowChat(payload: {
   resume: SavedResume;
   profile: ResumeProfile | null;
   inputMessages: Array<{ role: string; content: string }>;
-  actionHint?: "review" | "edit" | null;
+  actionHint?: "review" | "edit" | "trim" | null;
   jobDescriptionId?: string | null;
   writer: WritableStreamDefaultWriter<Uint8Array>;
 }) {
@@ -69,12 +71,33 @@ export async function runResumeowChat(payload: {
     phase: "planning",
   });
 
+  // One discovery per agentic run; every model call below reuses the snapshot.
+  await refreshFreeModels();
+
   await insertAiMessage(payload.supabase, {
     userId: payload.userId,
     resumeId: payload.resume.id,
     role: "user",
     content: latestUserMessage,
   });
+
+  // "Fit to 1 Page" button: a fixed in-scope action, so guardrails and the
+  // scope classifier are skipped and the dedicated trim flow runs instead of
+  // the orchestrator.
+  if (payload.actionHint === "trim") {
+    await runTrimResumeToOnePage({
+      supabase: payload.supabase,
+      userId: payload.userId,
+      resume: payload.resume,
+      profile: payload.profile,
+      latestUserMessage,
+      writer: eventWriter,
+    });
+    return;
+  }
+
+  // Past the trim branch the hint can only be review/edit.
+  const actionHint = payload.actionHint ?? null;
 
   const safetyDecision = evaluateSafetyGuardrails({
     message: latestUserMessage,
@@ -136,7 +159,7 @@ export async function runResumeowChat(payload: {
   const scopeDecision = await classifyResumeScope({
     latestUserMessage,
     recentMessages: recentContextWithoutLatest,
-    actionHint: payload.actionHint ?? null,
+    actionHint,
     hasSelectedJobDescription: Boolean(payload.jobDescriptionId),
     activeResumeTitle: payload.resume.title,
   });
@@ -196,7 +219,7 @@ export async function runResumeowChat(payload: {
     resume: payload.resume,
     profile: payload.profile,
     latestUserMessage,
-    actionHint: payload.actionHint ?? null,
+    actionHint,
     jobDescriptionId: payload.jobDescriptionId ?? null,
     writer: eventWriter,
   });

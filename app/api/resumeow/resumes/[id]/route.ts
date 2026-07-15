@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { jsonRoute } from "@/lib/api-route";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireUser } from "@/lib/supabase/require-user";
 import {
@@ -7,10 +8,10 @@ import {
   saveResumeForUser,
 } from "@/lib/services/resume-server-service";
 
-export async function GET(
+export const GET = jsonRoute(async (
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
-) {
+) => {
   const { user, error } = await requireUser();
   if (!user) {
     return NextResponse.json({ error }, { status: 401 });
@@ -23,12 +24,12 @@ export async function GET(
   return NextResponse.json({
     resume,
   });
-}
+});
 
-export async function PATCH(
+export const PATCH = jsonRoute(async (
   request: Request,
   { params }: { params: Promise<{ id: string }> }
-) {
+) => {
   const { user, error } = await requireUser();
   if (!user) {
     return NextResponse.json({ error }, { status: 401 });
@@ -60,12 +61,12 @@ export async function PATCH(
   return NextResponse.json({
     resume,
   });
-}
+});
 
-export async function DELETE(
+export const DELETE = jsonRoute(async (
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
-) {
+) => {
   const { user, error } = await requireUser();
   if (!user) {
     return NextResponse.json({ error }, { status: 401 });
@@ -78,4 +79,4 @@ export async function DELETE(
   return NextResponse.json({
     success: true,
   });
-}
+});

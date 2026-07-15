@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { jsonRoute } from "@/lib/api-route";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireUser } from "@/lib/supabase/require-user";
 import {
@@ -6,7 +7,7 @@ import {
   saveResumeProfile,
 } from "@/lib/services/resume-server-service";
 
-export async function GET() {
+export const GET = jsonRoute(async () => {
   const { user, error } = await requireUser();
   if (!user) {
     return NextResponse.json({ error }, { status: 401 });
@@ -18,9 +19,9 @@ export async function GET() {
   return NextResponse.json({
     profile,
   });
-}
+});
 
-export async function PUT(request: Request) {
+export const PUT = jsonRoute(async (request: Request) => {
   const { user, error } = await requireUser();
   if (!user) {
     return NextResponse.json({ error }, { status: 401 });
@@ -43,4 +44,4 @@ export async function PUT(request: Request) {
   return NextResponse.json({
     profile,
   });
-}
+});
