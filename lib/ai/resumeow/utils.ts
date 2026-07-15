@@ -31,10 +31,6 @@ export function splitCommaSeparated(value: string) {
     .filter(Boolean);
 }
 
-export function toVectorString(embedding: number[]) {
-  return `[${embedding.join(",")}]`;
-}
-
 export function extractJsonFromText(text: string) {
   const trimmed = text.trim();
 
@@ -70,32 +66,24 @@ export function serializeResumeData(
   resumeData: ResumeData,
   revision?: number
 ) {
-  return JSON.stringify(
-    {
-      title,
-      revision,
-      resumeData,
-    },
-    null,
-    2
-  );
+  return JSON.stringify({
+    title,
+    revision,
+    resumeData,
+  });
 }
 
 export function serializeProfile(profile: ResumeProfile) {
-  return JSON.stringify(
-    {
-      professionalHeadline: profile.professional_headline,
-      targetRoles: profile.target_roles,
-      yearsExperience: profile.years_experience,
-      locationPreferences: profile.location_preferences,
-      coreSkills: profile.core_skills,
-      educationSummary: profile.education_summary,
-      domainFocus: profile.domain_focus,
-      achievementNotes: profile.achievement_notes,
-    },
-    null,
-    2
-  );
+  return JSON.stringify({
+    professionalHeadline: profile.professional_headline,
+    targetRoles: profile.target_roles,
+    yearsExperience: profile.years_experience,
+    locationPreferences: profile.location_preferences,
+    coreSkills: profile.core_skills,
+    educationSummary: profile.education_summary,
+    domainFocus: profile.domain_focus,
+    achievementNotes: profile.achievement_notes,
+  });
 }
 
 export function serializeSavedResume(resume: SavedResume) {

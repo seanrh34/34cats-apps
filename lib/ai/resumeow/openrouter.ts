@@ -1,9 +1,4 @@
-import {
-  OPENROUTER_CHAT_URL,
-  OPENROUTER_EMBEDDINGS_URL,
-  DEFAULT_OPENROUTER_EMBEDDING_MODEL,
-  EMBEDDING_DIMENSIONS,
-} from "@/lib/ai/resumeow/constants";
+import { OPENROUTER_CHAT_URL } from "@/lib/ai/resumeow/constants";
 
 export interface OpenRouterMessage {
   role: "system" | "user" | "assistant" | "tool";
@@ -468,48 +463,4 @@ export async function streamChatCompletion(
 
     return text;
   }, payload.modelBucket);
-}
-
-export async function createEmbeddings(values: string[]) {
-  if (values.length === 0) {
-    return [];
-  }
-
-  const response = await fetch(OPENROUTER_EMBEDDINGS_URL, {
-    method: "POST",
-    headers: getAuthHeaders(),
-    body: JSON.stringify({
-      model:
-        process.env.OPENROUTER_EMBEDDING_MODEL ??
-        DEFAULT_OPENROUTER_EMBEDDING_MODEL,
-      input: values,
-      encoding_format: "float",
-      dimensions: EMBEDDING_DIMENSIONS,
-    }),
-  });
-
-  if (!response.ok) {
-    const body = await response.text();
-    throw new OpenRouterRequestError(
-      body || `OpenRouter embeddings error ${response.status}`,
-      {
-        status: response.status,
-        responseBody: body,
-      }
-    );
-  }
-
-  const payload = await response.json();
-  return ((payload.data ?? []) as Array<{ embedding: number[] }>).map(
-    (item, index) => {
-      const embedding = item.embedding;
-      if (embedding.length !== EMBEDDING_DIMENSIONS) {
-        throw new Error(
-          `Embedding dimension mismatch for input ${index}: expected ${EMBEDDING_DIMENSIONS}, received ${embedding.length}`
-        );
-      }
-
-      return embedding;
-    }
-  );
 }

@@ -87,6 +87,14 @@ Latest user request:
 ${payload.latestUserMessage}`;
 }
 
+export function buildCitationLegend(
+  sources: Array<{ citationId: string; sourceLabel: string }>
+) {
+  return sources
+    .map((source) => `${source.citationId} = ${source.sourceLabel}`)
+    .join("; ");
+}
+
 export function buildAnalysisToolPrompt(payload: {
   toolName: string;
   purpose: string;
@@ -94,7 +102,7 @@ export function buildAnalysisToolPrompt(payload: {
   resume: SavedResume;
   profile: ResumeProfile | null;
   jobDescription: ResumeJobDescription | null;
-  contextBlock: string;
+  citationLegend: string;
   extraRules?: string[];
 }) {
   return `You are executing the Resumeow tool "${payload.toolName}".
@@ -118,8 +126,9 @@ Return JSON only with this shape:
 }
 
 Rules:
-- Only rely on the active resume, saved profile, selected job description, and retrieved evidence below.
+- Only rely on the active resume, saved profile, and selected job description below.
 - Do not invent facts.
+- Strong bullets start with a clear action verb, name the scope of work, and state the result or impact; flag vague or unsupported claims.
 - Resumeow's fixed template does not include a professional summary / summary section, so do not recommend adding one.
 - Field ordering inside sections is fixed and must not be described as an improvement.
 - Section order feedback is allowed, but Personal Info must remain first.
@@ -142,8 +151,7 @@ ${payload.profile ? serializeProfile(payload.profile) : "No saved profile."}
 Selected job description:
 ${payload.jobDescription ? payload.jobDescription.content : "No selected job description."}
 
-Retrieved evidence:
-${payload.contextBlock}`;
+Citations: use these ids in citation_ids. They refer to the material above: ${payload.citationLegend}`;
 }
 
 export function buildMutationToolPrompt(payload: {
@@ -154,7 +162,7 @@ export function buildMutationToolPrompt(payload: {
   workingResumeData: ResumeData;
   profile: ResumeProfile | null;
   jobDescription: ResumeJobDescription | null;
-  contextBlock: string;
+  citationLegend: string;
   extraRules?: string[];
 }) {
   return `You are executing the Resumeow mutation tool "${payload.toolName}".
@@ -176,8 +184,9 @@ Rules:
 - Keep section field ordering fixed. Do not change or describe within-section field order.
 - You may change sectionOrder only at the section/tab level, while keeping Personal Info first.
 - You may use facts from the user's current instruction as first-class evidence for this edit request.
-- Otherwise, only use facts present in the working resume, saved profile, selected job description, or cited evidence.
+- Otherwise, only use facts present in the working resume, saved profile, or selected job description.
 - Do not fabricate content.
+- Strong bullets start with a clear action verb, name the scope of work, and state the result or impact; avoid keyword stuffing and keep every claim defensible.
 - Do not reject a change just because the fact came directly from the user's current prompt.
 - If the user gives new concrete resume facts in this prompt, prefer incorporating them faithfully over asking them to repeat or verify them.
 - Make every safe, grounded improvement you can from the existing evidence before asking for anything else.
@@ -194,27 +203,10 @@ ${payload.profile ? serializeProfile(payload.profile) : "No saved profile."}
 Selected job description:
 ${payload.jobDescription ? payload.jobDescription.content : "No selected job description."}
 
-Retrieved evidence:
-${payload.contextBlock}
+Citations: use these ids in citation_ids. They refer to the material above: ${payload.citationLegend}
 
 User instruction:
 ${payload.userInstruction}`;
-}
-
-export function buildToolContextBlock(
-  sources: Array<{
-    citationId: string;
-    namespace: string;
-    sourceLabel: string;
-    content: string;
-  }>
-) {
-  return sources
-    .map(
-      (source) =>
-        `[${source.citationId}] ${source.sourceLabel} (${source.namespace})\n${source.content}`
-    )
-    .join("\n\n");
 }
 
 export function serializeCitations(citations: ResumeCitation[] = []) {

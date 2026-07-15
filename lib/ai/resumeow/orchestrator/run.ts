@@ -240,19 +240,26 @@ function buildToolResultPayload(payload: {
 }
 
 function serializeToolResultForModel(result: ResumeAiToolResult) {
-  return JSON.stringify(
-    {
-      toolName: result.toolName,
-      summary: result.summary,
-      citations: serializeCitations(result.citations),
-      data: result.data ?? {},
-      patchPrepared: (result.patchOperations?.length ?? 0) > 0,
-      diffItems: result.diffItems ?? [],
-      mutatedResume: result.mutatedResume ?? false,
-    },
-    null,
-    2
-  );
+  // Strip bulk payloads the orchestrator never needs: the full proposed
+  // resume lives in state, and diff before/after bodies are for the client.
+  const {
+    proposedResumeData: _proposedResumeData,
+    selectedJobDescription: _selectedJobDescription,
+    diffItems: _diffItems,
+    ...data
+  } = result.data ?? {};
+
+  return JSON.stringify({
+    toolName: result.toolName,
+    summary: result.summary,
+    citations: serializeCitations(result.citations),
+    data,
+    patchPrepared: (result.patchOperations?.length ?? 0) > 0,
+    changedSections: [
+      ...new Set((result.diffItems ?? []).map((item) => item.section)),
+    ],
+    mutatedResume: result.mutatedResume ?? false,
+  });
 }
 
 function buildFallbackAssistantText(payload: {

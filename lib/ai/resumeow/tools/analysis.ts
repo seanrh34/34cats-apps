@@ -1,6 +1,6 @@
-import { buildAnalysisToolPrompt, buildToolContextBlock } from "@/lib/ai/resumeow/orchestrator/prompts";
+import { buildAnalysisToolPrompt, buildCitationLegend } from "@/lib/ai/resumeow/orchestrator/prompts";
 import { OrchestratorToolDefinition } from "@/lib/ai/resumeow/orchestrator/types";
-import { retrieveSupportingContext } from "@/lib/ai/resumeow/rag";
+import { retrieveSupportingContext } from "@/lib/ai/resumeow/evidence";
 import {
   analysisResultSchema,
   buildWorkingResume,
@@ -66,7 +66,6 @@ async function runAnalysisTool(payload: {
         payload.context.state.workingResumeData
       ),
       profile: payload.context.state.profile,
-      query: payload.userInstruction,
       selectedJobDescriptionId: payload.context.state.selectedJobDescriptionId,
     }
   );
@@ -90,7 +89,7 @@ async function runAnalysisTool(payload: {
       ),
       profile: payload.context.state.profile,
       jobDescription: selectedJobDescription,
-      contextBlock: buildToolContextBlock(sources),
+      citationLegend: buildCitationLegend(sources),
       extraRules: payload.extraRules,
     }),
     toolName: payload.toolName,
@@ -321,7 +320,7 @@ export const analysisToolDefinitions: Array<
     name: "validate_factual_consistency",
     displayName: "Validate Factual Consistency",
     description:
-      "Validate that the active resume remains consistent with the saved profile and retrieved evidence.",
+      "Validate that the active resume remains consistent with the saved profile and selected job context.",
     category: "analysis",
     mutating: false,
     parameters: {
@@ -340,7 +339,7 @@ export const analysisToolDefinitions: Array<
         toolName: "validate_factual_consistency",
         displayName: "Validate Factual Consistency",
         purpose:
-          "Validate factual consistency between the current resume, profile, job context, and retrieved evidence.",
+          "Validate factual consistency between the current resume, profile, and selected job context.",
         fallbackSummary:
           "Validated the resume against the available evidence for factual consistency.",
         userInstruction:

@@ -7,7 +7,6 @@ import {
   saveResumeForUser,
   updateChangeSetStatus,
 } from "@/lib/services/resume-server-service";
-import { syncResumeToRag } from "@/lib/ai/resumeow/rag";
 
 export async function POST(
   _request: Request,
@@ -69,7 +68,6 @@ export async function POST(
     changeSet.id,
     "reverted"
   );
-  await syncResumeToRag(supabase, restoredResume);
 
   return NextResponse.json({
     resume: restoredResume,

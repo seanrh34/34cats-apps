@@ -183,6 +183,14 @@ export async function classifyResumeScope(payload: {
   hasSelectedJobDescription: boolean;
   activeResumeTitle: string;
 }) {
+  if (payload.actionHint && !hasObviousNonResumePivot(payload.latestUserMessage)) {
+    return {
+      decision: "in_scope",
+      reasonCode: "action_hint_precheck",
+      assistantMessage: "This request is within Resumeow's scope.",
+    } satisfies ResumeScopeDecision;
+  }
+
   if (
     hasExplicitResumeIntent(payload.latestUserMessage) &&
     !hasObviousNonResumePivot(payload.latestUserMessage)

@@ -74,12 +74,6 @@ export interface ResumeData {
   sectionOrder?: ResumeSectionId[];
 }
 
-export type RagNamespace =
-  | "user_profile_docs"
-  | "user_resume_history"
-  | "job_descriptions"
-  | "internal_resume_guides";
-
 export interface SavedResume {
   id: string;
   user_id: string;
@@ -106,7 +100,12 @@ export interface ResumeProfile {
 }
 
 export interface ResumeCitation {
-  source_type: RagNamespace | "active_resume";
+  source_type:
+    | "active_resume"
+    | "user_profile_docs"
+    | "user_resume_history"
+    | "job_descriptions"
+    | "internal_resume_guides";
   source_label: string;
   document_id?: string;
   chunk_id?: string;
@@ -128,7 +127,6 @@ export type ResumeAiToolName =
   | "check_format_constraints"
   | "score_ats_alignment"
   | "rewrite_bullet"
-  | "improve_summary_section"
   | "tailor_resume_to_job"
   | "reorder_resume_sections"
   | "apply_resume_patch";
@@ -245,33 +243,6 @@ export interface ResumeJobDescription {
   content: string;
   created_at: string;
   updated_at: string;
-}
-
-export interface RagDocument {
-  id: string;
-  user_id?: string | null;
-  resume_id?: string | null;
-  namespace: RagNamespace;
-  source_type: string;
-  source_id: string;
-  source_key: string;
-  title: string;
-  content: string;
-  metadata?: Record<string, unknown> | null;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface RagChunk {
-  id: string;
-  document_id: string;
-  user_id?: string | null;
-  resume_id?: string | null;
-  namespace: RagNamespace;
-  content: string;
-  chunk_index: number;
-  metadata?: Record<string, unknown> | null;
-  similarity?: number;
 }
 
 export interface ResumeAiRateLimitStatus {

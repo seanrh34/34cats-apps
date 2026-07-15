@@ -1,4 +1,4 @@
-import { retrieveSupportingContext } from "@/lib/ai/resumeow/rag";
+import { retrieveSupportingContext } from "@/lib/ai/resumeow/evidence";
 import { OrchestratorToolDefinition } from "@/lib/ai/resumeow/orchestrator/types";
 import {
   getJobDescriptionById,
@@ -28,6 +28,8 @@ export const contextToolDefinitions: Array<
         state.workingResumeData
       );
 
+      const resumeData = workingResume.resume_data;
+
       return {
         toolName: "get_active_resume",
         toolDisplayName: "Get Active Resume",
@@ -35,7 +37,36 @@ export const contextToolDefinitions: Array<
         data: {
           title: workingResume.title,
           revision: workingResume.resume_revision,
-          resumeData: workingResume.resume_data,
+          sectionOrder: resumeData.sectionOrder ?? [],
+          education: resumeData.education.map((entry) => ({
+            id: entry.id,
+            degree: entry.degree,
+            institution: entry.institution,
+          })),
+          experience: resumeData.experience.map((entry) => ({
+            id: entry.id,
+            position: entry.position,
+            company: entry.company,
+            bulletCount: entry.description.length,
+          })),
+          skills: resumeData.skills.map((entry) => entry.category),
+          projects: (resumeData.projects ?? []).map((entry) => ({
+            id: entry.id,
+            name: entry.name,
+          })),
+          coCurricularActivities: (resumeData.coCurricularActivities ?? []).map(
+            (entry) => ({
+              id: entry.id,
+              position: entry.position,
+              organization: entry.organization,
+            })
+          ),
+          certificationsAwards: (resumeData.certificationsAwards ?? []).map(
+            (entry) => ({
+              id: entry.id,
+              name: entry.name,
+            })
+          ),
         },
         mutatedResume: false,
       };
@@ -155,33 +186,24 @@ export const contextToolDefinitions: Array<
     name: "retrieve_relevant_experience",
     displayName: "Retrieve Relevant Experience",
     description:
-      "Retrieve the most relevant experience snippets, profile context, and prior resume evidence for the current task.",
+      "Load profile context, prior resume evidence, and the selected job description for the current task.",
     category: "context",
     mutating: false,
     parameters: {
       type: "object",
-      properties: {
-        query: {
-          type: "string",
-          description: "What evidence should be retrieved for.",
-        },
-      },
-      required: ["query"],
+      properties: {},
       additionalProperties: false,
     },
     buildStepLabel: () => "Finding the strongest relevant experience and evidence...",
-    async execute({ supabase, userId, state }, args) {
+    async execute({ supabase, userId, state }) {
       const { sources, selectedJobDescription } = await retrieveSupportingContext(
         supabase,
         {
           userId,
           activeResume: buildWorkingResume(state.baseResume, state.workingResumeData),
           profile: state.profile,
-          query:
-            typeof args.query === "string" && args.query.trim()
-              ? args.query
-              : state.latestUserMessage,
           selectedJobDescriptionId: state.selectedJobDescriptionId,
+          includeResumeHistory: true,
         }
       );
 

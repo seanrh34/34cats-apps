@@ -3,7 +3,6 @@ import {
   saveResumeForUser,
   updateChangeSetStatus,
 } from "@/lib/services/resume-server-service";
-import { syncResumeToRag } from "@/lib/ai/resumeow/rag";
 import { OrchestratorToolDefinition } from "@/lib/ai/resumeow/orchestrator/types";
 import { diffResumeData } from "@/lib/ai/resumeow/utils";
 
@@ -109,12 +108,6 @@ export const applyToolDefinition: OrchestratorToolDefinition<{ reason?: string }
         changeSet.id,
         "applied"
       );
-
-      console.info("Resumeow apply tool: syncing updated resume to RAG", {
-        resumeId: updatedResume.id,
-        revision: updatedResume.resume_revision,
-      });
-      await syncResumeToRag(supabase, updatedResume);
 
       state.workingResumeData = updatedResume.resume_data;
 

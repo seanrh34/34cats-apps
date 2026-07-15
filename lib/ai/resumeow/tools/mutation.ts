@@ -1,7 +1,7 @@
 import { z } from "zod";
-import { buildMutationToolPrompt, buildToolContextBlock } from "@/lib/ai/resumeow/orchestrator/prompts";
+import { buildMutationToolPrompt, buildCitationLegend } from "@/lib/ai/resumeow/orchestrator/prompts";
 import { OrchestratorToolDefinition } from "@/lib/ai/resumeow/orchestrator/types";
-import { retrieveSupportingContext } from "@/lib/ai/resumeow/rag";
+import { retrieveSupportingContext } from "@/lib/ai/resumeow/evidence";
 import {
   createReplaceResumePatchOperation,
   mapCitationIds,
@@ -43,7 +43,6 @@ async function runMutationTool(payload: {
         resume_data: payload.context.state.workingResumeData,
       },
       profile: payload.context.state.profile,
-      query: payload.instruction,
       selectedJobDescriptionId: payload.context.state.selectedJobDescriptionId,
     }
   );
@@ -65,7 +64,7 @@ async function runMutationTool(payload: {
       workingResumeData: payload.context.state.workingResumeData,
       profile: payload.context.state.profile,
       jobDescription: selectedJobDescription,
-      contextBlock: buildToolContextBlock(sources),
+      citationLegend: buildCitationLegend(sources),
       extraRules: payload.extraRules,
     }),
     toolName: payload.toolName,
@@ -207,42 +206,6 @@ export const mutationToolDefinitions: Array<
         extraRules: [
           entryHint,
           "Prefer improving wording and emphasis over broad structural changes unless the user explicitly asks for them.",
-        ],
-        context,
-      });
-    },
-  },
-  {
-    name: "improve_summary_section",
-    displayName: "Improve Summary Section",
-    description:
-      "Improve the resume's summary-like opening content if one exists in the current schema; otherwise return a safe no-op.",
-    category: "mutation",
-    mutating: false,
-    parameters: {
-      type: "object",
-      properties: {
-        instruction: {
-          type: "string",
-        },
-      },
-      required: ["instruction"],
-      additionalProperties: false,
-    },
-    buildStepLabel: () => "Checking whether a summary-style opening section can be improved...",
-    execute(context, args) {
-      return runMutationTool({
-        toolName: "improve_summary_section",
-        displayName: "Improve Summary Section",
-        purpose:
-          "Improve any summary-like opening content if present, while preserving the current ResumeData schema.",
-        instruction:
-          typeof args.instruction === "string" && args.instruction.trim()
-            ? args.instruction
-            : context.state.latestUserMessage,
-        extraRules: [
-          "Do not invent a brand new resume field or schema key for a summary section.",
-          "If this resume format has no dedicated summary section, keep the data unchanged and explain that limitation in the summary.",
         ],
         context,
       });

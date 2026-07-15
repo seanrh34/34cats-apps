@@ -5,7 +5,6 @@ import {
   listUserResumes,
   saveResumeForUser,
 } from "@/lib/services/resume-server-service";
-import { syncResumeToRag } from "@/lib/ai/resumeow/rag";
 
 export async function GET() {
   const { user, error } = await requireUser();
@@ -47,7 +46,6 @@ export async function POST(request: Request) {
     title,
     body.resumeData
   );
-  await syncResumeToRag(supabase, resume);
 
   return NextResponse.json({
     resume,

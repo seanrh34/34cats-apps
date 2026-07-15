@@ -4,12 +4,10 @@ import { requireUser } from "@/lib/supabase/require-user";
 import {
   countJobDescriptionsForUser,
   deleteJobDescription,
-  deleteRagDocumentBySourceKey,
   getJobDescriptionById,
   listJobDescriptions,
   saveJobDescription,
 } from "@/lib/services/resume-server-service";
-import { syncJobDescriptionToRag } from "@/lib/ai/resumeow/rag";
 
 export async function GET() {
   const { user, error } = await requireUser();
@@ -74,8 +72,6 @@ export async function POST(request: Request) {
     content: body.content,
   });
 
-  await syncJobDescriptionToRag(supabase, jobDescription);
-
   return NextResponse.json({
     jobDescription,
   });
@@ -102,7 +98,6 @@ export async function DELETE(request: Request) {
 
   const supabase = createAdminClient();
   await deleteJobDescription(supabase, user.id, id);
-  await deleteRagDocumentBySourceKey(supabase, `job-description:${id}`, user.id);
 
   return NextResponse.json({
     success: true,

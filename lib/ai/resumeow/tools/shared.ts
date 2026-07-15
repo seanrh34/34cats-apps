@@ -9,9 +9,7 @@ import type {
   OpenRouterModelBucket,
 } from "@/lib/ai/resumeow/openrouter";
 import {
-  buildProfileDocument,
   extractJsonFromText,
-  flattenResumeForText,
   normalizeAiMessageContent,
   splitCommaSeparated,
 } from "@/lib/ai/resumeow/utils";
@@ -779,15 +777,5 @@ export function createReplaceResumePatchOperation(payload: {
     reason: payload.reason,
     resume_data: payload.resumeData,
     citations: payload.citations ?? [],
-  };
-}
-
-export function buildContextSummaryBlocks(payload: {
-  activeResume: SavedResume;
-  profile: ResumeProfile | null;
-}) {
-  return {
-    activeResumeText: flattenResumeForText(payload.activeResume),
-    profileText: payload.profile ? buildProfileDocument(payload.profile) : "",
   };
 }

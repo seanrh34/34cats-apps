@@ -2,10 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireUser } from "@/lib/supabase/require-user";
 import { runResumeowChat, loadResumeAiState } from "@/lib/ai/resumeow/chat";
-import {
-  ensureInternalGuidesSeeded,
-  ensureUserResumeHistoryIndexed,
-} from "@/lib/ai/resumeow/rag";
 import { enforceRateLimit } from "@/lib/ai/resumeow/rate-limit";
 import {
   getResumeById,
@@ -68,8 +64,6 @@ export async function POST(request: NextRequest) {
   }
 
   const profile = await getResumeProfile(supabase, user.id);
-  await ensureInternalGuidesSeeded(supabase);
-  await ensureUserResumeHistoryIndexed(supabase, user.id);
 
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {

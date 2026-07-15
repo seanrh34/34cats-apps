@@ -5,7 +5,6 @@ import {
   getResumeProfile,
   saveResumeProfile,
 } from "@/lib/services/resume-server-service";
-import { syncProfileToRag } from "@/lib/ai/resumeow/rag";
 
 export async function GET() {
   const { user, error } = await requireUser();
@@ -40,8 +39,6 @@ export async function PUT(request: Request) {
     domain_focus: body.domain_focus ?? [],
     achievement_notes: body.achievement_notes ?? "",
   });
-
-  await syncProfileToRag(supabase, user.id, profile);
 
   return NextResponse.json({
     profile,
