@@ -67,7 +67,7 @@ export function CertificationsAwardsForm({
         <Button
           onClick={addEntry}
           size="sm"
-          className="bg-green-600 text-white shadow-lg hover:bg-green-700 hover:shadow-xl hover:shadow-green-600/20"
+          variant="secondary"
         >
           + Add Entry
         </Button>
@@ -104,7 +104,7 @@ export function CertificationsAwardsForm({
               <Button
                 onClick={() => removeEntry(entry.id)}
                 size="sm"
-                className="bg-red-500 text-white hover:bg-red-600"
+                variant="ghost" className="text-red-300 hover:bg-red-500/10 hover:text-red-200"
               >
                 Remove
               </Button>

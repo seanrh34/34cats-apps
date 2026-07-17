@@ -101,51 +101,11 @@ const TAB_CONFIG: Array<{
   },
 ];
 
-const TAB_COLOR_CLASSES: Record<
-  ResumeSectionId,
-  { idle: string; active: string }
-> = {
-  personal: {
-    idle: "border-sky-500/30 bg-sky-500/12 text-sky-100 hover:bg-sky-500/18",
-    active: "border-sky-400 bg-sky-500/28 text-white shadow-[0_10px_30px_rgba(14,165,233,0.22)]",
-  },
-  education: {
-    idle:
-      "border-emerald-500/30 bg-emerald-500/12 text-emerald-100 hover:bg-emerald-500/18",
-    active:
-      "border-emerald-400 bg-emerald-500/28 text-white shadow-[0_10px_30px_rgba(16,185,129,0.22)]",
-  },
-  experience: {
-    idle:
-      "border-amber-500/30 bg-amber-500/12 text-amber-100 hover:bg-amber-500/18",
-    active:
-      "border-amber-400 bg-amber-500/28 text-white shadow-[0_10px_30px_rgba(245,158,11,0.22)]",
-  },
-  cocurricular: {
-    idle:
-      "border-fuchsia-500/30 bg-fuchsia-500/12 text-fuchsia-100 hover:bg-fuchsia-500/18",
-    active:
-      "border-fuchsia-400 bg-fuchsia-500/28 text-white shadow-[0_10px_30px_rgba(217,70,239,0.22)]",
-  },
-  skills: {
-    idle:
-      "border-cyan-500/30 bg-cyan-500/12 text-cyan-100 hover:bg-cyan-500/18",
-    active:
-      "border-cyan-400 bg-cyan-500/28 text-white shadow-[0_10px_30px_rgba(6,182,212,0.22)]",
-  },
-  projects: {
-    idle:
-      "border-rose-500/30 bg-rose-500/12 text-rose-100 hover:bg-rose-500/18",
-    active:
-      "border-rose-400 bg-rose-500/28 text-white shadow-[0_10px_30px_rgba(244,63,94,0.22)]",
-  },
-  certificationsAwards: {
-    idle:
-      "border-violet-500/30 bg-violet-500/12 text-violet-100 hover:bg-violet-500/18",
-    active:
-      "border-violet-400 bg-violet-500/28 text-white shadow-[0_10px_30px_rgba(139,92,246,0.22)]",
-  },
-};
+const TAB_CLASSES = {
+  idle: "border-transparent bg-transparent text-gray-400 hover:bg-white/[0.05] hover:text-white",
+  active:
+    "border-[#E84A3A]/40 bg-[#E84A3A]/10 text-white",
+} as const;
 
 function isBlank(value: string | undefined | null) {
   return !value?.trim();
@@ -1248,7 +1208,7 @@ export default function ResumeowPage() {
   const visibleChangeSets = changeSets;
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black">
+    <div className="min-h-screen bg-[#090b10] text-gray-100">
       {toast ? (
         <button
           type="button"
@@ -1317,29 +1277,41 @@ export default function ResumeowPage() {
         isSavingJobDescription={isSavingJobDescription}
       />
 
-      <div className="container mx-auto px-4 py-12">
+      <div className="mx-auto w-full max-w-[1560px] px-3 py-5 sm:px-5 sm:py-7 lg:px-8">
         {!showResumeList ? (
-          <div className="mb-6 text-center md:mb-8">
-            <h1 className="mb-3 px-2 text-3xl font-bold text-white md:mb-4 md:text-4xl lg:text-5xl">
-              Resumeow
-            </h1>
-            <p className="mx-auto mb-2 max-w-3xl px-4 text-base text-gray-300 md:text-lg lg:text-xl">
-              Create professional resumes with LaTeX quality, then use AI to
-              review and draft grounded improvements before you generate the final PDF.
-            </p>
-            {lastSaved ? (
-              <p className="px-2 text-xs text-gray-400 md:text-sm">
-                Last saved: {lastSaved.toLocaleString()}
+          <div className="mb-5 flex min-w-0 items-end justify-between gap-4 border-b border-white/[0.07] pb-5">
+            <div className="min-w-0">
+              <p className="mb-1 text-xs font-medium uppercase tracking-[0.18em] text-[#f07a6e]">Resume builder</p>
+              <h1 className="truncate text-2xl font-semibold tracking-tight text-white sm:text-3xl">Resumeow</h1>
+              <p className="mt-1 max-w-2xl text-sm leading-6 text-gray-400">
+                Build a polished resume, then refine it naturally with AI.
               </p>
-            ) : null}
+            </div>
+            <Button
+              onClick={() => setIsAiDrawerOpen(true)}
+              size="sm"
+              className="xl:hidden"
+            >
+              Chat with AI
+            </Button>
           </div>
         ) : null}
 
         {showResumeList ? (
           <div className="mx-auto max-w-4xl">
-            <h2 className="mb-4 px-2 text-xl font-bold text-white md:mb-6 md:text-2xl">
-              Your Saved Resumes
-            </h2>
+            <div className="mb-4 flex items-center justify-between gap-3 px-2 md:mb-6">
+              <h2 className="text-xl font-bold text-white md:text-2xl">
+                Your Saved Resumes
+              </h2>
+              <Button
+                onClick={() => setShowResumeList(false)}
+                variant="secondary"
+                size="sm"
+                title="Back to the resume editor"
+              >
+                Back to Editor
+              </Button>
+            </div>
             {savedResumes.length === 0 ? (
               <Card className="bg-gray-800/30 p-8 text-center">
                 <p className="mb-4 text-gray-400">No saved resumes yet.</p>
@@ -1359,7 +1331,7 @@ export default function ResumeowPage() {
                         <h3 className="mb-2 flex items-center gap-2 text-lg font-semibold text-white md:text-xl">
                           {resume.title}
                           {resume.id === currentResumeId ? (
-                            <span className="rounded-full border border-emerald-500/40 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-emerald-300">
+                            <span className="rounded-full border border-[#E84A3A]/40 bg-[#E84A3A]/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-[#f0968c]">
                               Currently open
                             </span>
                           ) : null}
@@ -1385,11 +1357,11 @@ export default function ResumeowPage() {
                         </Button>
                         <Button
                           onClick={() => handleDeleteResume(resume.id)}
-                          variant="outline"
+                          variant="ghost"
                           size="sm"
                           disabled={isAiRunLocked}
                           title="Permanently delete this resume and its AI chat history"
-                          className="flex-1 sm:flex-none"
+                          className="flex-1 text-red-300 hover:bg-red-500/10 hover:text-red-200 sm:flex-none"
                         >
                           Delete
                         </Button>
@@ -1402,9 +1374,9 @@ export default function ResumeowPage() {
           </div>
         ) : (
           <div className="mx-auto max-w-7xl">
-            <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_420px] lg:items-start">
+            <div className="grid min-w-0 gap-5 xl:grid-cols-[minmax(0,1fr)_390px] xl:items-start 2xl:grid-cols-[minmax(0,1fr)_420px]">
               <div className="min-w-0 space-y-4 md:space-y-6">
-                <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                <div className="flex min-w-0 flex-wrap items-center gap-2">
                   <Button
                     onClick={() => setShowResumeList(!showResumeList)}
                     variant="secondary"
@@ -1417,7 +1389,7 @@ export default function ResumeowPage() {
                   </Button>
                   <Button
                     onClick={handleNewResume}
-                    variant="outline"
+                    variant="secondary"
                     size="sm"
                     disabled={isAiRunLocked}
                     title="Start a blank resume (your saved resumes are kept)"
@@ -1439,14 +1411,14 @@ export default function ResumeowPage() {
                     variant="ghost"
                     size="sm"
                     title="Open the AI assistant chat"
-                    className="ml-auto text-xs sm:text-sm lg:hidden"
+                    className="ml-auto text-xs sm:text-sm xl:hidden"
                   >
                     AI Assistant
                   </Button>
                 </div>
 
                 {showGettingStarted ? (
-                  <Card className="border-[#E84A3A]/30 bg-gradient-to-br from-gray-800/60 to-gray-900/60 p-4 md:p-5">
+                  <Card className="border-[#E84A3A]/20 bg-[#E84A3A]/[0.035] p-4 md:p-5">
                     <div className="mb-3 flex items-start justify-between gap-3">
                       <div>
                         <h3 className="text-base font-semibold text-white md:text-lg">
@@ -1465,11 +1437,11 @@ export default function ResumeowPage() {
                         Got it
                       </Button>
                     </div>
-                    <ol className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                    <ol className="grid gap-2 sm:grid-cols-2 2xl:grid-cols-4">
                       {GETTING_STARTED_STEPS.map((step, index) => (
                         <li
                           key={step.title}
-                          className="rounded-xl border border-gray-700/80 bg-gray-900/50 p-3"
+                          className="rounded-xl border border-white/[0.07] bg-black/15 p-3"
                         >
                           <div className="mb-1.5 flex items-center gap-2">
                             <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#E84A3A] text-[11px] font-bold text-white">
@@ -1488,7 +1460,8 @@ export default function ResumeowPage() {
                   </Card>
                 ) : null}
 
-                <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center sm:gap-4">
+                <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] p-3 sm:p-4">
+                  <div className="flex min-w-0 flex-col gap-3 lg:flex-row lg:items-center">
                   <input
                     type="text"
                     value={resumeTitle}
@@ -1500,10 +1473,10 @@ export default function ResumeowPage() {
                       setResumeTitle(e.target.value);
                     }}
                     disabled={isAiRunLocked}
-                    className="w-full rounded-lg border border-gray-700 bg-gray-800/50 px-3 py-2 text-base text-white sm:max-w-md sm:text-lg md:text-xl"
+                    className="h-11 min-w-0 flex-1 rounded-xl border border-white/10 bg-black/20 px-3.5 text-base font-medium text-white outline-none transition-colors placeholder:text-gray-600 focus:border-[#E84A3A]/60 focus:ring-2 focus:ring-[#E84A3A]/20 sm:text-lg"
                     placeholder="Resume Title"
                   />
-                  <div className="flex gap-2">
+                  <div className="flex min-w-0 flex-wrap gap-2">
                     <Button
                       onClick={handleSaveResume}
                       disabled={isSaving || isAiRunLocked}
@@ -1513,8 +1486,10 @@ export default function ResumeowPage() {
                           ? "Save your changes to this resume"
                           : "Save this resume — saving also unlocks the AI assistant"
                       }
-                      className={`flex-1 bg-blue-600 text-white shadow-lg hover:bg-blue-700 hover:shadow-xl hover:shadow-blue-600/20 sm:flex-none ${
-                        hasUnsavedChanges && !isSaving ? "ring-2 ring-blue-400/60" : ""
+                      className={`flex-1 sm:flex-none ${
+                        hasUnsavedChanges && !isSaving
+                          ? "ring-2 ring-[#E84A3A]/60 ring-offset-2 ring-offset-gray-900"
+                          : ""
                       }`}
                     >
                       {isSaving ? "Saving..." : "Save"}
@@ -1522,9 +1497,10 @@ export default function ResumeowPage() {
                     <Button
                       onClick={generateResume}
                       disabled={isGenerating || cooldownSeconds > 0}
+                      variant="secondary"
                       size="sm"
                       title="Compile your resume with LaTeX and download it as a PDF"
-                      className="flex-1 sm:flex-none"
+                      className="flex-1 whitespace-nowrap sm:flex-none"
                     >
                       {isGenerating
                         ? "Generating..."
@@ -1534,10 +1510,10 @@ export default function ResumeowPage() {
                     </Button>
                     <Button
                       onClick={copyLatexToClipboard}
-                      variant="outline"
+                      variant="secondary"
                       size="sm"
                       title="Copy the LaTeX source to paste into Overleaf or any LaTeX editor"
-                      className="flex-1 sm:flex-none"
+                      className="flex-1 whitespace-nowrap sm:flex-none"
                     >
                       Copy LaTeX
                     </Button>
@@ -1556,21 +1532,22 @@ export default function ResumeowPage() {
                         void handleSendMessage(undefined, "trim");
                       }}
                       disabled={isAiRunLocked}
-                      variant="outline"
+                      variant="secondary"
                       size="sm"
                       title="Let the AI compile your resume and trim it down to one PDF page"
-                      className="flex-1 border-[#E84A3A]/50 text-[#E84A3A] hover:bg-[#E84A3A]/10 sm:flex-none"
+                      className="flex-1 whitespace-nowrap border-[#E84A3A]/30 text-[#f0968c] hover:bg-[#E84A3A]/10 hover:text-white sm:flex-none"
                     >
                       Fit to 1 Page
                     </Button>
                   </div>
+                  </div>
                 </div>
 
-                <p className="flex items-center gap-1.5 text-xs">
+                <p className="mt-3 flex items-start gap-2 text-xs leading-5">
                   {hasUnsavedChanges ? (
                     <>
-                      <span className="inline-block h-2 w-2 rounded-full bg-amber-400" />
-                      <span className="text-amber-200/90">
+                      <span className="mt-1.5 inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-[#E84A3A]" />
+                      <span className="text-gray-400">
                         Unsaved changes — save to keep them
                         {currentResumeId
                           ? " and let the AI see the latest version."
@@ -1579,7 +1556,7 @@ export default function ResumeowPage() {
                     </>
                   ) : currentResumeId ? (
                     <>
-                      <span className="inline-block h-2 w-2 rounded-full bg-emerald-400" />
+                      <span className="mt-1.5 inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-gray-500" />
                       <span className="text-gray-400">
                         All changes saved
                         {lastSaved ? ` · ${lastSaved.toLocaleString()}` : ""}. The AI
@@ -1588,7 +1565,7 @@ export default function ResumeowPage() {
                     </>
                   ) : (
                     <>
-                      <span className="inline-block h-2 w-2 rounded-full bg-gray-500" />
+                      <span className="mt-1.5 inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-gray-600" />
                       <span className="text-gray-400">
                         New resume — fill in the tabs below, then Save.
                       </span>
@@ -1596,7 +1573,7 @@ export default function ResumeowPage() {
                   )}
                 </p>
 
-                <Card className="relative overflow-hidden bg-gray-800/30 p-4 md:p-6">
+                <Card className="relative min-w-0 overflow-hidden bg-white/[0.025] p-3 sm:p-5 md:p-6">
                   {isAiRunLocked ? (
                     <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/50 px-6 backdrop-blur-[1px]">
                       <div className="max-w-sm rounded-xl border border-gray-700 bg-gray-900/90 px-4 py-3 text-center">
@@ -1610,15 +1587,11 @@ export default function ResumeowPage() {
                     </div>
                   ) : null}
                   <div className={isAiRunLocked ? "pointer-events-none select-none opacity-80" : ""}>
-                    <h3 className="mb-1 text-left text-lg font-semibold text-white">
-                      Resume Sections
-                    </h3>
-                    <p className="mb-3 text-left text-xs text-gray-400 sm:text-sm">
-                      Click a tab to edit that section. Sections marked * are
-                      required; drag a tab left or right to change its order in
-                      the final PDF (Personal Info always stays first).
+                    <h2 className="mb-1 text-left text-lg font-semibold text-white">Edit resume</h2>
+                    <p className="mb-3 text-left text-xs leading-5 text-gray-500 sm:text-sm">
+                      Choose a section below. Drag optional sections to reorder the PDF.
                     </p>
-                    <div className="mb-4 flex flex-col gap-1 sm:mb-4 sm:flex-row sm:gap-2 sm:overflow-x-auto sm:scrollbar-hide">
+                    <div className="-mx-1 mb-4 flex snap-x gap-1 overflow-x-auto px-1 pb-2">
                     {tabs.map((tab) => (
                       <button
                         key={tab.id}
@@ -1655,10 +1628,7 @@ export default function ResumeowPage() {
                         }}
                         onDragEnd={() => setDraggedTabId(null)}
                         disabled={isAiRunLocked}
-                        className={`rounded-xl border px-3 py-2.5 text-left text-sm font-medium whitespace-nowrap transition-all sm:px-3 sm:py-2 md:text-sm ${tab.id !== "personal" && !isAiRunLocked ? "cursor-grab active:cursor-grabbing" : ""} ${draggedTabId === tab.id ? "scale-[1.02] shadow-2xl ring-2 ring-white/15" : ""} ${activeTab === tab.id
-                            ? TAB_COLOR_CLASSES[tab.id].active
-                            : TAB_COLOR_CLASSES[tab.id].idle
-                          }`}
+                        className={`snap-start rounded-xl border px-3 py-2.5 text-left text-sm font-medium whitespace-nowrap transition-colors ${tab.id !== "personal" && !isAiRunLocked ? "cursor-grab active:cursor-grabbing" : ""} ${draggedTabId === tab.id ? "ring-2 ring-white/15" : ""} ${activeTab === tab.id ? TAB_CLASSES.active : TAB_CLASSES.idle}`}
                         title={
                           tab.id === "personal"
                             ? "Personal Info stays first"
@@ -1671,9 +1641,9 @@ export default function ResumeowPage() {
                       </button>
                     ))}
                     </div>
-                    <div className="mb-4 mt-2 border-b border-gray-700" />
+                    <div className="mb-4 border-b border-white/[0.07]" />
 
-                    <div className="min-h-[400px]">
+                    <div className="min-h-[360px] min-w-0">
                       {renderActiveTab()}
                     </div>
 

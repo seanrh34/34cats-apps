@@ -103,7 +103,7 @@ export function CoCurricularForm({ data, onChange }: CoCurricularFormProps) {
 
       <div className="flex justify-between items-center">
         <h3 className="text-lg font-semibold text-white">Co-Curricular Activities</h3>
-        <Button onClick={addActivity} size="sm" className="bg-green-600 hover:bg-green-700 text-white shadow-lg hover:shadow-xl hover:shadow-green-600/20">
+        <Button onClick={addActivity} size="sm" variant="secondary">
           + Add Activity
         </Button>
       </div>
@@ -134,7 +134,7 @@ export function CoCurricularForm({ data, onChange }: CoCurricularFormProps) {
               <Button
                 onClick={() => removeActivity(activity.id)}
                 size="sm"
-                className="bg-red-500 hover:bg-red-600 text-white"
+                variant="ghost" className="text-red-300 hover:bg-red-500/10 hover:text-red-200"
               >
                 Remove
               </Button>
@@ -199,7 +199,7 @@ export function CoCurricularForm({ data, onChange }: CoCurricularFormProps) {
               <Button
                 onClick={() => addBullet(activity.id)}
                 size="sm"
-                className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl hover:shadow-blue-600/20"
+                variant="secondary"
               >
                 + Add Bullet
               </Button>

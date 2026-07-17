@@ -76,49 +76,11 @@ interface ToolMessageMetadata {
   diffItems?: ResumeChangeSet["diff_items"];
 }
 
-const PROCESS_PHASE_STYLES: Record<
-  ResumeAiProcessPhase,
-  {
-    badge: string;
-    activeDot: string;
-    idleDot: string;
-    activeText: string;
-    idleText: string;
-    label: string;
-  }
-> = {
-  planning: {
-    badge: "border-sky-500/30 bg-sky-500/10 text-sky-200",
-    activeDot: "bg-sky-400",
-    idleDot: "bg-sky-900/80",
-    activeText: "text-sky-100",
-    idleText: "text-sky-200/70",
-    label: "PLAN",
-  },
-  context: {
-    badge: "border-emerald-500/30 bg-emerald-500/10 text-emerald-200",
-    activeDot: "bg-emerald-400",
-    idleDot: "bg-emerald-900/80",
-    activeText: "text-emerald-100",
-    idleText: "text-emerald-200/70",
-    label: "CTX",
-  },
-  reasoning: {
-    badge: "border-amber-500/30 bg-amber-500/10 text-amber-200",
-    activeDot: "bg-amber-400",
-    idleDot: "bg-amber-900/80",
-    activeText: "text-amber-100",
-    idleText: "text-amber-200/70",
-    label: "RSN",
-  },
-  apply: {
-    badge: "border-rose-500/30 bg-rose-500/10 text-rose-200",
-    activeDot: "bg-rose-400",
-    idleDot: "bg-rose-900/80",
-    activeText: "text-rose-100",
-    idleText: "text-rose-200/70",
-    label: "APY",
-  },
+const PROCESS_PHASE_LABELS: Record<ResumeAiProcessPhase, string> = {
+  planning: "Planning",
+  context: "Reading",
+  reasoning: "Thinking",
+  apply: "Applying",
 };
 
 function renderLineBreakTokens(node: ReactNode): ReactNode {
@@ -524,8 +486,8 @@ function ChatComposer({
   };
 
   return (
-    <div className="border-t border-gray-800 bg-gray-950/90 px-4 py-4">
-      <div className="rounded-3xl border border-gray-800 bg-gray-900/90 p-3 shadow-sm">
+    <div className="border-t border-white/[0.07] bg-[#0b0d12]/95 p-3 sm:p-4">
+      <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-3 shadow-sm focus-within:border-[#E84A3A]/40 focus-within:ring-2 focus-within:ring-[#E84A3A]/10">
         <textarea
           value={draftInput}
           onChange={(event) => setDraftInput(event.target.value)}
@@ -536,11 +498,11 @@ function ChatComposer({
               : "Ask for feedback, tailoring, or changes to the current resume..."
           }
           disabled={chatDisabled || isStreaming}
-          className="min-h-28 w-full resize-none bg-transparent px-1 py-1 text-sm leading-6 text-white placeholder:text-gray-500 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+          className="min-h-20 w-full resize-none bg-transparent px-1 py-1 text-sm leading-6 text-white placeholder:text-gray-600 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
         />
-        <div className="mt-3 flex items-center justify-between gap-3">
-          <p className="text-xs text-gray-500">
-            Press Enter to send, Shift+Enter for a new line.
+        <div className="mt-2 flex items-center justify-between gap-3">
+          <p className="text-[11px] text-gray-600">
+            Enter to send · Shift+Enter for a new line
           </p>
           <Button
             onClick={() => void handleSend(null)}
@@ -689,23 +651,22 @@ export function ResumeAiSidebar({
   }, [resumeId, messages, streamingText, changeSets]);
 
   const containerClassName = isOpen
-    ? "fixed inset-y-0 right-0 z-40 w-full max-w-md translate-x-0 border-l border-gray-800 bg-gray-950/95 shadow-2xl shadow-black/30 backdrop-blur transition-transform lg:sticky lg:top-20 lg:h-[calc(100vh-5rem)] lg:w-auto lg:max-w-none lg:translate-x-0 lg:overflow-hidden lg:rounded-3xl lg:border"
-    : "fixed inset-y-0 right-0 z-40 w-full max-w-md translate-x-full border-l border-gray-800 bg-gray-950/95 shadow-2xl shadow-black/30 backdrop-blur transition-transform lg:sticky lg:top-20 lg:h-[calc(100vh-5rem)] lg:w-auto lg:max-w-none lg:translate-x-0 lg:overflow-hidden lg:rounded-3xl lg:border";
+    ? "fixed inset-0 z-40 w-full translate-x-0 bg-[#0b0d12] shadow-2xl transition-transform sm:left-auto sm:max-w-md sm:border-l sm:border-white/10 xl:sticky xl:top-20 xl:h-[calc(100vh-6rem)] xl:w-auto xl:max-w-none xl:translate-x-0 xl:overflow-hidden xl:rounded-2xl xl:border"
+    : "fixed inset-0 z-40 w-full translate-x-full bg-[#0b0d12] shadow-2xl transition-transform sm:left-auto sm:max-w-md sm:border-l sm:border-white/10 xl:sticky xl:top-20 xl:h-[calc(100vh-6rem)] xl:w-auto xl:max-w-none xl:translate-x-0 xl:overflow-hidden xl:rounded-2xl xl:border";
 
   return (
     <aside className={containerClassName}>
       <div className="flex h-full flex-col overflow-hidden">
-        <div className="border-b border-gray-800 px-4 py-4">
+        <div className="border-b border-white/[0.07] px-4 py-3.5">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <h2 className="text-lg font-semibold text-white">Resumeow AI</h2>
-              <p className="mt-1 text-xs leading-5 text-gray-400">
-                Chat naturally. I&apos;ll interpret your prompt, review the current
-                resume, and draft grounded changes when needed.
+              <h2 className="text-base font-semibold text-white">Resumeow AI</h2>
+              <p className="mt-1 text-xs leading-5 text-gray-500">
+                Ask, review, and refine your resume naturally.
               </p>
             </div>
             <div className="flex items-start gap-2">
-              <div className="flex flex-col gap-2">
+              <div className="flex gap-1">
                 <Button
                   variant="ghost"
                   size="sm"
@@ -734,7 +695,7 @@ export function ResumeAiSidebar({
                   Job Target
                 </Button>
               </div>
-              <Button variant="ghost" size="sm" onClick={onClose} className="lg:hidden">
+              <Button variant="ghost" size="sm" onClick={onClose} className="xl:hidden">
                 Close
               </Button>
             </div>
@@ -816,7 +777,6 @@ export function ResumeAiSidebar({
                         <div className="space-y-2">
                           {processUpdates.map((update, index) => {
                             const isLatest = index === processUpdates.length - 1;
-                            const phaseStyle = PROCESS_PHASE_STYLES[update.phase];
 
                             return (
                               <div
@@ -828,22 +788,24 @@ export function ResumeAiSidebar({
                                 }`}
                               >
                                 <span
-                                  className={`mt-0.5 inline-flex shrink-0 items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold tracking-[0.18em] ${phaseStyle.badge}`}
+                                  className={`mt-0.5 inline-flex shrink-0 items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
+                                    isLatest
+                                      ? "border-[#E84A3A]/40 bg-[#E84A3A]/10 text-[#f0968c]"
+                                      : "border-gray-800 bg-gray-900 text-gray-500"
+                                  }`}
                                 >
-                                  {phaseStyle.label}
+                                  {PROCESS_PHASE_LABELS[update.phase]}
                                 </span>
                                 <span
                                   className={`mt-2 inline-block h-1.5 w-1.5 shrink-0 rounded-full ${
                                     isLatest
-                                      ? `${phaseStyle.activeDot} animate-pulse`
-                                      : phaseStyle.idleDot
+                                      ? "animate-pulse bg-[#E84A3A]"
+                                      : "bg-gray-700"
                                   }`}
                                 />
                                 <span
                                   className={
-                                    isLatest
-                                      ? phaseStyle.activeText
-                                      : phaseStyle.idleText
+                                    isLatest ? "text-gray-100" : "text-gray-500"
                                   }
                                 >
                                   {update.label}

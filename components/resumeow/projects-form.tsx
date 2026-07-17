@@ -166,7 +166,7 @@ export function ProjectsForm({ data, onChange }: ProjectsFormProps) {
 
       <div className="flex justify-between items-center">
         <h3 className="text-lg font-semibold text-white">Projects</h3>
-        <Button onClick={addProject} size="sm" className="bg-green-600 hover:bg-green-700 text-white shadow-lg hover:shadow-xl hover:shadow-green-600/20">
+        <Button onClick={addProject} size="sm" variant="secondary">
           + Add Project
         </Button>
       </div>
@@ -197,7 +197,7 @@ export function ProjectsForm({ data, onChange }: ProjectsFormProps) {
               <Button
                 onClick={() => removeProject(project.id)}
                 size="sm"
-                className="bg-red-500 hover:bg-red-600 text-white"
+                variant="ghost" className="text-red-300 hover:bg-red-500/10 hover:text-red-200"
               >
                 Remove
               </Button>
@@ -271,7 +271,7 @@ export function ProjectsForm({ data, onChange }: ProjectsFormProps) {
               <Button
                 onClick={() => addBullet(project.id)}
                 size="sm"
-                className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl hover:shadow-blue-600/20"
+                variant="secondary"
               >
                 + Add Bullet
               </Button>
@@ -312,7 +312,7 @@ export function ProjectsForm({ data, onChange }: ProjectsFormProps) {
                     <Button
                       onClick={() => removeBullet(project.id, bulletIndex)}
                       size="sm"
-                      className="bg-red-500 hover:bg-red-600 text-white"
+                      variant="ghost" className="text-red-300 hover:bg-red-500/10 hover:text-red-200"
                     >
                       Remove
                     </Button>
