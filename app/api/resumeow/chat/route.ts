@@ -3,8 +3,10 @@ import { jsonRoute } from "@/lib/api-route";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireUser } from "@/lib/supabase/require-user";
 import { runResumeowChat, loadResumeAiState } from "@/lib/ai/resumeow/chat";
+import { DEFAULT_AI_REQUEST_QUOTA } from "@/lib/ai/resumeow/constants";
 import { enforceRateLimit } from "@/lib/ai/resumeow/rate-limit";
 import {
+  consumeAiQuota,
   getResumeById,
   getResumeProfile,
 } from "@/lib/services/resume-server-service";
@@ -62,6 +64,18 @@ export const POST = jsonRoute(async (request: NextRequest) => {
   const resume = await getResumeById(supabase, user.id, body.resumeId);
   if (!resume) {
     return NextResponse.json({ error: "Resume not found" }, { status: 404 });
+  }
+
+  const quota = await consumeAiQuota(supabase, user.id, DEFAULT_AI_REQUEST_QUOTA);
+  if (!quota.allowed) {
+    return NextResponse.json(
+      {
+        error:
+          "You've used all your AI requests. Your balance will be topped up by the site owner — non-AI features like editing and PDF download still work.",
+        aiRequestsRemaining: 0,
+      },
+      { status: 429 }
+    );
   }
 
   const profile = await getResumeProfile(supabase, user.id);

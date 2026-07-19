@@ -57,6 +57,7 @@ interface ResumeAiSidebarProps {
   selectedJobDescriptionId?: string | null;
   onSelectedJobDescriptionChange: (value: string) => void;
   rateLimitMessage?: string | null;
+  aiRequestsRemaining?: number | null;
   activeProcessLabel?: string | null;
   processUpdates?: ProcessUpdate[];
   errorMessage?: string | null;
@@ -539,6 +540,7 @@ export function ResumeAiSidebar({
   selectedJobDescriptionId,
   onSelectedJobDescriptionChange,
   rateLimitMessage,
+  aiRequestsRemaining = null,
   activeProcessLabel,
   processUpdates = [],
   errorMessage,
@@ -664,6 +666,18 @@ export function ResumeAiSidebar({
               <p className="mt-1 text-xs leading-5 text-gray-500">
                 Ask, review, and refine your resume naturally.
               </p>
+              {typeof aiRequestsRemaining === "number" ? (
+                <p
+                  className={`mt-1 text-[11px] font-medium ${
+                    aiRequestsRemaining === 0 ? "text-[#f0968c]" : "text-gray-500"
+                  }`}
+                  title="Each message to the AI uses one request. The site owner can top up your balance."
+                >
+                  {aiRequestsRemaining === 0
+                    ? "No AI requests left — ask the site owner for a top-up."
+                    : `${aiRequestsRemaining} AI request${aiRequestsRemaining === 1 ? "" : "s"} left`}
+                </p>
+              ) : null}
             </div>
             <div className="flex items-start gap-2">
               <div className="flex gap-1">

@@ -317,6 +317,9 @@ export default function ResumeowPage() {
     []
   );
   const [selectedJobDescriptionId, setSelectedJobDescriptionId] = useState("");
+  const [aiRequestsRemaining, setAiRequestsRemaining] = useState<number | null>(
+    null
+  );
   const [streamingText, setStreamingText] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
   const [rateLimitMessage, setRateLimitMessage] = useState<string | null>(null);
@@ -519,6 +522,9 @@ export default function ResumeowPage() {
       setMessages(payload.messages);
       setChangeSets(payload.changeSets);
       setJobDescriptions(payload.jobDescriptions);
+      if (typeof payload.aiRequestsRemaining === "number") {
+        setAiRequestsRemaining(payload.aiRequestsRemaining);
+      }
       if (options?.scrollToLatest) {
         setChatScrollRequestKey((current) => current + 1);
       }
@@ -1719,6 +1725,7 @@ export default function ResumeowPage() {
                   setSelectedJobDescriptionId(value);
                 }}
                 rateLimitMessage={rateLimitMessage}
+                aiRequestsRemaining={aiRequestsRemaining}
                 activeProcessLabel={activeProcessLabel}
                 processUpdates={processUpdates}
                 scrollToLatestSignal={chatScrollRequestKey}

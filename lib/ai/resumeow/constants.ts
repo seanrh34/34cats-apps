@@ -25,6 +25,10 @@ export const RATE_LIMIT_CONFIG = {
 
 export const MAX_ORCHESTRATOR_STEPS = 5;
 
+// Starting AI request balance for new users. Adjust an individual user's
+// balance by editing `remaining` in the resume_ai_quotas table on Supabase.
+export const DEFAULT_AI_REQUEST_QUOTA = 30;
+
 export const MAX_HISTORY_MESSAGES = 8;
 
 export const EXPLICIT_OR_INAPPROPRIATE_KEYWORDS = [

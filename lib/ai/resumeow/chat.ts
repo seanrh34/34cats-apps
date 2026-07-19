@@ -4,7 +4,9 @@ import { refreshFreeModels } from "@/lib/ai/resumeow/openrouter";
 import { runTrimResumeToOnePage } from "@/lib/ai/resumeow/trim";
 import { createOrchestratorEventWriter } from "@/lib/ai/resumeow/orchestrator/events";
 import { runResumeowOrchestrator } from "@/lib/ai/resumeow/orchestrator/run";
+import { DEFAULT_AI_REQUEST_QUOTA } from "@/lib/ai/resumeow/constants";
 import {
+  getAiQuotaRemaining,
   insertAiMessage,
   listAiMessages,
   listChangeSets,
@@ -39,17 +41,21 @@ export async function loadResumeAiState(
   messages: ResumeAiMessage[];
   changeSets: ResumeChangeSet[];
   jobDescriptions: ResumeJobDescription[];
+  aiRequestsRemaining: number;
 }> {
-  const [messages, changeSets, jobDescriptions] = await Promise.all([
-    listAiMessages(supabase, userId, resumeId),
-    listChangeSets(supabase, userId, resumeId),
-    listJobDescriptions(supabase, userId),
-  ]);
+  const [messages, changeSets, jobDescriptions, aiRequestsRemaining] =
+    await Promise.all([
+      listAiMessages(supabase, userId, resumeId),
+      listChangeSets(supabase, userId, resumeId),
+      listJobDescriptions(supabase, userId),
+      getAiQuotaRemaining(supabase, userId, DEFAULT_AI_REQUEST_QUOTA),
+    ]);
 
   return {
     messages,
     changeSets,
     jobDescriptions,
+    aiRequestsRemaining,
   };
 }
 

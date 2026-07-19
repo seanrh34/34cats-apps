@@ -58,6 +58,7 @@ export async function fetchResumeAiState(resumeId: string) {
     messages: ResumeAiMessage[];
     changeSets: ResumeChangeSet[];
     jobDescriptions: ResumeJobDescription[];
+    aiRequestsRemaining: number;
   }>(response);
 }
 

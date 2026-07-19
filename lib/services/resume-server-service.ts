@@ -443,3 +443,37 @@ export async function deleteJobDescription(
   assertNoError(error, "Failed to delete job description");
 }
 
+
+export async function consumeAiQuota(
+  supabase: DatabaseClient,
+  userId: string,
+  defaultQuota: number
+): Promise<{ allowed: boolean; remaining: number }> {
+  const { data, error } = await supabase.rpc("consume_resume_ai_quota", {
+    p_user_id: userId,
+    p_default: defaultQuota,
+  });
+
+  assertNoError(error, "Failed to consume AI quota");
+  const row = ((data ?? []) as Array<{ allowed: boolean; remaining: number }>)[0];
+  return {
+    allowed: Boolean(row?.allowed),
+    remaining: Math.max(0, Number(row?.remaining ?? 0)),
+  };
+}
+
+export async function getAiQuotaRemaining(
+  supabase: DatabaseClient,
+  userId: string,
+  defaultQuota: number
+): Promise<number> {
+  const { data, error } = await supabase
+    .from("resume_ai_quotas")
+    .select("remaining")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  assertNoError(error, "Failed to fetch AI quota");
+  // No row yet means the user has never spent a request: full default balance.
+  return data ? Math.max(0, Number(data.remaining ?? 0)) : defaultQuota;
+}
