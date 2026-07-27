@@ -1,123 +1,76 @@
 # 34cats Apps
 
-A modern Next.js application showcasing innovative tools and AI-powered creations.
+The gateway site at [apps.34cats.com](https://apps.34cats.com) — an index of the
+apps built under 34cats, plus the shared account and the legal pages.
 
-## 🚀 Tech Stack
+Apps that grow past a landing page move to their own repo and subdomain
+(Resumeow lives at `resumeow.34cats.com`). What stays here: the index, PawPress
+CMS's write-up, sign-in, privacy policy, terms.
 
-- **Framework**: Next.js 16 (App Router)
-- **Language**: TypeScript
-- **Styling**: Tailwind CSS v4
-- **Database**: Supabase
-- **Deployment**: Vercel
+## Stack
 
-## 📦 Project Structure
+Next.js 16 (App Router) · TypeScript · Tailwind CSS v4 · Supabase auth
 
-```
-34cats-apps/
-├── app/                # Next.js App Router pages
-├── components/         # React components
-│   ├── ui/            # Reusable UI components
-│   ├── home/          # Home page components
-│   ├── layout/        # Layout components
-│   └── shared/        # Shared components
-├── lib/               # Utilities and configurations
-│   ├── types/         # TypeScript types
-│   ├── supabase/      # Supabase clients
-│   └── utils.ts       # Helper functions
-├── hooks/             # Custom React hooks
-├── config/            # App configuration
-└── public/            # Static assets
-```
+## Running it
 
-See [ARCHITECTURE.md](./ARCHITECTURE.md) for detailed architecture documentation.
-
-## 🛠️ Getting Started
-
-### Prerequisites
-
-- Node.js 18+ and npm
-- Supabase account (optional, for authentication features)
-
-### Installation
-
-1. Clone the repository:
-```bash
-git clone https://github.com/34cats/34cats-apps.git
-cd 34cats-apps
-```
-
-2. Install dependencies:
 ```bash
 npm install
-```
-
-3. Set up environment variables:
-```bash
-cp .env.example .env.local
-```
-
-Edit `.env.local` with your Supabase credentials:
-```bash
-NEXT_PUBLIC_SUPABASE_URL=your-project-url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
-SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
-```
-
-4. Run the development server:
-```bash
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) to view the app.
+Supabase credentials go in `.env.local`:
 
-## 📝 Available Scripts
+```bash
+NEXT_PUBLIC_SUPABASE_URL=your-project-url
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your-publishable-key
+```
 
-- `npm run dev` - Start development server
-- `npm run build` - Build for production
-- `npm start` - Start production server
-- `npm run lint` - Run ESLint
+`npm run build` for production, `npm run lint` for ESLint.
 
-## 🎨 Key Features
+## Layout
 
-- **Modular Architecture**: Clean separation of concerns with organized folder structure
-- **Reusable Components**: UI component library (Button, Card, Input, etc.)
-- **Type Safety**: Full TypeScript support with shared type definitions
-- **Path Aliases**: Clean imports using `@/` prefix
-- **Supabase Integration**: Ready-to-use authentication and database setup
-- **Responsive Design**: Mobile-first responsive layouts
-- **Modern Stack**: Next.js 16 with App Router and React Server Components
+```
+app/            Routes: /, /login, /auth/callback, /pawpress-cms, legal pages
+components/
+  home/         Homepage sections (hero, apps index, rules, about)
+  layout/       Navbar, footer
+  pawpress/     PawPress write-up sections
+  shared/       Used in more than one place
+config/         apps.ts (the index), navigation.ts, site.ts
+lib/            supabase clients, types, cn() helper
+hooks/          use-auth, use-mounted
+```
 
-## 📚 Documentation
+## Design tokens
 
-- [Architecture Guide](./ARCHITECTURE.md) - Detailed project architecture
-- [Next.js Documentation](https://nextjs.org/docs)
-- [Supabase Documentation](https://supabase.com/docs)
-- [Tailwind CSS](https://tailwindcss.com/docs)
+Everything visual comes from `@theme` in [app/globals.css](app/globals.css) —
+no `gray-800`, no hex codes in components.
 
-## 🚢 Deployment
+| Token                                | Use                                       |
+| ------------------------------------ | ----------------------------------------- |
+| `ink` / `ink-raised`                 | Page background / raised panels           |
+| `line` / `line-strong`               | Hairline rules, borders                   |
+| `bone` / `ash` / `ash-dim`           | Primary / secondary / tertiary text       |
+| `ember`                              | Accent for type and rules                 |
+| `ember-deep`                         | Solid fills behind white text (contrast)  |
+| `moss`                               | Positive status                           |
 
-### Deploy on Vercel
+Fonts: Instrument Serif (`font-display`) for headings, Geist for body, Geist
+Mono for the uppercase `label` eyebrows. The font variables are set on `<html>`
+so Tailwind's `:root` theme can resolve them — moving them to `<body>` silently
+breaks every `font-*` utility.
 
-1. Push your code to GitHub
-2. Import your repository on [Vercel](https://vercel.com/new)
-3. Add environment variables in Vercel dashboard
-4. Deploy!
+Every text colour on `ink` clears WCAG AA (4.5:1). Solid buttons use
+`ember-deep`, not `ember`, for that reason.
 
-### Environment Variables for Production
+## Adding an app
 
-Make sure to set these in your deployment platform:
-- `NEXT_PUBLIC_SUPABASE_URL`
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-- `SUPABASE_SERVICE_ROLE_KEY` (if using server-side operations)
+1. Add an entry to `config/apps.ts`. Absolute `href` for its own subdomain, a
+   path if it's hosted here.
+2. If it's hosted here, add the route under `app/`.
 
-## 📄 License
+## Deployment
 
-This project is private and proprietary to 34cats.
-
-## 🤝 Contributing
-
-This is a private project. Contact the team for collaboration opportunities.
-
----
-
-Built with ❤️ by 34cats
+See [CLOUDFLARE_DEPLOYMENT.md](./CLOUDFLARE_DEPLOYMENT.md). Note that
+`/auth/callback` is server-rendered, so a pure static export won't serve the
+sign-in flow.

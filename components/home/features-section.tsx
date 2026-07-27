@@ -2,20 +2,25 @@ import { features } from "@/config/apps";
 
 export function FeaturesSection() {
   return (
-    <section className="px-4 py-16 bg-gray-900/50">
-      <div className="max-w-6xl mx-auto">
-        <h2 className="text-3xl md:text-4xl font-bold text-center mb-12 text-white">
-          Why Use My Apps?
+    <section className="border-y border-line bg-ink-raised px-6 py-20 md:py-28">
+      <div className="mx-auto max-w-6xl">
+        <p className="label text-ash-dim">How these get built</p>
+        <h2 className="mt-4 max-w-2xl font-display text-4xl leading-tight text-bone md:text-5xl">
+          Three rules I don&apos;t break.
         </h2>
-        <div className="grid md:grid-cols-3 gap-8">
+
+        <div className="mt-14 grid gap-px bg-line md:grid-cols-3">
           {features.map((feature, index) => (
-            <div
-              key={index}
-              className="p-6 rounded-xl border border-gray-800 bg-gray-800/50 hover:border-[#E84A3A] hover:shadow-lg hover:shadow-[#E84A3A]/10 transition-all"
-            >
-              <div className="text-4xl mb-4">{feature.icon}</div>
-              <h3 className="text-xl font-semibold mb-2 text-white">{feature.title}</h3>
-              <p className="text-gray-400">{feature.description}</p>
+            <div key={feature.title} className="bg-ink-raised p-8 md:p-10">
+              <span className="label tabular-nums text-ash-dim">
+                {String(index + 1).padStart(2, "0")}
+              </span>
+              <h3 className="mt-6 font-display text-2xl text-bone">
+                {feature.title}
+              </h3>
+              <p className="mt-3 leading-relaxed text-ash">
+                {feature.description}
+              </p>
             </div>
           ))}
         </div>

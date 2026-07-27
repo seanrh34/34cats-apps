@@ -1,7 +1,5 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
-
 export function ScrollToBottomButton() {
   const scrollToBottom = () => {
     window.scrollTo({
@@ -13,15 +11,14 @@ export function ScrollToBottomButton() {
   return (
     <button
       onClick={scrollToBottom}
-      className="fixed bottom-8 right-8 z-50 rounded-full w-12 h-12 flex items-center justify-center shadow-lg bg-[#E84A3A] border-2 border-gray-600 hover:border-gray-600 transition-all transform hover:-translate-y-0.5 cursor-pointer"
       title="Scroll to bottom"
+      className="fixed right-6 bottom-6 z-50 flex h-11 w-11 cursor-pointer items-center justify-center rounded-full border border-line-strong bg-ink-raised text-ash transition-colors hover:border-ember hover:text-ember"
     >
       <svg
-        className="w-6 h-6 text-white"
+        className="h-5 w-5"
         fill="none"
         stroke="currentColor"
         viewBox="0 0 24 24"
-        xmlns="http://www.w3.org/2000/svg"
       >
         <path
           strokeLinecap="round"

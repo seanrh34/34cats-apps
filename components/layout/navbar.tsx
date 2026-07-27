@@ -3,17 +3,16 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { mainNavItems } from "@/config/navigation";
-import { smoothScrollToSection } from "@/lib/scroll-utils";
 import { useAuth } from "@/contexts/auth-context";
 
 export function Navbar() {
   const { user, loading, signOut } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [activeSection, setActiveSection] = useState<string | null>(null);
 
@@ -28,202 +27,159 @@ export function Navbar() {
 
   useEffect(() => {
     const handleScroll = () => {
-      setIsScrolled(window.scrollY > 20);
+      setIsScrolled(window.scrollY > 16);
 
-      // Don't set active section if we're on an app page (not homepage)
-      if (window.location.pathname !== '/') {
+      // Section highlighting only makes sense on the homepage
+      if (pathname !== "/") {
         setActiveSection(null);
         return;
       }
 
       let current = "home";
-      
-      // Check each section to see if it's in view
       for (const item of mainNavItems) {
-        if (item.href.includes('#')) {
-          const id = item.href.split('#')[1];
-          const el = document.getElementById(id);
-          if (el) {
-            const rect = el.getBoundingClientRect();
-            // Check if the section is in the viewport (top of section is above middle of screen)
-            if (rect.top <= 150) {
-              current = id;
-            }
-          }
+        const id = item.href.split("#")[1];
+        const el = id && document.getElementById(id);
+        if (el && el.getBoundingClientRect().top <= 150) {
+          current = id;
         }
       }
-
       setActiveSection(current);
     };
 
-    window.addEventListener("scroll", handleScroll);
+    window.addEventListener("scroll", handleScroll, { passive: true });
     handleScroll();
     return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
-
-  useEffect(() => {
-    console.log("Active Section:", activeSection);
-  }, [activeSection]);
-
-  const handleLinkClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
-    smoothScrollToSection(e, href);
-    setIsOpen(false);
-    setMobileMenuOpen(false);
-  };
+  }, [pathname]);
 
   return (
-    <nav className="sticky top-0 z-50 w-full border-b border-gray-800 bg-gray-900/95 backdrop-blur supports-[backdrop-filter]:bg-gray-900/75">
-      <div className="container mx-auto max-w-6xl px-4">
+    <nav
+      className={cn(
+        "sticky top-0 z-50 w-full transition-colors duration-300",
+        isScrolled
+          ? "border-b border-line bg-ink/85 backdrop-blur-md"
+          : "border-b border-transparent"
+      )}
+    >
+      <div className="mx-auto max-w-6xl px-6">
         <div className="flex h-16 items-center justify-between">
-          {/* Logo */}
-          <Link 
-            href="/"
-            className="flex items-center space-x-2 group">
-            <Image src="/34cats_main.png" alt="34cats Apps Logo" width={120} height={120} className="w-auto h-12" />
+          <Link href="/" className="-ml-2 flex items-center">
+            <Image
+              src="/34cats_main.png"
+              alt="34cats"
+              width={240}
+              height={120}
+              className="h-11 w-auto"
+            />
           </Link>
 
-          {/* Desktop Navigation */}
-          <div className="hidden md:flex md:items-center md:space-x-8">
+          <div className="hidden md:flex md:items-center md:gap-9">
             {mainNavItems.map((item) => {
-              const sectionId = item.href.split('#')[1];
-              const isItemActive = activeSection === sectionId;
-              
+              const isActive = activeSection === item.href.split("#")[1];
               return (
                 <Link
                   key={item.name}
                   href={item.href}
-                  onClick={(e) => handleLinkClick(e, item.href)}
                   className={cn(
-                    "text-sm font-medium transition-colors hover:text-[#E84A3A] relative inline-block cursor-pointer",
-                    isItemActive ? "text-[#E84A3A]" : "text-gray-300"
+                    "label text-ash transition-colors hover:text-bone",
+                    isActive && "text-ember hover:text-ember"
                   )}
                 >
-                  <span className="relative inline-block py-2">
-                    {item.name}
-                    {isItemActive && (
-                      <span className="absolute -bottom-[1px] left-0 right-0 h-[2px] bg-[#E84A3A] rounded-full" />
-                    )}
-                  </span>
+                  {item.name}
                 </Link>
               );
             })}
           </div>
 
-          {/* Auth Section - Desktop */}
           <div className="hidden md:flex md:items-center md:gap-4">
             {loading ? (
-              <div className="text-sm text-gray-400">Loading...</div>
+              <span className="label text-ash-dim">···</span>
             ) : user ? (
               <>
-                <span className="text-sm text-gray-300 truncate max-w-[200px]">
+                <span className="max-w-[180px] truncate text-sm text-ash">
                   {user.email}
                 </span>
                 <button
                   onClick={handleSignOut}
-                  className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-300 border border-gray-700 rounded-lg hover:bg-gray-800 hover:text-white transition-all"
+                  className="rounded-full border border-line-strong px-4 py-1.5 text-sm font-medium text-bone transition-colors hover:border-ash-dim hover:bg-ink-raised"
                 >
-                  Sign Out
+                  Sign out
                 </button>
               </>
             ) : (
               <Link
                 href="/login"
-                className="inline-flex items-center px-4 py-2 text-sm font-semibold text-white bg-[#E84A3A] rounded-lg hover:bg-[#d43d2d] transition-all shadow-md hover:shadow-lg hover:shadow-[#E84A3A]/20"
+                className="rounded-full bg-ember-deep px-5 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-ember"
               >
-                Login
+                Sign in
               </Link>
             )}
           </div>
 
-          {/* Mobile Menu Button */}
           <button
             type="button"
-            className="md:hidden inline-flex items-center justify-center p-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-[#E84A3A]"
+            className="-mr-2 inline-flex items-center justify-center rounded-lg p-2 text-ash transition-colors hover:text-bone md:hidden"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             aria-expanded={mobileMenuOpen}
           >
-            <span className="sr-only">Open main menu</span>
-            {!mobileMenuOpen ? (
-              <svg
-                className="h-6 w-6"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth="1.5"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"
-                />
-              </svg>
-            ) : (
-              <svg
-                className="h-6 w-6"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth="1.5"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
-            )}
+            <span className="sr-only">Toggle menu</span>
+            <svg
+              className="h-6 w-6"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth="1.5"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d={
+                  mobileMenuOpen
+                    ? "M6 18L18 6M6 6l12 12"
+                    : "M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"
+                }
+              />
+            </svg>
           </button>
         </div>
 
-        {/* Mobile Menu */}
         {mobileMenuOpen && (
-          <div className="md:hidden border-t border-gray-800">
-            <div className="space-y-1 px-2 pb-3 pt-2">
-              {mainNavItems.map((item) => (
+          <div className="border-t border-line bg-ink pb-4 md:hidden">
+            {mainNavItems.map((item) => (
+              <Link
+                key={item.name}
+                href={item.href}
+                className="block border-b border-line py-4 font-display text-2xl text-bone"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                {item.name}
+              </Link>
+            ))}
+
+            <div className="pt-4">
+              {loading ? (
+                <span className="label text-ash-dim">···</span>
+              ) : user ? (
+                <>
+                  <p className="truncate text-sm text-ash">{user.email}</p>
+                  <button
+                    onClick={() => {
+                      handleSignOut();
+                      setMobileMenuOpen(false);
+                    }}
+                    className="mt-3 w-full rounded-full border border-line-strong px-4 py-2.5 text-sm font-medium text-bone"
+                  >
+                    Sign out
+                  </button>
+                </>
+              ) : (
                 <Link
-                  key={item.name}
-                  href={item.href}
-                  className={cn(
-                    "block px-3 py-2 rounded-lg text-base font-medium transition-colors",
-                    activeSection === item.href.substring(1)
-                      ? "text-[#E84A3A] bg-gray-800"
-                      : "text-gray-300 hover:text-white hover:bg-gray-800"
-                  )}
+                  href="/login"
+                  className="block w-full rounded-full bg-ember-deep px-4 py-2.5 text-center text-sm font-semibold text-white"
                   onClick={() => setMobileMenuOpen(false)}
                 >
-                  {item.name}
+                  Sign in
                 </Link>
-              ))}
-              
-              {/* Auth Section - Mobile */}
-              <div className="pt-2 mt-2 border-t border-gray-700">
-                {loading ? (
-                  <div className="px-3 py-2 text-sm text-gray-400">Loading...</div>
-                ) : user ? (
-                  <>
-                    <div className="px-3 py-2 text-sm text-gray-300 truncate">
-                      {user.email}
-                    </div>
-                    <button
-                      onClick={() => {
-                        handleSignOut();
-                        setMobileMenuOpen(false);
-                      }}
-                      className="w-full mt-2 px-3 py-2 text-center text-sm font-medium text-gray-300 border border-gray-700 rounded-lg hover:bg-gray-800 hover:text-white transition-colors"
-                    >
-                      Sign Out
-                    </button>
-                  </>
-                ) : (
-                  <Link
-                    href="/login"
-                    className="block px-3 py-2 mt-2 text-center text-sm font-semibold text-white bg-[#E84A3A] rounded-lg hover:bg-[#d43d2d] transition-colors"
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    Login
-                  </Link>
-                )}
-              </div>
+              )}
             </div>
           </div>
         )}

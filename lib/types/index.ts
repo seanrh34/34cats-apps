@@ -1,13 +1,13 @@
 export interface App {
   name: string;
+  /** Absolute URL for apps living on their own subdomain, path for ones hosted here. */
   href: string;
   description: string;
   status: "Live" | "Coming Soon" | "Beta" | "In Development";
-  icon: string;
+  stack: string[];
 }
 
 export interface Feature {
-  icon: string;
   title: string;
   description: string;
 }

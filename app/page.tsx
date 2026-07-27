@@ -5,10 +5,10 @@ import { AppsGrid } from "@/components/home/apps-grid";
 
 export default function Home() {
   return (
-    <main className="min-h-screen bg-linear-to-b from-gray-900 to-black">
+    <main className="min-h-screen">
       <HeroSection />
-      <FeaturesSection />
       <AppsGrid />
+      <FeaturesSection />
       <AboutSection />
     </main>
   );

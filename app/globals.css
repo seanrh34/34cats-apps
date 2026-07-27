@@ -1,26 +1,72 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@theme {
+  /* Warm near-black base — off-black, never pure #000 */
+  --color-ink: #0c0b0a;
+  --color-ink-raised: #131110;
+  --color-line: #241f1c;
+  --color-line-strong: #352e29;
+
+  /* Type */
+  --color-bone: #ede8e1;
+  --color-ash: #9c948b;
+  /* Dimmest text still clears 4.5:1 on --color-ink */
+  --color-ash-dim: #8b837a;
+
+  /* Accent. `ember` for type and rules (5.1:1 on ink); `ember-deep` for solid
+     fills, where white text needs the darker background to clear 4.5:1. */
+  --color-ember: #e84a3a;
+  --color-ember-deep: #c93d2e;
+  --color-moss: #7fa87f;
+
+  --font-display: var(--font-instrument-serif), Georgia, serif;
+  --font-sans: var(--font-geist-sans), system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+html {
+  scroll-behavior: smooth;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+/* Clear the sticky navbar when jumping to an anchor */
+[id] {
+  scroll-margin-top: 5rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
   }
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-ink);
+  color: var(--color-bone);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: var(--color-ember);
+  color: #fff;
+}
+
+/* Mono eyebrow label used across sections. Colour is left to a text-* utility
+   so callers can override it on hover/active without specificity fights. */
+@utility label {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+/* Warm light bleeding from the top of the page */
+@utility page-glow {
+  background:
+    radial-gradient(
+      70rem 40rem at 50% -12rem,
+      rgba(232, 74, 58, 0.09),
+      transparent 65%
+    ),
+    var(--color-ink);
 }

@@ -1,63 +1,83 @@
 import Link from "next/link";
 
+const columns = [
+  {
+    heading: "Site",
+    links: [
+      { name: "Apps", href: "/#apps" },
+      { name: "About", href: "/#about" },
+      { name: "Sign in", href: "/login" },
+    ],
+  },
+  {
+    heading: "Elsewhere",
+    links: [
+      { name: "34cats.com", href: "https://34cats.com" },
+      { name: "Blog", href: "https://blog.34cats.com" },
+      { name: "GitHub", href: "https://github.com/seanrh34" },
+    ],
+  },
+  {
+    heading: "Legal",
+    links: [
+      { name: "Privacy Policy", href: "/privacy-policy" },
+      { name: "Terms of Service", href: "/terms-of-service" },
+    ],
+  },
+];
+
 export function Footer() {
   return (
-    <footer className="px-4 py-12 border-t border-gray-800">
-      <div className="max-w-6xl mx-auto">
-        <div className="grid md:grid-cols-3 gap-8 mb-8">
-          {/* Brand */}
-          <div>
-            <h3 className="text-lg font-bold text-white mb-4">34cats Apps</h3>
-            <p className="text-sm text-gray-400">
-              Building pawsome and innovative digital experiences.
-            </p>
-          </div>
+    <footer className="border-t border-line px-6 py-16">
+      <div className="mx-auto grid max-w-6xl gap-12 md:grid-cols-[1.5fr_repeat(3,1fr)]">
+        <div>
+          <p className="font-display text-2xl text-bone">34cats</p>
+          <p className="mt-3 max-w-xs text-sm leading-relaxed text-ash">
+            Small, useful software, built by hand and kept that way.
+          </p>
+          <a
+            href="mailto:34cats.dev@gmail.com"
+            className="mt-5 inline-block text-sm text-ash underline decoration-line-strong underline-offset-4 transition-colors hover:text-ember hover:decoration-ember"
+          >
+            34cats.dev@gmail.com
+          </a>
+        </div>
 
-          {/* Links */}
-          <div>
-            <h4 className="text-sm font-semibold text-white mb-4">Quick Links</h4>
-            <ul className="space-y-2">
-              <li>
-                <Link href="/#apps" className="text-sm text-gray-400 hover:text-[#E84A3A] transition-colors">
-                  Apps
-                </Link>
-              </li>
-              <li>
-                <Link href="/#about" className="text-sm text-gray-400 hover:text-[#E84A3A] transition-colors">
-                  About
-                </Link>
-              </li>
-              <li>
-                <Link href="/privacy-policy" className="text-sm text-gray-400 hover:text-[#E84A3A] transition-colors">
-                  Privacy Policy
-                </Link>
-              </li>
-              <li>
-                <Link href="/terms-of-service" className="text-sm text-gray-400 hover:text-[#E84A3A] transition-colors">
-                  Terms of Service
-                </Link>
-              </li>
+        {columns.map((column) => (
+          <div key={column.heading}>
+            <h3 className="label text-ash-dim">{column.heading}</h3>
+            <ul className="mt-5 space-y-3">
+              {column.links.map((link) => (
+                <li key={link.name}>
+                  {link.href.startsWith("http") ? (
+                    <a
+                      href={link.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm text-ash transition-colors hover:text-ember"
+                    >
+                      {link.name}
+                    </a>
+                  ) : (
+                    <Link
+                      href={link.href}
+                      className="text-sm text-ash transition-colors hover:text-ember"
+                    >
+                      {link.name}
+                    </Link>
+                  )}
+                </li>
+              ))}
             </ul>
           </div>
+        ))}
+      </div>
 
-          {/* Contact */}
-          <div>
-            <h4 className="text-sm font-semibold text-white mb-4">Get in Touch</h4>
-            <a
-              href="mailto:34cats.dev@gmail.com"
-              className="text-sm text-gray-400 hover:text-[#E84A3A] transition-colors"
-            >
-              34cats.dev@gmail.com
-            </a>
-          </div>
-        </div>
-
-        {/* Copyright */}
-        <div className="text-center text-gray-400 pt-8 border-t border-gray-800">
-          <p className="text-sm">
-            &copy; {new Date().getFullYear()} 34cats. All rights reserved.
-          </p>
-        </div>
+      <div className="mx-auto mt-16 flex max-w-6xl flex-col gap-2 border-t border-line pt-6 sm:flex-row sm:items-center sm:justify-between">
+        <p className="label text-ash-dim">
+          © {new Date().getFullYear()} 34cats
+        </p>
+        <p className="label text-ash-dim">Built in the evenings</p>
       </div>
     </footer>
   );

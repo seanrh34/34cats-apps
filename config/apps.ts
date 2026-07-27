@@ -4,34 +4,36 @@ export const apps: App[] = [
   {
     name: "PawPress CMS",
     href: "/pawpress-cms",
-    description: "Free and open-source headless CMS built with Next.js and Tailwind CSS. Hostable as static sites like on Cloudflare and Vercel.",
+    description:
+      "A free, open-source headless CMS built into your Next.js app. No pricing tiers, no vendor lock-in, deploys as a static site on Cloudflare or Vercel.",
     status: "Live",
-    icon: "🐱",
+    stack: ["Next.js", "Supabase", "Tailwind"],
   },
   {
     name: "Resumeow",
-    href: "/resumeow",
-    description: "Create professional resumes with LaTeX quality that you can get as PDFs immediately. Formatted in the way recruiters love.",
+    href: "https://resumeow.34cats.com",
+    description:
+      "LaTeX-quality resumes without touching LaTeX. Fill in the forms, get the PDF recruiters actually like reading.",
     status: "Live",
-    icon: "📄",
+    stack: ["Next.js", "LaTeX", "Supabase"],
   },
   // Add more apps here
 ];
 
 export const features: Feature[] = [
   {
-    icon: "😺",
-    title: "Fun and Interesting",
-    description: "They're fun for me to make and for you to enjoy!",
+    title: "Built to be used",
+    description:
+      "Every app here started as a problem I actually had. If it doesn't earn its place in my own week, it doesn't ship.",
   },
   {
-    icon: "🎯",
-    title: "Purpose-Built",
-    description: "Designed to solve real problems (and some that I create to sell to you)",
+    title: "Small on purpose",
+    description:
+      "No dashboards nobody asked for, no onboarding tour. The shortest path between opening the app and being done with it.",
   },
   {
-    icon: "🚀",
-    title: "Modern Stack",
-    description: "These are all the apps that I make as practice for learning the latest technologies",
+    title: "Yours to keep",
+    description:
+      "Your data stays exportable and, where it makes sense, the source stays open. Nothing here holds your work hostage.",
   },
 ];

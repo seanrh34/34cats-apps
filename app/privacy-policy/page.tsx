@@ -7,13 +7,13 @@ export const metadata: Metadata = {
 
 export default function PrivacyPolicyPage() {
   return (
-    <main className="min-h-screen bg-black text-gray-100">
-      <div className="max-w-4xl mx-auto px-4 py-16">
-        <h1 className="text-4xl font-bold mb-8 text-white">Privacy Policy</h1>
+    <main className="min-h-screen text-bone">
+      <div className="mx-auto max-w-3xl px-6 py-16 md:py-24">
+        <h1 className="mb-10 font-display text-5xl text-bone md:text-6xl">Privacy Policy</h1>
         
-        <div className="space-y-8 text-gray-300">
+        <div className="space-y-12 leading-relaxed text-ash">
           <section>
-            <p className="text-sm text-gray-400 mb-6">
+            <p className="mb-6 text-sm text-ash-dim">
               <strong>Last Updated:</strong> January 3, 2026
             </p>
             <p className="mb-4">
@@ -24,9 +24,9 @@ export default function PrivacyPolicyPage() {
           </section>
 
           <section>
-            <h2 className="text-2xl font-bold mb-4 text-white">1. Information We Collect</h2>
+            <h2 className="mb-4 font-display text-2xl text-bone">1. Information We Collect</h2>
             
-            <h3 className="text-xl font-semibold mb-3 text-white">1.1 Information You Provide</h3>
+            <h3 className="mb-3 font-display text-xl text-bone">1.1 Information You Provide</h3>
             <p className="mb-4">
               When you use our Service, particularly our resume builder application (Resumeow), 
               you may provide the following information:
@@ -40,7 +40,7 @@ export default function PrivacyPolicyPage() {
               <li>Co-curricular activities and achievements</li>
             </ul>
 
-            <h3 className="text-xl font-semibold mb-3 text-white">1.2 Information from Third-Party Services</h3>
+            <h3 className="mb-3 font-display text-xl text-bone">1.2 Information from Third-Party Services</h3>
             <p className="mb-4">
               When you sign in using Google OAuth, we receive:
             </p>
@@ -51,7 +51,7 @@ export default function PrivacyPolicyPage() {
               <li>Unique identifier from Google</li>
             </ul>
 
-            <h3 className="text-xl font-semibold mb-3 text-white">1.3 Automatically Collected Information</h3>
+            <h3 className="mb-3 font-display text-xl text-bone">1.3 Automatically Collected Information</h3>
             <p className="mb-4">
               We may automatically collect certain technical information:
             </p>
@@ -65,7 +65,7 @@ export default function PrivacyPolicyPage() {
           </section>
 
           <section>
-            <h2 className="text-2xl font-bold mb-4 text-white">2. How We Use Your Information</h2>
+            <h2 className="mb-4 font-display text-2xl text-bone">2. How We Use Your Information</h2>
             <p className="mb-4">We use the collected information for the following purposes:</p>
             <ul className="list-disc list-inside ml-4 mb-4 space-y-2">
               <li><strong>Service Delivery:</strong> To provide, maintain, and improve our applications</li>
@@ -79,7 +79,7 @@ export default function PrivacyPolicyPage() {
           </section>
 
           <section>
-            <h2 className="text-2xl font-bold mb-4 text-white">3. Data Storage and Security</h2>
+            <h2 className="mb-4 font-display text-2xl text-bone">3. Data Storage and Security</h2>
             <p className="mb-4">
               <strong>Storage:</strong> Your data is stored securely using Supabase (PostgreSQL database) 
               with industry-standard encryption and security measures.
@@ -98,7 +98,7 @@ export default function PrivacyPolicyPage() {
           </section>
 
           <section>
-            <h2 className="text-2xl font-bold mb-4 text-white">4. Data Sharing and Disclosure</h2>
+            <h2 className="mb-4 font-display text-2xl text-bone">4. Data Sharing and Disclosure</h2>
             <p className="mb-4">
               We do not sell, trade, or rent your personal information to third parties. We may share 
               your information only in the following circumstances:
@@ -112,7 +112,7 @@ export default function PrivacyPolicyPage() {
           </section>
 
           <section>
-            <h2 className="text-2xl font-bold mb-4 text-white">5. Third-Party Services</h2>
+            <h2 className="mb-4 font-display text-2xl text-bone">5. Third-Party Services</h2>
             <p className="mb-4">Our Service integrates with the following third-party services:</p>
             <ul className="list-disc list-inside ml-4 mb-4 space-y-2">
               <li><strong>Google OAuth:</strong> For authentication (governed by Google&apos;s Privacy Policy)</li>
@@ -127,7 +127,7 @@ export default function PrivacyPolicyPage() {
           </section>
 
           <section>
-            <h2 className="text-2xl font-bold mb-4 text-white">6. Your Rights and Choices</h2>
+            <h2 className="mb-4 font-display text-2xl text-bone">6. Your Rights and Choices</h2>
             <p className="mb-4">You have the following rights regarding your personal information:</p>
             <ul className="list-disc list-inside ml-4 mb-4 space-y-2">
               <li><strong>Access:</strong> Request access to the personal information we hold about you</li>
@@ -139,14 +139,14 @@ export default function PrivacyPolicyPage() {
             </ul>
             <p className="mb-4">
               To exercise these rights, please contact us at{" "}
-              <a href="mailto:34cats.dev@gmail.com" className="text-[#E84A3A] hover:underline">
+              <a href="mailto:34cats.dev@gmail.com" className="text-ember underline underline-offset-4">
                 34cats.dev@gmail.com
               </a>
             </p>
           </section>
 
           <section>
-            <h2 className="text-2xl font-bold mb-4 text-white">7. Cookies and Tracking Technologies</h2>
+            <h2 className="mb-4 font-display text-2xl text-bone">7. Cookies and Tracking Technologies</h2>
             <p className="mb-4">
               We use cookies and similar tracking technologies to enhance your experience. These include:
             </p>
@@ -162,7 +162,7 @@ export default function PrivacyPolicyPage() {
           </section>
 
           <section>
-            <h2 className="text-2xl font-bold mb-4 text-white">8. Children&apos;s Privacy</h2>
+            <h2 className="mb-4 font-display text-2xl text-bone">8. Children&apos;s Privacy</h2>
             <p className="mb-4">
               Our Service is not intended for children under the age of 13. We do not knowingly collect 
               personal information from children under 13. If you become aware that a child has provided 
@@ -171,7 +171,7 @@ export default function PrivacyPolicyPage() {
           </section>
 
           <section>
-            <h2 className="text-2xl font-bold mb-4 text-white">9. International Data Transfers</h2>
+            <h2 className="mb-4 font-display text-2xl text-bone">9. International Data Transfers</h2>
             <p className="mb-4">
               Your information may be transferred to and maintained on servers located outside of your 
               state, province, country, or other governmental jurisdiction where data protection laws 
@@ -180,7 +180,7 @@ export default function PrivacyPolicyPage() {
           </section>
 
           <section>
-            <h2 className="text-2xl font-bold mb-4 text-white">10. Changes to This Privacy Policy</h2>
+            <h2 className="mb-4 font-display text-2xl text-bone">10. Changes to This Privacy Policy</h2>
             <p className="mb-4">
               We may update this Privacy Policy from time to time. We will notify you of any changes 
               by posting the new Privacy Policy on this page and updating the &quot;Last Updated&quot; date. 
@@ -189,29 +189,29 @@ export default function PrivacyPolicyPage() {
           </section>
 
           <section>
-            <h2 className="text-2xl font-bold mb-4 text-white">11. Contact Us</h2>
+            <h2 className="mb-4 font-display text-2xl text-bone">11. Contact Us</h2>
             <p className="mb-4">
               If you have any questions, concerns, or requests regarding this Privacy Policy or our 
               data practices, please contact us:
             </p>
-            <div className="bg-gray-900 p-6 rounded-lg border border-gray-700">
+            <div className="border-l-2 border-line-strong pl-6">
               <p className="mb-2">
-                <strong className="text-white">Email:</strong>{" "}
-                <a href="mailto:34cats.dev@gmail.com" className="text-[#E84A3A] hover:underline">
+                <strong className="font-medium text-bone">Email:</strong>{" "}
+                <a href="mailto:34cats.dev@gmail.com" className="text-ember underline underline-offset-4">
                   34cats.dev@gmail.com
                 </a>
               </p>
               <p className="mb-2">
-                <strong className="text-white">Website:</strong>{" "}
-                <a href="https://34cats.com" target="_blank" rel="noopener noreferrer" className="text-[#E84A3A] hover:underline">
+                <strong className="font-medium text-bone">Website:</strong>{" "}
+                <a href="https://34cats.com" target="_blank" rel="noopener noreferrer" className="text-ember underline underline-offset-4">
                   https://34cats.com
                 </a>
               </p>
             </div>
           </section>
 
-          <section className="mt-12 pt-8 border-t border-gray-700">
-            <p className="text-sm text-gray-400">
+          <section className="mt-16 border-t border-line pt-8">
+            <p className="text-sm text-ash-dim">
               By using our Service, you acknowledge that you have read and understood this Privacy 
               Policy and agree to its terms.
             </p>

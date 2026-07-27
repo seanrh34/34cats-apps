@@ -8,13 +8,11 @@ interface ContentSectionProps {
 
 export function ContentSection({ title, children, className = "" }: ContentSectionProps) {
   return (
-    <section className={`mb-16 ${className}`}>
-      <h2 className="text-3xl font-bold text-white mb-6">
+    <section className={`mb-20 ${className}`}>
+      <h2 className="mb-8 font-display text-3xl text-bone md:text-4xl">
         {title}
       </h2>
-      <div className="text-gray-300 space-y-4 leading-relaxed">
-        {children}
-      </div>
+      <div className="space-y-5 leading-relaxed text-ash">{children}</div>
     </section>
   );
 }

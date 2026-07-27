@@ -3,19 +3,27 @@ import { AppCard } from "./app-card";
 
 export function AppsGrid() {
   return (
-    <section id="apps" className="px-4 py-16">
-      <div className="max-w-6xl mx-auto">
-        <h2 className="text-3xl md:text-4xl font-bold text-center mb-4 text-white">
-          My Apps
-        </h2>
-        <p className="text-center text-gray-400 mb-12 max-w-2xl mx-auto">
-          Discover Various Productivity and Utility Apps Designed to Enhance
-        </p>
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <section id="apps" className="px-6 py-20 md:py-28">
+      <div className="mx-auto max-w-6xl">
+        <div className="flex flex-col gap-4 border-b border-line-strong pb-6 md:flex-row md:items-end md:justify-between">
+          <h2 className="font-display text-4xl text-bone md:text-5xl">
+            The apps
+          </h2>
+          <p className="max-w-sm text-sm leading-relaxed text-ash">
+            Free to use unless it costs me money to run. Nothing here is a
+            trial, a beta list, or a funnel to a sales call.
+          </p>
+        </div>
+
+        <div>
           {apps.map((app, index) => (
-            <AppCard key={index} app={app} />
+            <AppCard key={app.name} app={app} index={index} />
           ))}
         </div>
+
+        <p className="pt-8 text-sm text-ash-dim">
+          More on the workbench. New ones land here first.
+        </p>
       </div>
     </section>
   );
