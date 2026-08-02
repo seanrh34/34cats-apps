@@ -22,7 +22,7 @@ export function AppCard({ app }: AppCardProps) {
           alt={`Screenshot of ${app.name}`}
           fill
           sizes="(max-width: 768px) 100vw, 50vw"
-          className="object-cover transition-transform duration-300 ease-out group-hover:scale-[1.02]"
+          className="scale-[1.25] object-cover transition-transform duration-300 ease-out group-hover:scale-[1.28]"
         />
       </div>
       <div className="flex flex-1 flex-col p-6 md:p-8">
