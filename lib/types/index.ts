@@ -5,6 +5,8 @@ export interface App {
   description: string;
   status: "Live" | "Coming Soon" | "Beta" | "In Development";
   stack: string[];
+  /** Path to a screenshot image for the app card. */
+  image: string;
 }
 
 export interface Feature {

@@ -1,79 +1,41 @@
-import { App } from "@/lib/types";
 import Link from "next/link";
+import Image from "next/image";
+import { App } from "@/lib/types";
 
-interface AppCardProps {
-  app: App;
-  index: number;
-}
+interface AppCardProps { app: App; }
 
-/** One row of the apps index. External apps live on their own subdomain. */
-export function AppCard({ app, index }: AppCardProps) {
+export function AppCard({ app }: AppCardProps) {
   const isLive = app.status === "Live";
   const isExternal = app.href.startsWith("http");
-
-  const body = (
-    <>
-      <div className="flex items-baseline gap-4 md:w-64 md:shrink-0">
-        <span className="label tabular-nums text-ash-dim">
-          {String(index + 1).padStart(2, "0")}
-        </span>
-        <h3 className="font-display text-3xl text-bone transition-colors group-hover:text-ember">
-          {app.name}
-        </h3>
-      </div>
-
-      <div className="flex-1">
-        <p className="max-w-xl leading-relaxed text-ash">{app.description}</p>
-        <ul className="mt-4 flex flex-wrap gap-x-4 gap-y-1">
-          {app.stack.map((tech) => (
-            <li key={tech} className="label text-ash-dim">
-              {tech}
-            </li>
-          ))}
-        </ul>
-      </div>
-
-      <div className="flex items-center gap-4 md:w-40 md:shrink-0 md:justify-end">
-        <span
-          className={`label ${isLive ? "text-moss" : "text-ash-dim"}`}
-        >
-          {isLive ? "● Live" : `○ ${app.status}`}
-        </span>
-        {isLive && (
-          <span
-            aria-hidden
-            className="text-ash transition-transform group-hover:translate-x-1 group-hover:text-ember"
-          >
-            {isExternal ? "↗" : "→"}
-          </span>
-        )}
-      </div>
-    </>
+  const actionClass = "portal-button portal-button-primary mt-6 w-full sm:w-auto";
+  const action = isExternal ? (
+    <a href={app.href} target="_blank" rel="noopener noreferrer" className={actionClass} aria-label={`Open ${app.name} in a new tab`}>Try app ↗</a>
+  ) : (
+    <Link href={app.href} className={actionClass}>Try app</Link>
   );
 
-  const className =
-    "group flex flex-col gap-4 border-b border-line px-1 py-8 transition-colors md:flex-row md:items-start md:gap-8";
-
-  if (!isLive) {
-    return <div className={`${className} opacity-50`}>{body}</div>;
-  }
-
-  if (isExternal) {
-    return (
-      <a
-        href={app.href}
-        target="_blank"
-        rel="noopener noreferrer"
-        className={`${className} hover:bg-ink-raised`}
-      >
-        {body}
-      </a>
-    );
-  }
-
   return (
-    <Link href={app.href} className={`${className} hover:bg-ink-raised`}>
-      {body}
-    </Link>
+    <article className="group portal-panel flex h-full flex-col overflow-hidden">
+      <div className="relative aspect-[16/10] w-full overflow-hidden border-b border-rail bg-surface-subtle">
+        <Image
+          src={app.image}
+          alt={`Screenshot of ${app.name}`}
+          fill
+          sizes="(max-width: 768px) 100vw, 50vw"
+          className="object-cover transition-transform duration-300 ease-out group-hover:scale-[1.02]"
+        />
+      </div>
+      <div className="flex flex-1 flex-col p-6 md:p-8">
+        <div className="flex items-center justify-between gap-4">
+          <span className={`status-pill rounded-full px-2.5 py-1 text-xs font-semibold ${isLive ? "bg-live/10 text-live" : "bg-warning/10 text-warning"}`}>{app.status}</span>
+          <ul className="flex flex-wrap justify-end gap-2" aria-label={`${app.name} technology`}>
+            {app.stack.map((technology) => <li key={technology} className="text-xs text-copy-muted">{technology}</li>)}
+          </ul>
+        </div>
+        <h3 className="portal-heading mt-6 text-2xl text-copy">{app.name}</h3>
+        <p className="mt-3 flex-1 leading-relaxed text-copy-muted">{app.description}</p>
+        {isLive ? action : <span className="mt-6 text-sm font-medium text-copy-muted">Not yet available</span>}
+      </div>
+    </article>
   );
 }

@@ -1,72 +1,287 @@
 @import "tailwindcss";
 
-@theme {
-  /* Warm near-black base — off-black, never pure #000 */
-  --color-ink: #0c0b0a;
-  --color-ink-raised: #131110;
-  --color-line: #241f1c;
-  --color-line-strong: #352e29;
+@theme inline {
+  --color-platform: var(--canvas);
+  --color-platform-raised: var(--surface);
+  --color-surface-subtle: var(--surface-subtle);
+  --color-copy: var(--text);
+  --color-copy-muted: var(--text-muted);
+  --color-rail: var(--border);
+  --color-signal: var(--accent);
+  --color-signal-bright: var(--accent);
+  --color-live: var(--success);
+  --color-warning: var(--warning);
+  --color-cancelled: var(--danger);
+  --font-display: Arial, Helvetica, system-ui, sans-serif;
+  --font-sans: Arial, Helvetica, system-ui, sans-serif;
 
-  /* Type */
-  --color-bone: #ede8e1;
-  --color-ash: #9c948b;
-  /* Dimmest text still clears 4.5:1 on --color-ink */
-  --color-ash-dim: #8b837a;
+  --radius-control: 0.75rem;
+  --radius-panel: 1rem;
+  --ease-standard: ease-out;
+  --ease-arrive: cubic-bezier(0.16, 1, 0.3, 1);
+}
 
-  /* Accent. `ember` for type and rules (5.1:1 on ink); `ember-deep` for solid
-     fills, where white text needs the darker background to clear 4.5:1. */
-  --color-ember: #e84a3a;
-  --color-ember-deep: #c93d2e;
-  --color-moss: #7fa87f;
+:root {
+  color-scheme: light;
+  --canvas: #f7f7f5;
+  --surface: #ffffff;
+  --surface-subtle: #efefec;
+  --text: #202123;
+  --text-muted: #676767;
+  --border: #deded9;
+  --border-strong: #b8b8b2;
+  --accent: #c44428;
+  --success: #276e42;
+  --warning: #8a5a00;
+  --danger: #b42318;
+}
 
-  --font-display: var(--font-instrument-serif), Georgia, serif;
-  --font-sans: var(--font-geist-sans), system-ui, sans-serif;
-  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --canvas: #212121;
+  --surface: #2f2f2f;
+  --surface-subtle: #3a3a3a;
+  --text: #ececec;
+  --text-muted: #b4b4b4;
+  --border: #494949;
+  --border-strong: #686868;
+  --accent: #f07a5f;
+  --success: #75bd8f;
+  --warning: #d5a548;
+  --danger: #f18b82;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    color-scheme: dark;
+    --canvas: #212121;
+    --surface: #2f2f2f;
+    --surface-subtle: #3a3a3a;
+    --text: #ececec;
+    --text-muted: #b4b4b4;
+    --border: #494949;
+    --border-strong: #686868;
+    --accent: #f07a5f;
+    --success: #75bd8f;
+    --warning: #d5a548;
+    --danger: #f18b82;
+  }
 }
 
 html {
   scroll-behavior: smooth;
 }
 
-/* Clear the sticky navbar when jumping to an anchor */
 [id] {
   scroll-margin-top: 5rem;
+}
+
+body {
+  min-width: 20rem;
+  background: var(--color-platform);
+  color: var(--color-copy);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: var(--color-signal);
+  color: #ffffff;
+}
+
+:where(a, button, input, textarea, select, summary):focus-visible {
+  outline: 3px solid var(--color-signal);
+  outline-offset: 3px;
+}
+
+@utility portal-label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+@utility portal-heading {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: -0.025em;
+}
+
+.portal-panel {
+  border: 1px solid var(--color-rail);
+  border-radius: var(--radius-panel);
+  background: var(--color-platform-raised);
+  color: var(--color-copy);
+  transition: border-color 200ms ease-out;
+}
+
+.portal-panel:hover {
+  border-color: var(--border-strong);
+}
+
+.portal-button {
+  display: inline-flex;
+  min-height: 2.75rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: var(--radius-control);
+  padding: 0.625rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1;
+  transition: background-color 160ms ease-out, border-color 160ms ease-out, color 160ms ease-out;
+}
+
+.portal-button-primary {
+  background: var(--color-copy);
+  color: var(--color-platform-raised);
+  transition: background-color 160ms ease-out, border-color 160ms ease-out, color 160ms ease-out, transform 160ms var(--ease-arrive);
+}
+
+.portal-button-primary:hover {
+  background: color-mix(in srgb, var(--color-copy) 86%, transparent);
+  transform: translateY(-1px);
+}
+
+.portal-button-secondary {
+  border: 1px solid var(--color-rail);
+  background: var(--color-platform-raised);
+  color: var(--color-copy);
+}
+
+.portal-button-secondary:hover {
+  border-color: var(--border-strong);
+  background: var(--color-surface-subtle);
+}
+
+.status-pill {
+  display: inline-flex;
+}
+
+.legal-document {
+  max-width: 70ch;
+  color: var(--color-copy-muted);
+  line-height: 1.65;
+}
+
+.legal-document > div,
+.legal-document section {
+  display: grid;
+  gap: 1rem;
+}
+
+.legal-document section + section {
+  margin-top: 3rem;
+}
+
+.legal-document h2 {
+  margin: 0 0 0.5rem;
+  color: var(--color-copy);
+  font-size: 1.75rem;
+  font-weight: 600;
+  line-height: 1.15;
+}
+
+.legal-document h3 {
+  margin: 1rem 0 0;
+  color: var(--color-copy);
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.legal-document strong {
+  color: var(--color-copy);
+}
+
+.legal-document a {
+  color: var(--color-signal);
+  text-decoration: underline;
+  text-underline-offset: 0.25rem;
+}
+
+.legal-document ul {
+  padding-left: 1.25rem;
+  list-style-position: outside;
+}
+
+.legal-document li + li {
+  margin-top: 0.5rem;
+}
+
+.legal-document li::marker {
+  color: var(--color-signal);
+}
+
+.theme-image-dark,
+.theme-icon-sun {
+  display: none;
+}
+
+:root[data-theme="dark"] .theme-image-light,
+:root[data-theme="dark"] .theme-icon-moon {
+  display: none;
+}
+
+:root[data-theme="dark"] .theme-image-dark,
+:root[data-theme="dark"] .theme-icon-sun {
+  display: block;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) .theme-image-light,
+  :root:not([data-theme]) .theme-icon-moon {
+    display: none;
+  }
+
+  :root:not([data-theme]) .theme-image-dark,
+  :root:not([data-theme]) .theme-icon-sun {
+    display: block;
+  }
+}
+
+@keyframes hero-text-arrive {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.hero-label {
+  animation: hero-text-arrive 500ms var(--ease-arrive) both;
+}
+
+.hero-line-1 {
+  animation: hero-text-arrive 600ms var(--ease-arrive) 100ms both;
+}
+
+.hero-line-2 {
+  animation: hero-text-arrive 600ms var(--ease-arrive) 250ms both;
+}
+
+.hero-body {
+  animation: hero-text-arrive 500ms var(--ease-arrive) 400ms both;
+}
+
+.hero-actions {
+  animation: hero-text-arrive 500ms var(--ease-arrive) 550ms both;
 }
 
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
   }
-}
 
-body {
-  background: var(--color-ink);
-  color: var(--color-bone);
-  font-family: var(--font-sans);
-  -webkit-font-smoothing: antialiased;
-}
-
-::selection {
-  background: var(--color-ember);
-  color: #fff;
-}
-
-/* Mono eyebrow label used across sections. Colour is left to a text-* utility
-   so callers can override it on hover/active without specificity fights. */
-@utility label {
-  font-family: var(--font-mono);
-  font-size: 0.6875rem;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-}
-
-/* Warm light bleeding from the top of the page */
-@utility page-glow {
-  background:
-    radial-gradient(
-      70rem 40rem at 50% -12rem,
-      rgba(232, 74, 58, 0.09),
-      transparent 65%
-    ),
-    var(--color-ink);
+  .hero-label,
+  .hero-line-1,
+  .hero-line-2,
+  .hero-body,
+  .hero-actions {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
 }

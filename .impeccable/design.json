@@ -1,0 +1,59 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-07-29T00:00:00+08:00",
+  "title": "Design System: 34cats App Portal",
+  "extensions": {
+    "colorMeta": {
+      "accent": { "role": "primary", "displayName": "34cats Orange", "canonical": "#d94f32", "tonalRamp": ["#48150c", "#762416", "#a43621", "#d94f32", "#e8735c", "#ee9a89", "#f5c5ba", "#fcede9"] },
+      "canvas": { "role": "neutral", "displayName": "Canvas", "canonical": "#f7f7f5", "tonalRamp": ["#202123", "#353638", "#565759", "#7c7d7f", "#a7a8a8", "#d0d0ce", "#e8e8e4", "#f7f7f5"] }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Portal Display", "purpose": "Homepage thesis only." },
+      "title": { "displayName": "Title", "purpose": "Page and section headings." },
+      "subtitle": { "displayName": "Subtitle", "purpose": "Component and subsection headings." },
+      "body": { "displayName": "Body", "purpose": "Readable explanations and legal content." },
+      "label": { "displayName": "Label", "purpose": "Statuses and metadata." },
+      "control": { "displayName": "Control", "purpose": "Buttons and compact navigation actions." }
+    },
+    "shadows": [
+      { "name": "overlay", "value": "0 12px 32px rgb(0 0 0 / 10%)", "purpose": "Floating menus and overlays only." }
+    ],
+    "motion": [
+      { "name": "interaction", "value": "160ms ease-out", "purpose": "Hover, focus, and disclosure feedback." }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "640px" },
+      { "name": "md", "value": "768px" },
+      { "name": "lg", "value": "1024px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The principal action on a surface.",
+      "html": "<button class=\"ds-button-primary\">Open app</button>",
+      "css": ".ds-button-primary{min-height:44px;padding:10px 16px;border:0;border-radius:12px;background:#202123;color:#fff;font:600 14px/1 Arial,sans-serif;transition:background-color 160ms ease-out}.ds-button-primary:hover{background:#353638}.ds-button-primary:focus-visible{outline:3px solid #d94f32;outline-offset:3px}"
+    },
+    {
+      "name": "App Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "A clear app outcome, status, and action on one working surface.",
+      "html": "<article class=\"ds-card\"><span>Live</span><h3>Resumeow</h3><p>Build a polished resume and export a typeset PDF.</p><button>Open app</button></article>",
+      "css": ".ds-card{padding:24px;border:1px solid #deded9;border-radius:16px;background:#fff;color:#202123;font-family:Arial,sans-serif}.ds-card span{color:#2f7d4b;font-size:13px;font-weight:600}.ds-card h3{margin:16px 0 8px;font-size:24px}.ds-card p{color:#676767;line-height:1.6}.ds-card button{min-height:44px;margin-top:24px;padding:10px 16px;border:0;border-radius:12px;background:#202123;color:#fff;font-weight:600}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Familiar Workspace",
+    "overview": "34cats uses a calm, immediately understandable product language: neutral surfaces, direct language, generous breathing room, and familiar controls. The interface disappears behind the choice of useful apps.",
+    "keyCharacteristics": ["Warm-neutral canvas with crisp white working surfaces.", "One workhorse sans-serif family and compact, readable hierarchy.", "Rounded controls and panels with restrained borders.", "Orange reserved for brand emphasis and meaningful links.", "Quiet motion limited to direct interaction feedback."],
+    "rules": [
+      { "name": "The Quiet Accent Rule", "body": "Orange appears sparingly. Primary actions may use neutral ink when that produces a calmer and clearer hierarchy.", "section": "colors" },
+      { "name": "The Flat-by-Default Rule", "body": "Do not combine a border and a large shadow on the same ordinary card.", "section": "elevation" }
+    ],
+    "dos": ["Do make every app understandable by name, outcome, status, and action.", "Do keep controls familiar and copy literal.", "Do preserve visible focus, 44px targets, and responsive reading order.", "Do let whitespace separate distinct ideas."],
+    "donts": ["Don't copy ChatGPT or Claude branding, assets, or proprietary layouts.", "Don't reintroduce the concourse metaphor, split-flap lettering, or status lamps.", "Don't use orange on every border, heading, and button.", "Don't invent prices, balances, usage numbers, or customer proof."]
+  }
+}

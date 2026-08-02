@@ -4,7 +4,9 @@ export function ScrollToBottomButton() {
   const scrollToBottom = () => {
     window.scrollTo({
       top: document.documentElement.scrollHeight,
-      behavior: "smooth",
+      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+        ? "auto"
+        : "smooth",
     });
   };
 
@@ -12,7 +14,8 @@ export function ScrollToBottomButton() {
     <button
       onClick={scrollToBottom}
       title="Scroll to bottom"
-      className="fixed right-6 bottom-6 z-50 flex h-11 w-11 cursor-pointer items-center justify-center rounded-full border border-line-strong bg-ink-raised text-ash transition-colors hover:border-ember hover:text-ember"
+      aria-label="Scroll to page footer"
+      className="fixed right-5 bottom-5 z-40 flex h-11 w-11 cursor-pointer items-center justify-center rounded-control border border-rail bg-platform-raised text-copy-muted transition-colors hover:bg-surface-subtle hover:text-copy"
     >
       <svg
         className="h-5 w-5"

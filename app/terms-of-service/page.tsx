@@ -1,4 +1,5 @@
 import { Metadata } from "next";
+import { LegalDocument } from "@/components/shared/legal-document";
 
 export const metadata: Metadata = {
   title: "Terms of Service | 34cats",
@@ -7,13 +8,10 @@ export const metadata: Metadata = {
 
 export default function TermsOfServicePage() {
   return (
-    <main className="min-h-screen text-bone">
-      <div className="mx-auto max-w-3xl px-6 py-16 md:py-24">
-        <h1 className="mb-10 font-display text-5xl text-bone md:text-6xl">Terms of Service</h1>
-        
-        <div className="space-y-12 leading-relaxed text-ash">
+    <LegalDocument title="Terms of Service">
+        <div className="space-y-12 leading-relaxed text-copy-muted">
           <section>
-            <p className="mb-6 text-sm text-ash-dim">
+            <p className="mb-6 text-sm text-copy-muted">
               <strong>Last Updated:</strong> January 3, 2026
             </p>
             <p className="mb-4">
@@ -27,7 +25,7 @@ export default function TermsOfServicePage() {
           </section>
 
           <section>
-            <h2 className="mb-4 font-display text-2xl text-bone">1. Acceptance of Terms</h2>
+            <h2 className="mb-4 font-display text-2xl text-copy">1. Acceptance of Terms</h2>
             <p className="mb-4">
               By creating an account, accessing, or using our Service, you confirm that:
             </p>
@@ -40,7 +38,7 @@ export default function TermsOfServicePage() {
           </section>
 
           <section>
-            <h2 className="mb-4 font-display text-2xl text-bone">2. Description of Service</h2>
+            <h2 className="mb-4 font-display text-2xl text-copy">2. Description of Service</h2>
             <p className="mb-4">
               34cats provides web-based applications, including but not limited to:
             </p>
@@ -56,9 +54,9 @@ export default function TermsOfServicePage() {
           </section>
 
           <section>
-            <h2 className="mb-4 font-display text-2xl text-bone">3. User Accounts</h2>
+            <h2 className="mb-4 font-display text-2xl text-copy">3. User Accounts</h2>
             
-            <h3 className="mb-3 font-display text-xl text-bone">3.1 Account Creation</h3>
+            <h3 className="mb-3 font-display text-xl text-copy">3.1 Account Creation</h3>
             <p className="mb-4">
               To access certain features of the Service, you must create an account using Google OAuth 
               authentication. You are responsible for:
@@ -69,7 +67,7 @@ export default function TermsOfServicePage() {
               <li>Notifying us immediately of any unauthorized access or security breach</li>
             </ul>
 
-            <h3 className="mb-3 font-display text-xl text-bone">3.2 Account Termination</h3>
+            <h3 className="mb-3 font-display text-xl text-copy">3.2 Account Termination</h3>
             <p className="mb-4">
               We reserve the right to suspend or terminate your account at our discretion if:
             </p>
@@ -85,9 +83,9 @@ export default function TermsOfServicePage() {
           </section>
 
           <section>
-            <h2 className="mb-4 font-display text-2xl text-bone">4. User Content and Data</h2>
+            <h2 className="mb-4 font-display text-2xl text-copy">4. User Content and Data</h2>
             
-            <h3 className="mb-3 font-display text-xl text-bone">4.1 Your Content</h3>
+            <h3 className="mb-3 font-display text-xl text-copy">4.1 Your Content</h3>
             <p className="mb-4">
               You retain all rights to the content you create using our Service, including resumes, 
               personal information, and other data (&quot;User Content&quot;). By using the Service, you grant 
@@ -99,7 +97,7 @@ export default function TermsOfServicePage() {
               <li>Display your User Content back to you within the Service</li>
             </ul>
 
-            <h3 className="mb-3 font-display text-xl text-bone">4.2 Content Responsibility</h3>
+            <h3 className="mb-3 font-display text-xl text-copy">4.2 Content Responsibility</h3>
             <p className="mb-4">You represent and warrant that:</p>
             <ul className="list-disc list-inside ml-4 mb-4 space-y-2">
               <li>You own or have the necessary rights to all User Content you submit</li>
@@ -108,7 +106,7 @@ export default function TermsOfServicePage() {
               <li>Your User Content does not contain illegal, harmful, or offensive material</li>
             </ul>
 
-            <h3 className="mb-3 font-display text-xl text-bone">4.3 Data Backup</h3>
+            <h3 className="mb-3 font-display text-xl text-copy">4.3 Data Backup</h3>
             <p className="mb-4">
               While we implement reasonable data backup procedures, you are responsible for maintaining 
               your own backup copies of important User Content. We are not liable for any loss of data.
@@ -116,7 +114,7 @@ export default function TermsOfServicePage() {
           </section>
 
           <section>
-            <h2 className="mb-4 font-display text-2xl text-bone">5. Acceptable Use Policy</h2>
+            <h2 className="mb-4 font-display text-2xl text-copy">5. Acceptable Use Policy</h2>
             <p className="mb-4">You agree NOT to:</p>
             <ul className="list-disc list-inside ml-4 mb-4 space-y-2">
               <li>Use the Service for any illegal or unauthorized purpose</li>
@@ -133,22 +131,22 @@ export default function TermsOfServicePage() {
           </section>
 
           <section>
-            <h2 className="mb-4 font-display text-2xl text-bone">6. Intellectual Property Rights</h2>
+            <h2 className="mb-4 font-display text-2xl text-copy">6. Intellectual Property Rights</h2>
             
-            <h3 className="mb-3 font-display text-xl text-bone">6.1 Our Property</h3>
+            <h3 className="mb-3 font-display text-xl text-copy">6.1 Our Property</h3>
             <p className="mb-4">
               The Service, including its design, features, functionality, source code, graphics, logos, 
               and all related intellectual property, is owned by 34cats and protected by copyright, 
               trademark, and other intellectual property laws.
             </p>
 
-            <h3 className="mb-3 font-display text-xl text-bone">6.2 Limited License</h3>
+            <h3 className="mb-3 font-display text-xl text-copy">6.2 Limited License</h3>
             <p className="mb-4">
               We grant you a limited, non-exclusive, non-transferable, revocable license to access and 
               use the Service for personal, non-commercial purposes, subject to these Terms.
             </p>
 
-            <h3 className="mb-3 font-display text-xl text-bone">6.3 Trademarks</h3>
+            <h3 className="mb-3 font-display text-xl text-copy">6.3 Trademarks</h3>
             <p className="mb-4">
               &quot;34cats&quot;, &quot;Resumeow&quot;, and related logos are trademarks of 34cats. You may not use 
               these trademarks without our prior written permission.
@@ -156,7 +154,7 @@ export default function TermsOfServicePage() {
           </section>
 
           <section>
-            <h2 className="mb-4 font-display text-2xl text-bone">7. Third-Party Services</h2>
+            <h2 className="mb-4 font-display text-2xl text-copy">7. Third-Party Services</h2>
             <p className="mb-4">
               Our Service integrates with third-party services including Google OAuth, Supabase, 
               LaTeX.Online, and Cloudflare Pages. Your use of these services is subject to their 
@@ -170,16 +168,16 @@ export default function TermsOfServicePage() {
           </section>
 
           <section>
-            <h2 className="mb-4 font-display text-2xl text-bone">8. Disclaimers and Limitations of Liability</h2>
+            <h2 className="mb-4 font-display text-2xl text-copy">8. Disclaimers and Limitations of Liability</h2>
             
-            <h3 className="mb-3 font-display text-xl text-bone">8.1 Service &quot;AS IS&quot;</h3>
+            <h3 className="mb-3 font-display text-xl text-copy">8.1 Service &quot;AS IS&quot;</h3>
             <p className="mb-4">
               THE SERVICE IS PROVIDED &quot;AS IS&quot; AND &quot;AS AVAILABLE&quot; WITHOUT WARRANTIES OF ANY KIND, 
               WHETHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO IMPLIED WARRANTIES OF MERCHANTABILITY, 
               FITNESS FOR A PARTICULAR PURPOSE, OR NON-INFRINGEMENT.
             </p>
 
-            <h3 className="mb-3 font-display text-xl text-bone">8.2 No Guarantee</h3>
+            <h3 className="mb-3 font-display text-xl text-copy">8.2 No Guarantee</h3>
             <p className="mb-4">We do not guarantee that:</p>
             <ul className="list-disc list-inside ml-4 mb-4 space-y-2">
               <li>The Service will be uninterrupted, secure, or error-free</li>
@@ -188,7 +186,7 @@ export default function TermsOfServicePage() {
               <li>The Service will meet your specific requirements</li>
             </ul>
 
-            <h3 className="mb-3 font-display text-xl text-bone">8.3 Limitation of Liability</h3>
+            <h3 className="mb-3 font-display text-xl text-copy">8.3 Limitation of Liability</h3>
             <p className="mb-4">
               TO THE MAXIMUM EXTENT PERMITTED BY LAW, IN NO EVENT SHALL 34CATS BE LIABLE FOR ANY 
               INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, INCLUDING BUT NOT 
@@ -203,7 +201,7 @@ export default function TermsOfServicePage() {
           </section>
 
           <section>
-            <h2 className="mb-4 font-display text-2xl text-bone">9. Indemnification</h2>
+            <h2 className="mb-4 font-display text-2xl text-copy">9. Indemnification</h2>
             <p className="mb-4">
               You agree to indemnify, defend, and hold harmless 34cats, its affiliates, and their 
               respective officers, directors, employees, and agents from any claims, liabilities, 
@@ -218,10 +216,10 @@ export default function TermsOfServicePage() {
           </section>
 
           <section>
-            <h2 className="mb-4 font-display text-2xl text-bone">10. Privacy</h2>
+            <h2 className="mb-4 font-display text-2xl text-copy">10. Privacy</h2>
             <p className="mb-4">
               Your privacy is important to us. Please review our{" "}
-              <a href="/privacy-policy" className="text-ember underline underline-offset-4">
+              <a href="/privacy-policy" className="text-signal underline underline-offset-4">
                 Privacy Policy
               </a>{" "}
               to understand how we collect, use, and protect your personal information.
@@ -229,7 +227,7 @@ export default function TermsOfServicePage() {
           </section>
 
           <section>
-            <h2 className="mb-4 font-display text-2xl text-bone">11. Modifications to Terms</h2>
+            <h2 className="mb-4 font-display text-2xl text-copy">11. Modifications to Terms</h2>
             <p className="mb-4">
               We reserve the right to modify these Terms at any time. We will notify users of material 
               changes by posting the updated Terms on this page and updating the &quot;Last Updated&quot; date. 
@@ -239,7 +237,7 @@ export default function TermsOfServicePage() {
           </section>
 
           <section>
-            <h2 className="mb-4 font-display text-2xl text-bone">12. Termination</h2>
+            <h2 className="mb-4 font-display text-2xl text-copy">12. Termination</h2>
             <p className="mb-4">
               Either party may terminate this agreement at any time. Upon termination:
             </p>
@@ -252,7 +250,7 @@ export default function TermsOfServicePage() {
           </section>
 
           <section>
-            <h2 className="mb-4 font-display text-2xl text-bone">13. Governing Law and Dispute Resolution</h2>
+            <h2 className="mb-4 font-display text-2xl text-copy">13. Governing Law and Dispute Resolution</h2>
             <p className="mb-4">
               These Terms shall be governed by and construed in accordance with the laws of the 
               jurisdiction where 34cats operates, without regard to its conflict of law provisions.
@@ -265,7 +263,7 @@ export default function TermsOfServicePage() {
           </section>
 
           <section>
-            <h2 className="mb-4 font-display text-2xl text-bone">14. Severability</h2>
+            <h2 className="mb-4 font-display text-2xl text-copy">14. Severability</h2>
             <p className="mb-4">
               If any provision of these Terms is found to be invalid or unenforceable, the remaining 
               provisions shall continue to be valid and enforceable to the fullest extent permitted by law.
@@ -273,7 +271,7 @@ export default function TermsOfServicePage() {
           </section>
 
           <section>
-            <h2 className="mb-4 font-display text-2xl text-bone">15. Entire Agreement</h2>
+            <h2 className="mb-4 font-display text-2xl text-copy">15. Entire Agreement</h2>
             <p className="mb-4">
               These Terms, together with our Privacy Policy, constitute the entire agreement between 
               you and 34cats regarding the Service and supersede all prior agreements and understandings.
@@ -281,34 +279,33 @@ export default function TermsOfServicePage() {
           </section>
 
           <section>
-            <h2 className="mb-4 font-display text-2xl text-bone">16. Contact Information</h2>
+            <h2 className="mb-4 font-display text-2xl text-copy">16. Contact Information</h2>
             <p className="mb-4">
               If you have any questions, concerns, or feedback regarding these Terms, please contact us:
             </p>
-            <div className="border-l-2 border-line-strong pl-6">
+            <div className="border-l border-rail pl-6">
               <p className="mb-2">
-                <strong className="font-medium text-bone">Email:</strong>{" "}
-                <a href="mailto:34cats.dev@gmail.com" className="text-ember underline underline-offset-4">
+                <strong className="font-medium text-copy">Email:</strong>{" "}
+                <a href="mailto:34cats.dev@gmail.com" className="text-signal underline underline-offset-4">
                   34cats.dev@gmail.com
                 </a>
               </p>
               <p className="mb-2">
-                <strong className="font-medium text-bone">Website:</strong>{" "}
-                <a href="https://34cats.com" target="_blank" rel="noopener noreferrer" className="text-ember underline underline-offset-4">
+                <strong className="font-medium text-copy">Website:</strong>{" "}
+                <a href="https://34cats.com" target="_blank" rel="noopener noreferrer" className="text-signal underline underline-offset-4">
                   https://34cats.com
                 </a>
               </p>
             </div>
           </section>
 
-          <section className="mt-16 border-t border-line pt-8">
-            <p className="text-sm text-ash-dim">
+          <section className="mt-16 border-t border-rail pt-8">
+            <p className="text-sm text-copy-muted">
               By using our Service, you acknowledge that you have read, understood, and agree to be 
               bound by these Terms of Service.
             </p>
           </section>
         </div>
-      </div>
-    </main>
+    </LegalDocument>
   );
 }

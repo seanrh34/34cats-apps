@@ -6,17 +6,11 @@ interface ProjectHeroProps {
 
 export function ProjectHero({ title, tagline, subtitle }: ProjectHeroProps) {
   return (
-    <section className="mb-20 border-b border-line pb-16">
-      <p className="label text-ash-dim">Project</p>
-      <h1 className="mt-5 font-display text-[clamp(2.5rem,6vw,4.25rem)] leading-[1] text-bone">
-        {title}
-      </h1>
-      <p className="mt-8 max-w-2xl text-xl leading-relaxed text-bone">
-        {tagline}
-      </p>
-      {subtitle && (
-        <p className="mt-4 max-w-2xl leading-relaxed text-ash">{subtitle}</p>
-      )}
+    <section className="mb-16 border-b border-rail pb-12">
+      <span className="status-pill inline-flex rounded-full bg-live/10 px-2.5 py-1 text-xs font-semibold text-live">Live</span>
+      <h1 className="portal-heading mt-5 text-[clamp(2.75rem,7vw,5.5rem)] leading-none tracking-[-0.035em] text-copy">{title}</h1>
+      <p className="mt-6 max-w-[65ch] text-xl leading-relaxed text-copy">{tagline}</p>
+      {subtitle && <p className="mt-3 max-w-[70ch] leading-relaxed text-copy-muted">{subtitle}</p>}
     </section>
   );
 }

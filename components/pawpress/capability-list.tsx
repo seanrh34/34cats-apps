@@ -9,15 +9,13 @@ interface CapabilityListProps {
 
 export function CapabilityList({ capabilities }: CapabilityListProps) {
   return (
-    <div className="grid gap-px bg-line sm:grid-cols-2">
+    <dl className="grid gap-3 sm:grid-cols-2">
       {capabilities.map((capability) => (
-        <div key={capability.title} className="bg-ink p-6">
-          <h3 className="font-display text-xl text-bone">{capability.title}</h3>
-          <p className="mt-2 text-sm leading-relaxed text-ash">
-            {capability.description}
-          </p>
+        <div key={capability.title} className="portal-panel p-5">
+          <dt className="portal-heading text-lg text-copy">{capability.title}</dt>
+          <dd className="mt-2 text-sm leading-relaxed text-copy-muted">{capability.description}</dd>
         </div>
       ))}
-    </div>
+    </dl>
   );
 }

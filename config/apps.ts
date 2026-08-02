@@ -5,35 +5,37 @@ export const apps: App[] = [
     name: "PawPress CMS",
     href: "/pawpress-cms",
     description:
-      "A free, open-source headless CMS built into your Next.js app. No pricing tiers, no vendor lock-in, deploys as a static site on Cloudflare or Vercel.",
+      "A small headless CMS, inspired by WordPress, for projects and other blogs, with content stored in Supabase and pages deployed as static sites on Cloudflare or Vercel.",
     status: "Live",
     stack: ["Next.js", "Supabase", "Tailwind"],
+    image: "/images/pawpress-screenshot.png",
   },
   {
     name: "Resumeow",
     href: "https://resumeow.34cats.com",
     description:
-      "LaTeX-quality resumes without touching LaTeX. Fill in the forms, get the PDF recruiters actually like reading.",
+      "All-in-one job application platform, featuring a visual-based, AI-assisted resume builder that produces ATS-friendly resumes, no technical knowledge of LaTeX, etc required.",
     status: "Live",
-    stack: ["Next.js", "LaTeX", "Supabase"],
+    stack: ["Next.js", "LaTeX", "Supabase", "Agentic AI"],
+    image: "/images/resumeow-screenshot.png",
   },
   // Add more apps here
 ];
 
 export const features: Feature[] = [
   {
-    title: "Built to be used",
+    title: "PawPress powers this site",
     description:
-      "Every app here started as a problem I actually had. If it doesn't earn its place in my own week, it doesn't ship.",
+      "The pages you are reading right now are managed through PawPress. It is a live product, not a demo — content edits deploy as static pages in minutes.",
   },
   {
-    title: "Small on purpose",
+    title: "Resumes that pass automated screening",
     description:
-      "No dashboards nobody asked for, no onboarding tour. The shortest path between opening the app and being done with it.",
+      "Resumeow produces ATS-friendly PDFs from your profile. No LaTeX, no guesswork about whether a recruiter software can parse the output.",
   },
   {
-    title: "Yours to keep",
+    title: "One account, one credit balance",
     description:
-      "Your data stays exportable and, where it makes sense, the source stays open. Nothing here holds your work hostage.",
+      "Sign in once at 34cats and the same balance works across every app in the network. Most tools are free; credits unlock paid features when they matter.",
   },
 ];

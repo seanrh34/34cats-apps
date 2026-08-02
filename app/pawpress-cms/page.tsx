@@ -58,8 +58,8 @@ export default function PawPressCMSPage() {
   ];
 
   return (
-    <div className="page-glow min-h-screen">
-      <div className="mx-auto max-w-4xl px-6 py-16 md:py-20">
+    <main className="min-h-screen px-5 py-12 md:px-8 md:py-20">
+      <div className="mx-auto max-w-5xl">
         <ProjectHero
           title="PawPress CMS"
           tagline="A lightweight headless CMS for writers who want control without complexity."
@@ -87,15 +87,15 @@ export default function PawPressCMSPage() {
           <p>
             PawPress CMS integrates directly into a Next.js application using a simple architecture:
           </p>
-          <div className="my-8 border-l-2 border-line-strong pl-6">
-            <h3 className="label text-ash-dim">Tech Stack</h3>
+          <div className="my-8 border-l border-rail pl-6">
+            <h3 className="portal-label text-copy-muted">Tech Stack</h3>
             <ul className="mt-4 space-y-2">
-              <li><strong className="font-medium text-bone">Next.js</strong> — Application framework and server-side rendering</li>
-              <li><strong className="font-medium text-bone">Supabase</strong> — Database, authentication, content storage, and real-time features</li>
+              <li><strong className="font-medium text-copy">Next.js</strong> — Application framework and server-side rendering</li>
+              <li><strong className="font-medium text-copy">Supabase</strong> — Database, authentication, content storage, and real-time features</li>
             </ul>
           </div>
-          <div className="my-8 border-l-2 border-line-strong pl-6">
-            <h3 className="label text-ash-dim">Architecture</h3>
+          <div className="my-8 border-l border-rail pl-6">
+            <h3 className="portal-label text-copy-muted">Architecture</h3>
             <ol className="mt-4 list-inside list-decimal space-y-2">
               <li>Authors log in through Supabase authentication</li>
               <li>Content is created and edited through a custom interface</li>
@@ -112,7 +112,7 @@ export default function PawPressCMSPage() {
               href="https://github.com/seanrh34/PawPress"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center rounded-full border border-line-strong px-6 py-3 font-medium text-bone transition-colors hover:border-ash-dim hover:bg-ink-raised"
+              className="portal-button portal-button-secondary"
             >
               View Full Implementation on GitHub
               <svg className="ml-2 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -124,8 +124,8 @@ export default function PawPressCMSPage() {
 
         <ContentSection title="Who This Is For">
           <div className="grid gap-8 md:grid-cols-2">
-            <div className="border-t-2 border-moss pt-5">
-              <h3 className="label text-moss">Ideal For</h3>
+            <div className="border-t border-live pt-5">
+              <h3 className="portal-label text-live">Ideal For</h3>
               <ul className="mt-4 space-y-2 text-sm">
                 <li>Solo founders building content-driven products</li>
                 <li>Developers who want a free, native CMS experience</li>
@@ -133,8 +133,8 @@ export default function PawPressCMSPage() {
                 <li>Anyone who values ownership over their stack</li>
               </ul>
             </div>
-            <div className="border-t-2 border-ember pt-5">
-              <h3 className="label text-ember">Not Right For</h3>
+            <div className="border-t border-cancelled pt-5">
+              <h3 className="portal-label text-cancelled">Not Right For</h3>
               <ul className="mt-4 space-y-2 text-sm">
                 <li>High-level website building tools (drag and drop)</li>
                 <li>Complex content models with relationships</li>
@@ -145,7 +145,7 @@ export default function PawPressCMSPage() {
           </div>
         </ContentSection>
 
-        <ContentSection title="See It In Action" className="border-t border-line pt-16">
+        <ContentSection title="See It In Action">
           <p>
             Want to see PawPress CMS in production? Check out the live blog powered by this system.
           </p>
@@ -154,7 +154,7 @@ export default function PawPressCMSPage() {
               href="https://blog.34cats.com/"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center rounded-full bg-ember-deep px-7 py-3.5 font-semibold text-white transition-colors hover:bg-ember"
+              className="portal-button portal-button-primary"
             >
               Visit Live Demo
               <svg className="ml-2 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -174,6 +174,6 @@ export default function PawPressCMSPage() {
         </ContentSection>
       </div>
       <ScrollToBottomButton />
-    </div>
+    </main>
   );
 }

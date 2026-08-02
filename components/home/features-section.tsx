@@ -2,26 +2,16 @@ import { features } from "@/config/apps";
 
 export function FeaturesSection() {
   return (
-    <section className="border-y border-line bg-ink-raised px-6 py-20 md:py-28">
+    <section className="border-y border-rail bg-platform-raised px-5 py-20 md:px-8 md:py-28">
       <div className="mx-auto max-w-6xl">
-        <p className="label text-ash-dim">How these get built</p>
-        <h2 className="mt-4 max-w-2xl font-display text-4xl leading-tight text-bone md:text-5xl">
-          Three rules I don&apos;t break.
-        </h2>
-
-        <div className="mt-14 grid gap-px bg-line md:grid-cols-3">
-          {features.map((feature, index) => (
-            <div key={feature.title} className="bg-ink-raised p-8 md:p-10">
-              <span className="label tabular-nums text-ash-dim">
-                {String(index + 1).padStart(2, "0")}
-              </span>
-              <h3 className="mt-6 font-display text-2xl text-bone">
-                {feature.title}
-              </h3>
-              <p className="mt-3 leading-relaxed text-ash">
-                {feature.description}
-              </p>
-            </div>
+        <p className="portal-label text-signal">What each app does</p>
+        <h2 className="portal-heading mt-2 max-w-2xl text-4xl text-copy md:text-5xl">Built to be used, not compared.</h2>
+        <div className="mt-10 grid gap-8 md:grid-cols-3">
+          {features.map((feature) => (
+            <article key={feature.title}>
+              <h3 className="portal-heading text-xl text-copy">{feature.title}</h3>
+              <p className="mt-3 leading-relaxed text-copy-muted">{feature.description}</p>
+            </article>
           ))}
         </div>
       </div>
