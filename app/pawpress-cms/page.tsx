@@ -1,179 +1,292 @@
-import { Metadata } from "next";
+import type { Metadata } from "next";
 import { ProjectHero } from "@/components/pawpress/project-hero";
-import { ContentSection } from "@/components/pawpress/content-section";
-import { CapabilityList } from "@/components/pawpress/capability-list";
-import { ScrollToBottomButton } from "@/components/shared/scroll-to-bottom";
 
 export const metadata: Metadata = {
   title: "PawPress CMS | 34cats",
   description:
-    "A free, open-source headless CMS built into your Next.js app. No pricing tiers, no vendor lock-in.",
+    "Fork an MIT-licensed Next.js blog CMS with a Lexical editor, Supabase-backed content, and a complete admin dashboard.",
 };
 
+const outcomes = [
+  {
+    title: "A focused writing experience",
+    description:
+      "Write, format, categorize, and publish posts in a Lexical-powered editor with image uploads, video embeds, code blocks, drafts, and featured images.",
+  },
+  {
+    title: "A complete blog foundation",
+    description:
+      "Start with the public blog, admin dashboard, post and category management, SEO-friendly routes, metadata, and API endpoints already connected.",
+  },
+  {
+    title: "Code you can take apart",
+    description:
+      "PawPress is an MIT-licensed repository, not a hosted CMS. Fork it, change the schema, reshape the editor, and deploy it with your application.",
+  },
+];
+
+const steps = [
+  {
+    title: "Fork the repository",
+    description:
+      "Use PawPress as a starting point for your blog instead of integrating a separate CMS product.",
+  },
+  {
+    title: "Connect Supabase",
+    description:
+      "Create a Supabase project, add the documented tables and storage bucket, then set the required environment variables.",
+  },
+  {
+    title: "Make it yours",
+    description:
+      "Change the visual design, content model, editor controls, roles, and publishing flow in the same Next.js codebase.",
+  },
+  {
+    title: "Deploy and publish",
+    description:
+      "Deploy the application to Vercel or your preferred Next.js host, then manage posts from the included admin dashboard.",
+  },
+];
+
+const included = [
+  "Next.js 15 App Router project",
+  "Lexical rich-text editor",
+  "Post, category, image, and user management",
+  "Public blog pages and SEO metadata",
+  "Supabase database and storage setup",
+  "Vercel-ready deployment structure",
+];
+
+const prerequisites = [
+  "Node.js 18 or newer",
+  "A Supabase project and credentials",
+  "A hosting account for the Next.js application",
+  "Comfort working in a TypeScript codebase",
+];
+
 export default function PawPressCMSPage() {
-  const capabilities = [
-    {
-      title: "Clean Writing Interface",
-      description: "Write and manage content in an interface built specifically for blog writing. No unnecessary features, just the tools you need.",
-    },
-    {
-      title: "Secure Authentication",
-      description: "Built-in authentication ensures only authorized users can create and edit content.",
-    },
-    {
-      title: "Straightforward Publishing",
-      description: "Draft, publish, and update posts with a workflow that matches how writers actually work.",
-    },
-    {
-      title: "Performance by Default",
-      description: "Server-side rendering delivers fast page loads and excellent SEO without configuration overhead.",
-    },
-    {
-      title: "Flexible Content Structure",
-      description: "Structure your content your way. No predefined templates or rigid schemas to work around.",
-    },
-    {
-      title: "Full Ownership",
-      description: "Your content, your database, your deployment. No third-party service controls your data or charges based on usage.",
-    },
-  ];
-
-  const advantages = [
-    {
-      title: "No Fees",
-      description: "Unlike Contentful, Sanity, or other headless CMSs, there's no pricing tier that scales with your traffic or content volume.",
-    },
-    {
-      title: "No Vendor Lock-In",
-      description: "Content lives in your Postgres database in a standard format. Export or migrate anytime without proprietary APIs.",
-    },
-    {
-      title: "Native Integration",
-      description: "Because the CMS is part of your app, there's no API layer between your content and your pages. Updates appear instantly.",
-    },
-    {
-      title: "Complete Control",
-      description: "Modify the editor, add custom fields, or change the publishing workflow. You own the entire stack.",
-    },
-  ];
-
   return (
-    <main className="min-h-screen px-5 py-12 md:px-8 md:py-20">
-      <div className="mx-auto max-w-5xl">
-        <ProjectHero
-          title="PawPress CMS"
-          tagline="A lightweight headless CMS for writers who want control without complexity."
-          subtitle="Built directly into your Next.js app. No external services, no monthly fees, no vendor lock-in."
-        />
+    <main className="px-5 py-10 md:px-8 md:py-16">
+      <div className="mx-auto max-w-6xl">
+        <ProjectHero />
 
-        <ContentSection title="Why This Exists">
-          <p>
-            Most CMS platforms are over-engineered for simple blogs. WordPress requires managing plugins and updates. Headless solutions add pricing tiers and vendor lock-in.
-          </p>
-          <p>
-            PawPress CMS is a headless content management system built directly into a Next.js application, designed specifically for blog writing and publishing.
-          </p>
-        </ContentSection>
-
-        <ContentSection title="What It Does">
-          <CapabilityList capabilities={capabilities} />
-        </ContentSection>
-
-        <ContentSection title="Key Advantages">
-          <CapabilityList capabilities={advantages} />
-        </ContentSection>
-
-        <ContentSection title="How It Works">
-          <p>
-            PawPress CMS integrates directly into a Next.js application using a simple architecture:
-          </p>
-          <div className="my-8 border-l border-rail pl-6">
-            <h3 className="portal-label text-copy-muted">Tech Stack</h3>
-            <ul className="mt-4 space-y-2">
-              <li><strong className="font-medium text-copy">Next.js</strong> — Application framework and server-side rendering</li>
-              <li><strong className="font-medium text-copy">Supabase</strong> — Database, authentication, content storage, and real-time features</li>
-            </ul>
-          </div>
-          <div className="my-8 border-l border-rail pl-6">
-            <h3 className="portal-label text-copy-muted">Architecture</h3>
-            <ol className="mt-4 list-inside list-decimal space-y-2">
-              <li>Authors log in through Supabase authentication</li>
-              <li>Content is created and edited through a custom interface</li>
-              <li>Posts are stored in the linked Supabase database</li>
-              <li>Published content is rendered server-side for optimal performance</li>
-              <li>The entire system deploys as a single Next.js application</li>
-            </ol>
-          </div>
-          <p>
-            The setup is straightforward: initialize a Next.js project, configure Supabase, create the content schema, and build the editor interface. No microservices, no API gateways, no complex infrastructure.
-          </p>
-          <div className="mt-6">
-            <a
-              href="https://github.com/seanrh34/PawPress"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="portal-button portal-button-secondary"
+        <section
+          aria-labelledby="proof-title"
+          className="grid gap-8 border-b border-rail py-14 md:py-20 lg:grid-cols-[0.8fr_1.2fr] lg:gap-16"
+        >
+          <div>
+            <p className="portal-label text-signal">Live proof</p>
+            <h2
+              id="proof-title"
+              className="portal-heading mt-3 max-w-lg text-3xl leading-tight text-copy md:text-4xl"
             >
-              View Full Implementation on GitHub
-              <svg className="ml-2 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-              </svg>
-            </a>
+              The framework behind the 34cats blog.
+            </h2>
           </div>
-        </ContentSection>
-
-        <ContentSection title="Who This Is For">
-          <div className="grid gap-8 md:grid-cols-2">
-            <div className="border-t border-live pt-5">
-              <h3 className="portal-label text-live">Ideal For</h3>
-              <ul className="mt-4 space-y-2 text-sm">
-                <li>Solo founders building content-driven products</li>
-                <li>Developers who want a free, native CMS experience</li>
-                <li>Projects with straightforward content needs</li>
-                <li>Anyone who values ownership over their stack</li>
-              </ul>
-            </div>
-            <div className="border-t border-cancelled pt-5">
-              <h3 className="portal-label text-cancelled">Not Right For</h3>
-              <ul className="mt-4 space-y-2 text-sm">
-                <li>High-level website building tools (drag and drop)</li>
-                <li>Complex content models with relationships</li>
-                <li>Projects requiring plugin ecosystems</li>
-                <li>Organizations preferring managed services</li>
-              </ul>
-            </div>
-          </div>
-        </ContentSection>
-
-        <ContentSection title="See It In Action">
-          <p>
-            Want to see PawPress CMS in production? Check out the live blog powered by this system.
-          </p>
-          <div className="mt-6">
+          <div className="max-w-[65ch]">
+            <p className="text-lg leading-relaxed text-copy-muted">
+              PawPress is not a hosted service or a mockup. I use it to write
+              and publish the posts on my live blog. Browse the output first;
+              if the approach fits your project, the complete implementation
+              is available to clone or fork.
+            </p>
             <a
               href="https://blog.34cats.com/"
               target="_blank"
               rel="noopener noreferrer"
-              className="portal-button portal-button-primary"
+              className="mt-6 inline-flex min-h-11 items-center gap-2 font-semibold text-signal underline decoration-1 underline-offset-4 hover:text-copy"
             >
-              Visit Live Demo
-              <svg className="ml-2 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-              </svg>
+              Browse the live blog
+              <span aria-hidden="true">↗</span>
+              <span className="sr-only"> (opens in a new tab)</span>
             </a>
           </div>
-        </ContentSection>
+        </section>
 
-        <ContentSection title="Final Thoughts">
-          <p>
-            Building a custom CMS isn&apos;t always the answer, but for focused use cases, it offers clarity and control that off-the-shelf solutions can&apos;t match.
+        <section aria-labelledby="outcomes-title" className="py-14 md:py-20">
+          <div className="max-w-2xl">
+            <p className="portal-label text-signal">What you get</p>
+            <h2
+              id="outcomes-title"
+              className="portal-heading mt-3 text-3xl leading-tight text-copy md:text-4xl"
+            >
+              Enough CMS to launch. Plain enough to change.
+            </h2>
+            <p className="mt-5 text-lg leading-relaxed text-copy-muted">
+              PawPress gives developers a working blog stack without putting a
+              proprietary CMS between their content and their application.
+            </p>
+          </div>
+
+          <dl className="mt-10 grid border-y border-rail lg:grid-cols-3">
+            {outcomes.map((outcome, index) => (
+              <div
+                key={outcome.title}
+                className={`py-7 lg:px-8 lg:py-9 ${
+                  index > 0 ? "border-t border-rail lg:border-t-0 lg:border-l" : ""
+                }`}
+              >
+                <dt className="portal-heading text-xl text-copy">
+                  {outcome.title}
+                </dt>
+                <dd className="mt-3 leading-relaxed text-copy-muted">
+                  {outcome.description}
+                </dd>
+              </div>
+            ))}
+          </dl>
+        </section>
+
+        <section
+          aria-labelledby="workflow-title"
+          className="grid gap-10 border-y border-rail py-14 md:py-20 lg:grid-cols-[0.7fr_1.3fr] lg:gap-20"
+        >
+          <div>
+            <p className="portal-label text-signal">From fork to first post</p>
+            <h2
+              id="workflow-title"
+              className="portal-heading mt-3 max-w-md text-3xl leading-tight text-copy md:text-4xl"
+            >
+              A starting point, not another platform to manage.
+            </h2>
+            <p className="mt-5 max-w-md leading-relaxed text-copy-muted">
+              The repository documents the database schema, environment
+              variables, local setup, and deployment path. You own the work
+              that follows.
+            </p>
+          </div>
+
+          <ol className="border-t border-rail">
+            {steps.map((step, index) => (
+              <li
+                key={step.title}
+                className="grid gap-3 border-b border-rail py-6 sm:grid-cols-[2.5rem_1fr] sm:gap-5"
+              >
+                <span className="portal-label text-copy-muted" aria-hidden="true">
+                  {String(index + 1).padStart(2, "0")}
+                </span>
+                <div>
+                  <h3 className="portal-heading text-xl text-copy">
+                    {step.title}
+                  </h3>
+                  <p className="mt-2 max-w-[65ch] leading-relaxed text-copy-muted">
+                    {step.description}
+                  </p>
+                </div>
+              </li>
+            ))}
+          </ol>
+        </section>
+
+        <section aria-labelledby="clone-title" className="py-14 md:py-20">
+          <div className="max-w-2xl">
+            <p className="portal-label text-signal">Know what you are cloning</p>
+            <h2
+              id="clone-title"
+              className="portal-heading mt-3 text-3xl leading-tight text-copy md:text-4xl"
+            >
+              The application is included. The infrastructure is yours.
+            </h2>
+          </div>
+
+          <div className="mt-10 grid gap-10 lg:grid-cols-2 lg:gap-16">
+            <div className="border-t border-rail pt-6">
+              <h3 className="portal-heading text-xl text-copy">In the repository</h3>
+              <ul className="mt-5 space-y-3 text-copy-muted">
+                {included.map((item) => (
+                  <li key={item} className="flex gap-3">
+                    <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-live" aria-hidden="true" />
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className="border-t border-rail pt-6">
+              <h3 className="portal-heading text-xl text-copy">You provide</h3>
+              <ul className="mt-5 space-y-3 text-copy-muted">
+                {prerequisites.map((item) => (
+                  <li key={item} className="flex gap-3">
+                    <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-signal" aria-hidden="true" />
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+
+          <p className="mt-8 max-w-[70ch] rounded-control bg-surface-subtle px-5 py-4 text-sm leading-relaxed text-copy-muted">
+            PawPress does not add a CMS subscription or proprietary content
+            API. Supabase and your hosting provider may have their own pricing,
+            usage limits, and operational requirements.
           </p>
-          <p>
-            PawPress CMS trades comprehensive features for simplicity. It works well when your requirements are narrow and ownership matters more than convenience.
-          </p>
-        </ContentSection>
+        </section>
+
+        <section
+          aria-labelledby="fit-title"
+          className="grid gap-10 border-t border-rail py-14 md:py-20 lg:grid-cols-[0.7fr_1.3fr] lg:gap-20"
+        >
+          <div>
+            <p className="portal-label text-signal">Choose it for the right job</p>
+            <h2
+              id="fit-title"
+              className="portal-heading mt-3 text-3xl leading-tight text-copy md:text-4xl"
+            >
+              Best when ownership matters more than convenience.
+            </h2>
+          </div>
+          <div className="grid gap-8 sm:grid-cols-2">
+            <div className="border-t border-rail pt-5">
+              <h3 className="portal-heading text-lg text-copy">A good fit</h3>
+              <p className="mt-3 leading-relaxed text-copy-muted">
+                Next.js developers building a blog or content-led site who want
+                a working editor and a codebase they can fully customize.
+              </p>
+            </div>
+            <div className="border-t border-rail pt-5">
+              <h3 className="portal-heading text-lg text-copy">Choose something else</h3>
+              <p className="mt-3 leading-relaxed text-copy-muted">
+                Teams that need a no-code site builder, complex relational
+                content models, a plugin marketplace, or managed CMS support.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section className="rounded-panel bg-copy px-6 py-10 text-platform-raised md:px-10 md:py-12 lg:flex lg:items-end lg:justify-between lg:gap-12">
+          <div className="max-w-2xl">
+            <p className="portal-label text-platform-raised/70">Ready to inspect the code?</p>
+            <h2 className="portal-heading mt-3 text-3xl leading-tight md:text-4xl">
+              See the result. Then fork the implementation.
+            </h2>
+            <p className="mt-4 max-w-[60ch] leading-relaxed text-platform-raised/75">
+              Start with the live 34cats blog, or go directly to the MIT-licensed
+              repository and adapt PawPress for your own project.
+            </p>
+          </div>
+          <div className="mt-8 flex flex-col gap-3 sm:flex-row lg:mt-0 lg:shrink-0">
+            <a
+              href="https://blog.34cats.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="portal-button bg-platform-raised text-copy hover:bg-surface-subtle"
+            >
+              Visit the live blog
+              <span aria-hidden="true">↗</span>
+              <span className="sr-only"> (opens in a new tab)</span>
+            </a>
+            <a
+              href="https://github.com/seanrh34/PawPress/fork"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="portal-button border border-platform-raised/35 text-platform-raised hover:bg-platform-raised/10"
+            >
+              Fork on GitHub
+              <span aria-hidden="true">↗</span>
+              <span className="sr-only"> (opens in a new tab)</span>
+            </a>
+          </div>
+        </section>
       </div>
-      <ScrollToBottomButton />
     </main>
   );
 }

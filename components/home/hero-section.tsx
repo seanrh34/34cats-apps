@@ -7,7 +7,7 @@ export function HeroSection() {
           Practical tools you can use right now.
         </h1>
         <p className="hero-line-2 mx-auto mt-4 text-lg italic text-copy-muted">
-          My testing grounds, your playground.
+          My proving grounds, your playground.
         </p>
         <p className="hero-body mx-auto mt-4 max-w-2xl text-lg leading-relaxed text-copy-muted">
           Tools that I built to learn new technologies. Experience the results of my learning,
