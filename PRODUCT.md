@@ -52,9 +52,7 @@ collection includes PawPress CMS and Resumeow.
 ## Brand Commitments
 
 Preserve the 34cats name and existing logo assets. The product voice is direct,
-practical, honest, and grounded in what the tools currently do. Use a polished,
-conventional product interface at the craft level of ChatGPT and Claude without
-copying their brands, assets, or proprietary layouts.
+practical, honest, and grounded in what the tools currently do. Aim for a polished, personal, hand-made studio feel that stays honest and legible, without copying other products' brands, assets, or proprietary layouts.
 
 ## Evidence on Hand
 
