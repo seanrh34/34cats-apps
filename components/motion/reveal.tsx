@@ -12,6 +12,7 @@ interface RevealProps {
   /** Rotation used by the tilt variant (CSS angle). */
   tilt?: string;
   className?: string;
+  "aria-labelledby"?: string;
   style?: CSSProperties;
   children?: ReactNode;
 }
@@ -21,7 +22,7 @@ interface RevealProps {
  * state only exists under `.js` (set by the inline head script), so the
  * server-rendered markup is fully visible without JavaScript.
  */
-export function Reveal({ as: Tag = "div", variant = "up", delay = 0, tilt, className, style, children }: RevealProps) {
+export function Reveal({ as: Tag = "div", variant = "up", delay = 0, tilt, className, style, children, "aria-labelledby": labelledBy }: RevealProps) {
   const ref = useRef<HTMLElement>(null);
   const [visible, setVisible] = useState(false);
 
@@ -52,7 +53,7 @@ export function Reveal({ as: Tag = "div", variant = "up", delay = 0, tilt, class
   } as CSSProperties;
 
   return (
-    <Tag ref={ref} data-reveal={variant} className={`${className ?? ""}${visible ? " is-visible" : ""}`.trim()} style={merged}>
+    <Tag ref={ref} aria-labelledby={labelledBy} data-reveal={variant} className={`${className ?? ""}${visible ? " is-visible" : ""}`.trim()} style={merged}>
       {children}
     </Tag>
   );

@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { PeekingCat } from "@/components/brand/cat";
+import { Reveal } from "@/components/motion/reveal";
 import { ProjectHero } from "@/components/pawpress/project-hero";
 
 export const metadata: Metadata = {
@@ -70,7 +72,7 @@ export default function PawPressCMSPage() {
       <div className="mx-auto max-w-6xl">
         <ProjectHero />
 
-        <section
+        <Reveal as="section"
           aria-labelledby="proof-title"
           className="grid gap-8 border-b border-rail py-14 md:py-20 lg:grid-cols-[0.8fr_1.2fr] lg:gap-16"
         >
@@ -101,9 +103,9 @@ export default function PawPressCMSPage() {
               <span className="sr-only"> (opens in a new tab)</span>
             </a>
           </div>
-        </section>
+        </Reveal>
 
-        <section aria-labelledby="outcomes-title" className="py-14 md:py-20">
+        <Reveal as="section" aria-labelledby="outcomes-title" className="py-14 md:py-20">
           <div className="max-w-2xl">
             <p className="portal-label text-signal">What you get</p>
             <h2
@@ -135,9 +137,9 @@ export default function PawPressCMSPage() {
               </div>
             ))}
           </dl>
-        </section>
+        </Reveal>
 
-        <section
+        <Reveal as="section"
           aria-labelledby="workflow-title"
           className="grid gap-10 border-y border-rail py-14 md:py-20 lg:grid-cols-[0.7fr_1.3fr] lg:gap-20"
         >
@@ -156,29 +158,29 @@ export default function PawPressCMSPage() {
             </p>
           </div>
 
-          <ol className="border-t border-rail">
-            {steps.map((step, index) => (
-              <li
-                key={step.title}
-                className="grid gap-3 border-b border-rail py-6 sm:grid-cols-[2.5rem_1fr] sm:gap-5"
-              >
-                <span className="portal-label text-copy-muted" aria-hidden="true">
-                  {String(index + 1).padStart(2, "0")}
-                </span>
-                <div>
-                  <h3 className="portal-heading text-xl text-copy">
-                    {step.title}
-                  </h3>
-                  <p className="mt-2 max-w-[65ch] leading-relaxed text-copy-muted">
-                    {step.description}
-                  </p>
-                </div>
-              </li>
-            ))}
-          </ol>
-        </section>
+          <Reveal variant="draw" className="relative">
+            <div className="draw-line-y dash-line-y pointer-events-none absolute left-[2.1rem] top-8 bottom-8 w-0.5" aria-hidden="true" />
+            <ol className="relative">
+              {steps.map((step, index) => (
+                <Reveal as="li" variant="tilt" tilt={index % 2 ? "1deg" : "-1deg"} delay={index * 100} key={step.title} className="flex gap-5 py-5">
+                  <span
+                    className="relative z-10 block h-14 w-[4.5rem] shrink-0 bg-platform pr-3 font-mono text-5xl font-medium leading-[3.5rem] text-transparent"
+                    style={{ WebkitTextStroke: "1.5px var(--text)" }}
+                    aria-hidden="true"
+                  >
+                    {String(index + 1).padStart(2, "0")}
+                  </span>
+                  <div className="pt-1">
+                    <h3 className="portal-heading text-2xl text-copy">{step.title}</h3>
+                    <p className="mt-2 max-w-[65ch] text-lg leading-relaxed text-copy-muted">{step.description}</p>
+                  </div>
+                </Reveal>
+              ))}
+            </ol>
+          </Reveal>
+        </Reveal>
 
-        <section aria-labelledby="clone-title" className="py-14 md:py-20">
+        <Reveal as="section" aria-labelledby="clone-title" className="py-14 md:py-20">
           <div className="max-w-2xl">
             <p className="portal-label text-signal">Know what you are cloning</p>
             <h2
@@ -219,9 +221,9 @@ export default function PawPressCMSPage() {
             API. Supabase and your hosting provider may have their own pricing,
             usage limits, and operational requirements.
           </p>
-        </section>
+        </Reveal>
 
-        <section
+        <Reveal as="section"
           aria-labelledby="fit-title"
           className="grid gap-10 border-t border-rail py-14 md:py-20 lg:grid-cols-[0.7fr_1.3fr] lg:gap-20"
         >
@@ -250,42 +252,45 @@ export default function PawPressCMSPage() {
               </p>
             </div>
           </div>
-        </section>
+        </Reveal>
 
-        <section className="rounded-panel bg-copy px-6 py-10 text-platform-raised md:px-10 md:py-12 lg:flex lg:items-end lg:justify-between lg:gap-12">
-          <div className="max-w-2xl">
-            <p className="portal-label text-platform-raised/70">Ready to inspect the code?</p>
-            <h2 className="portal-heading mt-3 text-3xl leading-tight md:text-4xl">
-              See the result. Then fork the implementation.
-            </h2>
-            <p className="mt-4 max-w-[60ch] leading-relaxed text-platform-raised/75">
-              Start with the live 34cats blog, or go directly to the MIT-licensed
-              repository and adapt PawPress for your own project.
-            </p>
-          </div>
-          <div className="mt-8 flex flex-col gap-3 sm:flex-row lg:mt-0 lg:shrink-0">
-            <a
-              href="https://blog.34cats.com/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="portal-button bg-platform-raised text-copy hover:bg-surface-subtle"
-            >
-              Visit the live blog
-              <span aria-hidden="true">↗</span>
-              <span className="sr-only"> (opens in a new tab)</span>
-            </a>
-            <a
-              href="https://github.com/seanrh34/PawPress/fork"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="portal-button border border-platform-raised/35 text-platform-raised hover:bg-platform-raised/10"
-            >
-              Fork on GitHub
-              <span aria-hidden="true">↗</span>
-              <span className="sr-only"> (opens in a new tab)</span>
-            </a>
-          </div>
-        </section>
+        <Reveal className="relative mt-16 md:mt-20">
+          <PeekingCat className="absolute bottom-[calc(100%-1px)] right-[8%] w-24 md:w-32" />
+          <section className="rounded-[28px] bg-[var(--cta-bg)] px-6 py-10 text-[var(--cta-fg)] md:px-12 md:py-14 lg:flex lg:items-end lg:justify-between lg:gap-12">
+            <div className="max-w-2xl">
+              <p className="portal-label opacity-80">Ready to inspect the code?</p>
+              <h2 className="portal-heading mt-3 text-3xl leading-tight md:text-5xl">
+                See the result. Then fork the implementation.
+              </h2>
+              <p className="mt-4 max-w-[60ch] leading-relaxed opacity-80">
+                Start with the live 34cats blog, or go directly to the MIT-licensed
+                repository and adapt PawPress for your own project.
+              </p>
+            </div>
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row lg:mt-0 lg:shrink-0">
+              <a
+                href="https://blog.34cats.com/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="portal-button portal-button-inverse"
+              >
+                Visit the live blog
+                <span aria-hidden="true">↗</span>
+                <span className="sr-only"> (opens in a new tab)</span>
+              </a>
+              <a
+                href="https://github.com/seanrh34/PawPress/fork"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="portal-button portal-button-inverse-outline"
+              >
+                Fork on GitHub
+                <span aria-hidden="true">↗</span>
+                <span className="sr-only"> (opens in a new tab)</span>
+              </a>
+            </div>
+          </section>
+        </Reveal>
       </div>
     </main>
   );

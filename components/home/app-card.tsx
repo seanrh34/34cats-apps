@@ -1,6 +1,5 @@
 import Link from "next/link";
-import Image from "next/image";
-import type { CSSProperties } from "react";
+import { BrowserFrame } from "@/components/shared/browser-frame";
 import { Bracket } from "@/components/brand/bracket";
 import { appHost, tintClass } from "@/lib/app-utils";
 import { App } from "@/lib/types";
@@ -26,27 +25,7 @@ export function AppCard({ app, index = 0 }: AppCardProps) {
     </Link>
   );
 
-  const frame = (
-    <div className="card-frame overflow-hidden rounded-xl border-2 border-copy bg-platform-raised" style={{ "--frame-rot": index % 2 ? "1.5deg" : "-1.5deg" } as CSSProperties}>
-      <div className="flex items-center gap-3 border-b-2 border-copy bg-surface-subtle px-3 py-2" aria-hidden="true">
-        <span className="flex gap-1.5">
-          <span className="size-2.5 rounded-full bg-tomato" />
-          <span className="size-2.5 rounded-full bg-butter" />
-          <span className="size-2.5 rounded-full bg-sage" />
-        </span>
-        <span className="min-w-0 flex-1 truncate rounded-full bg-platform-raised px-3 py-1 font-mono text-[0.6875rem] text-copy-muted">{appHost(app)}</span>
-      </div>
-      <div className="relative aspect-[16/10] w-full overflow-hidden bg-surface-subtle">
-        <Image
-          src={app.image}
-          alt={`Screenshot of ${app.name}`}
-          fill
-          sizes="(max-width: 768px) 100vw, 50vw"
-          className="scale-[1.25] object-cover"
-        />
-      </div>
-    </div>
-  );
+  const frame = <BrowserFrame src={app.image} alt={`Screenshot of ${app.name}`} host={appHost(app)} rotate={index % 2 ? 1.5 : -1.5} />;
 
   return (
     <article className="app-card group relative h-full">

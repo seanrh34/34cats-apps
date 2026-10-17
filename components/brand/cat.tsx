@@ -11,6 +11,8 @@ interface CatProps {
   track?: boolean;
   /** Fixed gaze, -1..1 on each axis. Used when track is off (e.g. the 404 page). */
   look?: { x: number; y: number };
+  /** Hold the tail still (e.g. a confused cat). */
+  still?: boolean;
 }
 
 /** Pointer-following gaze, shared by both cats. Writes --lx/--ly on the svg. */
@@ -47,14 +49,14 @@ function useGaze(ref: React.RefObject<SVGSVGElement | null>, enabled: boolean) {
 }
 
 /** The 34cats cat: a line-drawn loaf with a swaying tail, blinking eyes and following pupils. */
-export function Cat({ className, track = true, look }: CatProps) {
+export function Cat({ className, track = true, look, still = false }: CatProps) {
   const ref = useRef<SVGSVGElement>(null);
   useGaze(ref, track);
   const style = look ? ({ "--lx": look.x, "--ly": look.y } as CSSProperties) : undefined;
   const line = { stroke: ink, strokeWidth: 2.5, strokeLinecap: "round", strokeLinejoin: "round" } as const;
 
   return (
-    <svg ref={ref} viewBox="0 12 160 122" className={className} style={style} aria-hidden="true" focusable="false" overflow="visible">
+    <svg ref={ref} viewBox="0 12 160 122" className={`${still ? "cat-still " : ""}${className ?? ""}`} style={style} aria-hidden="true" focusable="false" overflow="visible">
       {/* tail, behind the body */}
       <g className="cat-tail">
         <path d="M128 118 C150 122 160 102 151 88 C146 80 151 72 158 76" fill="none" {...line} />

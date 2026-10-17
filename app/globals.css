@@ -235,6 +235,22 @@ body::before {
   box-shadow: 5px 5px 0 var(--accent);
 }
 
+.portal-button-inverse-outline {
+  border: 1.5px solid var(--cta-fg);
+  background: transparent;
+  color: var(--cta-fg);
+}
+
+.portal-button-inverse-outline:hover {
+  transform: translate(-2px, -2px);
+  background: color-mix(in srgb, var(--cta-fg) 12%, transparent);
+}
+
+.portal-button-inverse-outline:active {
+  transform: translate(0, 0);
+  transition-duration: 70ms;
+}
+
 .portal-button-inverse:active {
   transform: translate(3px, 3px);
   box-shadow: 0 0 0 var(--accent);
@@ -277,6 +293,12 @@ body::before {
 
 .legal-document section + section {
   margin-top: 3rem;
+}
+
+.legal-document h2,
+.legal-document h3 {
+  font-family: var(--font-display);
+  letter-spacing: -0.02em;
 }
 
 .legal-document h2 {
@@ -419,6 +441,27 @@ body::before {
   [data-js] [data-reveal="draw"] .draw-line {
     transform: scaleY(0);
   }
+}
+
+.draw-line-y {
+  transform-origin: center top;
+  transition: transform 1600ms var(--ease-arrive);
+}
+
+[data-js] [data-reveal="draw"] .draw-line-y {
+  transform: scaleY(0);
+}
+
+[data-js] [data-reveal="draw"].is-visible .draw-line-y {
+  transform: none;
+}
+
+.dash-line-y {
+  background-image: repeating-linear-gradient(180deg, var(--accent) 0 9px, transparent 9px 18px);
+}
+
+.cat-still .cat-tail {
+  animation: none;
 }
 
 .dash-line {
@@ -760,7 +803,8 @@ body::before {
 }
 
 .app-card:hover .card-frame,
-.app-card:focus-within .card-frame {
+.app-card:focus-within .card-frame,
+.frame-hover:hover .card-frame {
   transform: translateY(-6px) rotate(0deg);
 }
 
@@ -930,7 +974,8 @@ body::before {
     transform: none;
   }
 
-  [data-js] [data-reveal="draw"] .draw-line {
+  [data-js] [data-reveal="draw"] .draw-line,
+  [data-js] [data-reveal="draw"] .draw-line-y {
     transform: none;
   }
 
