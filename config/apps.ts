@@ -9,6 +9,7 @@ export const apps: App[] = [
     status: "Live",
     stack: ["Next.js", "Supabase", "Tailwind"],
     image: "/images/pawpress-screenshot.png",
+    tint: "butter",
   },
   {
     name: "Resumeow",
@@ -18,6 +19,7 @@ export const apps: App[] = [
     status: "Live",
     stack: ["Next.js", "LaTeX", "Supabase", "Agentic AI"],
     image: "/images/resumeow-screenshot.png",
+    tint: "lilac",
   },
   // Add more apps here
 ];
