@@ -48,9 +48,9 @@ export function Navbar() {
           scrolled ? "shadow-[0_10px_30px_-10px_rgba(28,25,21,0.35)]" : "shadow-[0_2px_8px_-4px_rgba(28,25,21,0.2)]"
         }`}
       >
-        <Link href="/" className="flex shrink-0 items-center" aria-label="34cats Apps home">
-          <Image src="/34cats_main_light.png" alt="" width={240} height={120} className="theme-image-light h-11 w-auto" priority />
-          <Image src="/34cats_main.png" alt="" width={240} height={120} className="theme-image-dark h-11 w-auto" priority />
+        <Link href="/" className="-my-3 flex shrink-0 items-center" aria-label="34cats Apps home">
+          <Image src="/34cats_main_light.png" alt="" width={240} height={120} className="theme-image-light h-16 w-auto" priority />
+          <Image src="/34cats_main.png" alt="" width={240} height={120} className="theme-image-dark h-16 w-auto" priority />
         </Link>
 
         <div className="hidden items-center gap-5 md:flex">

@@ -21,7 +21,7 @@ export function TickerStrip() {
   );
 
   return (
-    <div className="overflow-hidden py-6 md:py-8" role="region" aria-label="Technology used across the apps">
+    <div className="overflow-hidden py-4 md:py-8" role="region" aria-label="Technology used across the apps">
       <div className="marquee -mx-[4%] w-[108%] -rotate-[1.5deg] bg-copy py-3.5 text-platform md:py-4">
         <div className="marquee-track">
           {renderHalf(false)}

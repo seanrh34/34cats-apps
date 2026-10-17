@@ -12,6 +12,8 @@ interface BracketProps {
   animate?: boolean;
   /** Delay before the draw starts, in ms. */
   delay?: number;
+  /** Draw when the nearest <Reveal variant="draw"> ancestor scrolls into view. */
+  drawOnView?: boolean;
 }
 
 const paths = {
@@ -20,7 +22,7 @@ const paths = {
 } as const;
 
 /** The 34cats motif: a square bracket that can draw itself. */
-export function Bracket({ shape = "open", className, strokeWidth = 5, stroke = "var(--accent)", fill, animate = false, delay = 150 }: BracketProps) {
+export function Bracket({ shape = "open", className, strokeWidth = 5, stroke = "var(--accent)", fill, animate = false, delay = 150, drawOnView = false }: BracketProps) {
   return (
     <svg
       viewBox={shape === "open" ? "0 0 100 100" : "0 0 48 48"}
@@ -31,7 +33,7 @@ export function Bracket({ shape = "open", className, strokeWidth = 5, stroke = "
       overflow="visible"
     >
       {fill && shape === "open" && <path d={paths.open} fill={fill} stroke="none" pathLength={1} className="bracket-fill" style={{ strokeDasharray: "none" }} />}
-      <path d={paths[shape]} stroke={stroke} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" pathLength={1} />
+      <path d={paths[shape]} className={drawOnView ? "draw-on-view" : undefined} stroke={stroke} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" pathLength={1} />
     </svg>
   );
 }

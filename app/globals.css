@@ -52,6 +52,7 @@
   --cta-bg: #1c1915;
   --cta-fg: #f5efe4;
   --grain-opacity: 0.055;
+  --ink: #1c1915;
 }
 
 :root[data-theme="dark"] {
@@ -65,15 +66,15 @@
   --border-strong: #5a5041;
   --accent: #ff6a4a;
   --accent-text: #ff6a4a;
-  --butter: #6e5a1f;
-  --sage: #3f5a3c;
-  --lilac: #51467a;
-  --sky: #34536f;
+  --butter: #e3b544;
+  --sage: #8fb886;
+  --lilac: #a990e0;
+  --sky: #82b0db;
   --success: #6fbf8a;
   --warning: #d5a548;
   --danger: #f18b82;
-  --cta-bg: color-mix(in srgb, #ff6a4a 24%, #221e17);
-  --cta-fg: #f3ecdf;
+  --cta-bg: #f3ecdf;
+  --cta-fg: #1c1915;
   --grain-opacity: 0.035;
 }
 
@@ -89,15 +90,15 @@
     --border-strong: #5a5041;
     --accent: #ff6a4a;
     --accent-text: #ff6a4a;
-    --butter: #6e5a1f;
-    --sage: #3f5a3c;
-    --lilac: #51467a;
-    --sky: #34536f;
+    --butter: #e3b544;
+    --sage: #8fb886;
+    --lilac: #a990e0;
+    --sky: #82b0db;
     --success: #6fbf8a;
     --warning: #d5a548;
     --danger: #f18b82;
-    --cta-bg: color-mix(in srgb, #ff6a4a 24%, #221e17);
-    --cta-fg: #f3ecdf;
+    --cta-bg: #f3ecdf;
+    --cta-fg: #1c1915;
     --grain-opacity: 0.035;
   }
 }
@@ -373,25 +374,25 @@ body::before {
 }
 
 /* ---------- Reveal system ---------- */
-/* Hidden initial state only exists when the head script has set .js. */
-.js [data-reveal="up"],
-.js [data-reveal="tilt"] {
+/* Hidden initial state only exists when the head script has set data-js. */
+[data-js] [data-reveal="up"],
+[data-js] [data-reveal="tilt"] {
   opacity: 0;
   transition:
     opacity 700ms var(--ease-arrive) var(--d, 0ms),
     transform 850ms var(--ease-arrive) var(--d, 0ms);
 }
 
-.js [data-reveal="up"] {
+[data-js] [data-reveal="up"] {
   transform: translateY(24px);
 }
 
-.js [data-reveal="tilt"] {
+[data-js] [data-reveal="tilt"] {
   transform: translateY(32px) rotate(var(--tilt, -2deg));
 }
 
-.js [data-reveal="up"].is-visible,
-.js [data-reveal="tilt"].is-visible {
+[data-js] [data-reveal="up"].is-visible,
+[data-js] [data-reveal="tilt"].is-visible {
   opacity: 1;
   transform: none;
 }
@@ -402,11 +403,11 @@ body::before {
   transition: transform 1400ms var(--ease-arrive) var(--d, 0ms);
 }
 
-.js [data-reveal="draw"] .draw-line {
+[data-js] [data-reveal="draw"] .draw-line {
   transform: scaleX(0);
 }
 
-.js [data-reveal="draw"].is-visible .draw-line {
+[data-js] [data-reveal="draw"].is-visible .draw-line {
   transform: none;
 }
 
@@ -415,7 +416,7 @@ body::before {
     transform-origin: center top;
   }
 
-  .js [data-reveal="draw"] .draw-line {
+  [data-js] [data-reveal="draw"] .draw-line {
     transform: scaleY(0);
   }
 }
@@ -823,6 +824,11 @@ body::before {
   transform: scaleX(1);
 }
 
+.link-row:hover *,
+.link-row:focus-visible * {
+  color: var(--ink);
+}
+
 .link-row .row-arrow {
   opacity: 0;
   transform: translateX(-10px);
@@ -836,25 +842,14 @@ body::before {
 }
 
 /* ---------- Footer wordmark ---------- */
-.wordmark {
+.wordmark-text {
   font-family: var(--font-display);
   font-weight: 800;
-  letter-spacing: -0.05em;
-  line-height: 0.9;
-  white-space: nowrap;
-  /* Fill matches the footer so the inner half of the stroke (and any overlapping
-     variable-font contours) is covered, leaving a clean outline. */
-  -webkit-text-stroke: 4px var(--border-strong);
-  paint-order: stroke fill;
-  color: var(--surface);
 }
 
 .wordmark-fill {
   position: absolute;
-  left: 0;
-  top: 0;
-  color: var(--accent);
-  -webkit-text-stroke: 4px var(--accent);
+  inset: 0;
   clip-path: inset(0 100% 0 0);
   transition: clip-path 1000ms var(--ease-arrive);
 }
@@ -867,6 +862,51 @@ body::before {
   .is-visible .wordmark-fill {
     clip-path: inset(0 0 0 0);
     transition-delay: 300ms;
+  }
+}
+
+/* ---------- Sleeping cat ---------- */
+@keyframes z-float {
+  0% {
+    opacity: 0;
+    transform: translate(0, 8px) scale(0.8);
+  }
+  25% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(10px, -34px) scale(1.15);
+  }
+}
+
+.zzz {
+  animation: z-float 3.6s ease-in-out infinite;
+  animation-delay: calc(var(--k, 0) * 1.2s);
+  opacity: 0;
+}
+
+/* Bracket that draws when its Reveal wrapper becomes visible. */
+[data-js] [data-reveal="draw"] .bracket path.draw-on-view {
+  stroke-dashoffset: 1;
+}
+
+[data-js] [data-reveal="draw"].is-visible .bracket path.draw-on-view {
+  stroke-dashoffset: 0;
+  transition: stroke-dashoffset 1500ms var(--ease-arrive) 200ms;
+}
+
+.sleep-breathe {
+  transform-origin: 50% 100%;
+  animation: breathe 4s ease-in-out infinite;
+}
+
+@keyframes breathe {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.02, 1.035);
   }
 }
 
@@ -884,13 +924,13 @@ body::before {
     transition-delay: 0ms !important;
   }
 
-  .js [data-reveal],
-  .js [data-reveal].is-visible {
+  [data-js] [data-reveal],
+  [data-js] [data-reveal].is-visible {
     opacity: 1;
     transform: none;
   }
 
-  .js [data-reveal="draw"] .draw-line {
+  [data-js] [data-reveal="draw"] .draw-line {
     transform: none;
   }
 
@@ -917,7 +957,11 @@ body::before {
     stroke-dashoffset: 0;
   }
 
-  .wordmark-fill {
-    clip-path: inset(0 100% 0 0);
+  .zzz {
+    opacity: 0.8;
+  }
+
+  [data-js] [data-reveal="draw"] .bracket path.draw-on-view {
+    stroke-dashoffset: 0;
   }
 }

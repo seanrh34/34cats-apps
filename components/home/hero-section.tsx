@@ -9,7 +9,7 @@ export function HeroSection() {
   const tiles = apps.map((app) => ({ name: app.name, host: appHost(app), status: app.status, tint: app.tint ?? "sky" }));
 
   return (
-    <section id="home" className="relative px-5 pb-12 pt-10 md:px-8 md:pb-20 md:pt-16">
+    <section id="home" className="relative px-5 pb-4 pt-10 md:px-8 md:pb-20 md:pt-16">
       <div className="hero-dots pointer-events-none absolute inset-0" aria-hidden="true" />
       <div className="relative mx-auto grid max-w-6xl grid-cols-1 items-center gap-10 lg:grid-cols-[1.1fr_0.9fr] lg:gap-6">
         <div>
@@ -52,8 +52,10 @@ export function HeroSection() {
               <span className="sr-only"> (opens in a new tab)</span>
             </a>
           </div>
-          <p className="hero-fade portal-label mt-7 text-copy-muted" style={{ "--d": "1100ms" } as React.CSSProperties}>
-            {liveCount} {liveCount === 1 ? "app" : "apps"} live · free to try · no card needed
+          <p className="hero-fade portal-label mt-7 flex flex-wrap gap-x-2 gap-y-1 text-copy-muted" style={{ "--d": "1100ms" } as React.CSSProperties}>
+            <span className="whitespace-nowrap">{liveCount} {liveCount === 1 ? "app" : "apps"} live ·</span>
+            <span className="whitespace-nowrap">free to try ·</span>
+            <span className="whitespace-nowrap">no card needed</span>
           </p>
         </div>
 

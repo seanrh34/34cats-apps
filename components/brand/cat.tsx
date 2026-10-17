@@ -138,3 +138,30 @@ export function PeekingCat({ className }: { className?: string }) {
     </svg>
   );
 }
+
+/** A curled-up sleeping cat for the call-to-action block. Colours follow the CTA block. */
+export function SleepingCat({ className }: { className?: string }) {
+  const fg = "var(--cta-fg)";
+  const bg = "var(--cta-bg)";
+  const line = { stroke: fg, strokeWidth: 2.6, strokeLinecap: "round", strokeLinejoin: "round" } as const;
+  return (
+    <svg viewBox="0 0 200 112" className={className} aria-hidden="true" focusable="false" overflow="visible">
+      <g className="sleep-breathe">
+        {/* curled body */}
+        <path d="M14 106 C4 72 40 40 104 40 C168 40 198 72 188 106 Z" fill={bg} {...line} />
+        {/* ears */}
+        <path d="M34 62 L32 34 L58 50 Z" fill={bg} {...line} />
+        <path d="M82 52 L90 26 L102 56 Z" fill={bg} {...line} />
+        {/* head tucked on the paws */}
+        <ellipse cx="62" cy="76" rx="32" ry="26" fill={bg} {...line} />
+        {/* closed eyes */}
+        <path d="M44 76 q7 7 14 0 M68 76 q7 7 14 0" fill="none" {...line} strokeWidth="2.4" />
+        <path d="M60.5 85 H68.5 L64.5 89.5 Z" fill="var(--accent)" stroke="var(--accent)" strokeWidth="1.4" strokeLinejoin="round" />
+        {/* tail wrapped around the front */}
+        <path d="M186 98 C190 112 150 114 118 105 C104 101 100 94 108 92" fill="none" {...line} />
+        {/* back haunch line */}
+        <path d="M132 58 C158 62 172 80 166 100" fill="none" {...line} strokeWidth="2" opacity="0.6" />
+      </g>
+    </svg>
+  );
+}

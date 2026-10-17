@@ -57,7 +57,7 @@ export function HeroDesk({ tiles }: { tiles: DeskTile[] }) {
   }, []);
 
   return (
-    <div ref={ref} className="desk relative mx-auto aspect-square w-full max-w-[30rem]" aria-hidden="true">
+    <div ref={ref} className="desk relative mx-auto aspect-square w-full max-w-[18.5rem] sm:max-w-[26rem] lg:max-w-[30rem]" aria-hidden="true">
       <div className="par absolute inset-0" style={{ "--depth": 4 } as CSSProperties}>
         <Bracket animate fill="var(--surface)" strokeWidth={4.5} className="absolute left-[15%] top-[27%] w-[70%]" />
         <div className="cat-arrive absolute left-[41%] top-[27%] w-[38%] -translate-y-full" style={{ marginTop: "2.4cqw" }}>
@@ -76,17 +76,17 @@ export function HeroDesk({ tiles }: { tiles: DeskTile[] }) {
             <div className="tile-drop" style={{ "--rot": `${slot.rot}deg`, "--k": i } as CSSProperties}>
               <div className="tile-bob" style={{ "--dur": durations[i % durations.length], "--k": i } as CSSProperties}>
                 <div
-                  className={`${tintClass[tile.tint]} rounded-[1.1rem] border-2 border-copy`}
+                  className={`${tintClass[tile.tint]} rounded-[1.1rem] border-2 border-copy text-[var(--ink)]`}
                   style={{ padding: "3.2cqw 3.6cqw", boxShadow: "0.9cqw 0.9cqw 0 var(--text)" }}
                 >
-                  <p className="flex items-center gap-[1.4cqw] font-mono uppercase tracking-[0.08em] text-copy" style={{ fontSize: "clamp(0.5rem, 2.3cqw, 0.7rem)" }}>
+                  <p className="flex items-center gap-[1.4cqw] font-mono uppercase tracking-[0.08em]" style={{ fontSize: "clamp(0.5rem, 2.3cqw, 0.7rem)" }}>
                     <span className="rounded-full bg-live" style={{ width: "1.8cqw", height: "1.8cqw", minWidth: 6, minHeight: 6 }} />
                     {tile.status}
                   </p>
-                  <p className="portal-heading mt-[1.2cqw] leading-none text-copy" style={{ fontSize: "clamp(0.95rem, 5.2cqw, 1.5rem)" }}>
+                  <p className="portal-heading mt-[1.2cqw] leading-none" style={{ fontSize: "clamp(0.95rem, 5.2cqw, 1.5rem)" }}>
                     {tile.name}
                   </p>
-                  <p className="mt-[1.2cqw] truncate font-mono text-copy/70" style={{ fontSize: "clamp(0.5rem, 2.2cqw, 0.68rem)" }}>
+                  <p className="mt-[1.2cqw] truncate font-mono opacity-75" style={{ fontSize: "clamp(0.5rem, 2.2cqw, 0.68rem)" }}>
                     {tile.host}
                   </p>
                 </div>
