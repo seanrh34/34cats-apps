@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Cat } from "@/components/brand/cat";
 import { useAuth } from "@/contexts/auth-context";
 
 export default function LoginPage() {
@@ -28,8 +29,10 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="flex min-h-[80vh] items-center px-5 py-16 md:px-8">
-      <section className="portal-panel mx-auto w-full max-w-md p-6 md:p-8" aria-labelledby="sign-in-title">
+    <main className="flex min-h-[80vh] items-center px-5 pb-16 pt-28 md:px-8">
+      <section className="note-card relative mx-auto w-full max-w-md rounded-panel border border-rail-strong bg-platform-raised p-6 pt-9 md:p-8 md:pt-11" aria-labelledby="sign-in-title">
+        <Cat className="absolute bottom-[calc(100%-3px)] right-8 w-24 md:w-28" />
+        <span className="note-tape" aria-hidden="true" />
         <p className="portal-label text-signal">34cats account</p>
         <h1 id="sign-in-title" className="portal-heading mt-3 text-3xl text-copy">Sign in across the network</h1>
         <p className="mt-3 leading-relaxed text-copy-muted">Use one account for supported 34cats apps. No separate password is required.</p>

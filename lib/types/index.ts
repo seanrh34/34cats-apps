@@ -7,7 +7,11 @@ export interface App {
   stack: string[];
   /** Path to a screenshot image for the app card. */
   image: string;
+  /** Pastel backing colour for the app card and hero tile. Defaults to sky. */
+  tint?: AppTint;
 }
+
+export type AppTint = "butter" | "sage" | "lilac" | "sky";
 
 export interface Feature {
   title: string;

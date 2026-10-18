@@ -1,11 +1,12 @@
-import Image from "next/image";
+import { BrowserFrame } from "@/components/shared/browser-frame";
+import { Reveal } from "@/components/motion/reveal";
 
 export function ProjectHero() {
   return (
     <section className="grid items-center gap-10 border-b border-rail pb-14 md:pb-20 lg:grid-cols-[0.82fr_1.18fr] lg:gap-14">
       <div>
         <div className="flex flex-wrap items-center gap-2">
-          <span className="status-pill rounded-full bg-live/10 px-2.5 py-1 text-xs font-semibold text-live">
+          <span className="status-pill portal-label rounded-full bg-live/12 px-3 py-1.5 text-live">
             Open source
           </span>
           <span className="portal-label text-copy-muted">MIT licensed</span>
@@ -52,20 +53,21 @@ export function ProjectHero() {
         </p>
       </div>
 
-      <figure className="portal-panel overflow-hidden p-2">
-        <Image
-          src="/images/pawpress-screenshot.png"
-          alt="PawPress admin editor showing a blog post being written"
-          width={1600}
-          height={1000}
-          sizes="(min-width: 1024px) 52vw, 100vw"
-          className="h-auto w-full rounded-[0.7rem]"
-          priority
-        />
-        <figcaption className="px-3 py-3 text-sm leading-relaxed text-copy-muted">
+      <Reveal as="figure" variant="tilt" tilt="1.5deg" delay={150} className="frame-hover">
+        <div className="relative overflow-hidden rounded-panel border border-rail bg-butter px-5 pb-8 pt-9 md:px-9">
+          <BrowserFrame
+            src="/images/pawpress-screenshot.png"
+            alt="PawPress admin editor showing a blog post being written"
+            host="blog.34cats.com"
+            rotate={1.2}
+            sizes="(min-width: 1024px) 52vw, 100vw"
+            priority
+          />
+        </div>
+        <figcaption className="px-1 py-3 text-sm leading-relaxed text-copy-muted">
           The PawPress editor used to publish the live 34cats blog.
         </figcaption>
-      </figure>
+      </Reveal>
     </section>
   );
 }
