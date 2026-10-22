@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { SignInLink } from "@/components/auth/sign-in-link";
 import { Reveal } from "@/components/motion/reveal";
 
 const groups = [
@@ -30,6 +31,8 @@ export function Footer() {
                         {link.label}&nbsp;<span aria-hidden="true">↗</span>
                         <span className="sr-only"> (opens in a new tab)</span>
                       </a>
+                    ) : link.href === "/login" ? (
+                      <SignInLink className={linkClass}>{link.label}</SignInLink>
                     ) : (
                       <Link href={link.href} className={linkClass}>{link.label}</Link>
                     )}
