@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { useRouter } from "next/navigation";
+import { SignInLink } from "@/components/auth/sign-in-link";
 import { ThemeToggle } from "@/components/shared/theme-toggle";
 import { mainNavItems } from "@/config/navigation";
 import { useAuth } from "@/contexts/auth-context";
@@ -75,7 +76,7 @@ export function Navbar() {
               <button type="button" onClick={handleSignOut} className="portal-button portal-button-secondary rounded-full">Sign out</button>
             </>
           ) : (
-            <Link href="/login" className="portal-button portal-button-primary rounded-full">Sign in</Link>
+            <SignInLink className="portal-button portal-button-primary rounded-full">Sign in</SignInLink>
           )}
         </div>
 
@@ -121,7 +122,7 @@ export function Navbar() {
               ) : user ? (
                 <button type="button" onClick={handleSignOut} className="portal-button portal-button-primary">Sign out</button>
               ) : (
-                <Link href="/login" className="portal-button portal-button-primary" onClick={() => setMobileMenuOpen(false)}>Sign in</Link>
+                <SignInLink className="portal-button portal-button-primary" onClick={() => setMobileMenuOpen(false)}>Sign in</SignInLink>
               )}
             </div>
           </div>

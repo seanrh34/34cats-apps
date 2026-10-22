@@ -4,6 +4,9 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Cat } from "@/components/brand/cat";
 import { useAuth } from "@/contexts/auth-context";
+import { safeReturnPath } from "@/lib/auth/return-path";
+
+const returnPathFromUrl = () => safeReturnPath(new URLSearchParams(window.location.search).get("next"));
 
 export default function LoginPage() {
   const { user, loading, signInWithGoogle } = useAuth();
@@ -11,13 +14,13 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (user && !loading) router.push("/");
+    if (user && !loading) router.replace(returnPathFromUrl());
   }, [user, loading, router]);
 
   const handleGoogleSignIn = async () => {
     setError(null);
     try {
-      await signInWithGoogle();
+      await signInWithGoogle(returnPathFromUrl());
     } catch (signInError) {
       console.error("Failed to sign in:", signInError);
       setError("Sign-in did not complete. Check your connection and try again.");

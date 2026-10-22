@@ -2,12 +2,13 @@
 
 import { createContext, useContext, useEffect, useState } from "react";
 import { User } from "@supabase/supabase-js";
+import { RETURN_PATH_COOKIE, safeReturnPath } from "@/lib/auth/return-path";
 import { createClient } from "@/lib/supabase/client";
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  signInWithGoogle: () => Promise<void>;
+  signInWithGoogle: (returnPath?: string) => Promise<void>;
   signOut: () => Promise<void>;
 }
 
@@ -36,7 +37,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => subscription.unsubscribe();
   }, [supabase.auth]);
 
-  const signInWithGoogle = async () => {
+  const signInWithGoogle = async (returnPath?: string) => {
+    // Kept in a short-lived cookie (not the redirect URL) so the Supabase redirect allowlist still matches.
+    document.cookie = `${RETURN_PATH_COOKIE}=${encodeURIComponent(safeReturnPath(returnPath))}; path=/; max-age=600; samesite=lax`;
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
