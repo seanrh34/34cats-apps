@@ -21,6 +21,16 @@ export const apps: App[] = [
     image: "/images/resumeow-screenshot.png",
     tint: "lilac",
   },
+  {
+    name: "pawdf",
+    href: "https://pawdf.34cats.com",
+    description:
+      "A PDF editor that runs entirely in your browser. Add text, images, shapes, highlights and freehand notes, rearrange pages, then download the new PDF. Nothing is uploaded.",
+    status: "Live",
+    stack: ["Next.js", "pdf.js", "fabric.js", "pdf-lib"],
+    image: "/images/pawdf-screenshot.png",
+    tint: "sage",
+  },
   // Add more apps here
 ];
 

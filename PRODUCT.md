@@ -34,7 +34,7 @@ ongoing development practice.
 
 Visitors discover the available apps at apps.34cats.com, then use products
 hosted either within this site or on their own 34cats subdomains. The current
-collection includes PawPress CMS and Resumeow.
+collection includes PawPress CMS, Resumeow, and pawdf.
 
 ## Capabilities and Constraints
 
@@ -42,8 +42,9 @@ collection includes PawPress CMS and Resumeow.
   hosts product information and legal pages.
 - Apps that grow beyond a landing page may move to their own repository and
   subdomain.
-- Current products include a headless CMS for Next.js projects and a resume
-  builder that produces typeset PDFs.
+- Current products include a headless CMS for Next.js projects, a resume
+  builder that produces typeset PDFs, and a PDF editor that runs entirely in
+  the browser.
 - Offerings are primarily free tools. One credit balance is intended to work
   across all 34cats apps, with purchases handled at `credits.34cats.com`.
 - Product and legal claims must stay factual and must not imply unverified
